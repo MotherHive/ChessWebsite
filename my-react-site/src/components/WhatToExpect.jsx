@@ -1,0 +1,98 @@
+import CoffeeIcon from "../../assets/icons/Coffee.png"
+import ExitIcon from "../../assets/icons/exit.svg"
+
+import { useEffect, useRef, useState } from "react"
+
+const expectationItems = [
+  {
+    icon: (
+      <svg viewBox="0 0 64 64" role="img" aria-label="Exclamation marks">
+        <path d="M18 10h10l-2 34h-6L18 10Z" />
+        <circle cx="23" cy="54" r="5" />
+        <path d="M38 10h10l-2 34h-6L38 10Z" />
+        <circle cx="43" cy="54" r="5" />
+      </svg>
+    ),
+    title: "Show up anytime",
+    description: "No sign up is required. Just drop in between the listed times.",
+  },
+  {
+    icon: <img src={CoffeeIcon} alt="" />,
+    title: "Meet people",
+    description: "We have players of all ages and a friendly community.",
+  },
+  {
+    icon: (
+      <svg viewBox="0 0 64 64" role="img" aria-label="Magnifying glass">
+        <circle cx="28" cy="28" r="18" fill="none" stroke="currentColor" strokeWidth="6" />
+        <path d="m42 42 15 15" fill="none" stroke="currentColor" strokeWidth="7" strokeLinecap="square" />
+      </svg>
+    ),
+    title: "Analyze your games",
+    description: "We love taking a look afterwards to learn. Or forget it and just play blitz!",
+  },
+  {
+    icon: <img src={ExitIcon} alt="" />,
+    title: "Leave whenever",
+    description: "You aren’t expected to stay, but we’ll miss you!",
+  },
+]
+
+export default function WhatToExpect() {
+  const sectionRef = useRef(null)
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    const section = sectionRef.current
+
+    if (!section) {
+      return undefined
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+          observer.unobserve(entry.target)
+        }
+      },
+      { threshold: 0.24 },
+    )
+
+    observer.observe(section)
+
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <section
+      id="expect"
+      ref={sectionRef}
+      className={`expect-section${isVisible ? " is-visible" : ""}`}
+      aria-labelledby="expect-heading"
+    >
+      <div className="expect-content">
+        <div className="expect-copy">
+          <h2 id="expect-heading">WHAT TO EXPECT</h2>
+          <div className="expect-rule" aria-hidden="true"></div>
+
+          <div className="expect-list">
+            {expectationItems.map((item, index) => (
+              <article
+                className="expect-item"
+                key={item.title}
+                style={{ "--expect-item-index": index }}
+              >
+                <div className="expect-icon">{item.icon}</div>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <div className="expect-placeholder" aria-hidden="true"></div>
+      </div>
+    </section>
+  )
+}
