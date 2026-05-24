@@ -16,9 +16,9 @@ const introCards = [
     icon: RookIcon,
     title: "TOURNAMENTS",
     description: "Compete in local events throughout the year.",
-    id: "tournaments",
+    id: "tournaments-overview",
     linkText: "Get Competitive \u2192",
-    linkHref: "#tournaments",
+    linkHref: "/tournaments",
   },
   {
     icon: KnightIcon,

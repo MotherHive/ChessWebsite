@@ -1,5 +1,5 @@
 import { useState } from "react"
-import ScrantonChessClubLogo from "../../assets/ScrantonChessClub.png"
+import ScrantonChessClubLogo from "../../assets/ScrantonChessClub.svg"
 import MarywoodLogo from "../../assets/MarywoodLogo.png"
 import Board from "../../assets/Board.jpg"
 import Calendar from "../../assets/icons/Calendar.svg"
@@ -66,7 +66,11 @@ const createCalendarHref = (meetingDate) => {
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
 export default function Hero() {
-    const [email, setEmail] = useState("")
+    const [signupForm, setSignupForm] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+    })
     const [signupStatus, setSignupStatus] = useState("idle")
     const [signupMessage, setSignupMessage] = useState("")
     const nextMeetingDate = getNextTuesday()
@@ -77,18 +81,34 @@ export default function Hero() {
     })
     const calendarHref = createCalendarHref(nextMeetingDate)
 
+    const updateSignupField = (field, value) => {
+        setSignupForm((currentForm) => ({
+            ...currentForm,
+            [field]: value,
+        }))
+
+        if (signupStatus !== "idle") {
+            setSignupStatus("idle")
+            setSignupMessage("")
+        }
+    }
+
     const handleSignupSubmit = (event) => {
         event.preventDefault()
 
-        const trimmedEmail = email.trim()
+        const trimmedForm = {
+            firstName: signupForm.firstName.trim(),
+            lastName: signupForm.lastName.trim(),
+            email: signupForm.email.trim(),
+        }
 
-        if (!trimmedEmail) {
+        if (!trimmedForm.firstName || !trimmedForm.lastName || !trimmedForm.email) {
             setSignupStatus("error")
-            setSignupMessage("Enter your email to get meeting updates.")
+            setSignupMessage("Enter your first name, last name, and email to get meeting updates.")
             return
         }
 
-        if (!isValidEmail(trimmedEmail)) {
+        if (!isValidEmail(trimmedForm.email)) {
             setSignupStatus("error")
             setSignupMessage("Use a valid email address, like name@example.com.")
             return
@@ -99,13 +119,18 @@ export default function Hero() {
 
         window.setTimeout(() => {
             try {
-                window.localStorage.setItem("scranton-chess-club-email", trimmedEmail)
+                window.localStorage.setItem("scranton-chess-club-email", trimmedForm.email)
+                window.localStorage.setItem("scranton-chess-club-meeting-updates", JSON.stringify(trimmedForm))
                 setSignupStatus("success")
-                setSignupMessage("Thanks. Your email is saved for meeting updates.")
-                setEmail("")
+                setSignupMessage("Thanks. Your information is saved for meeting updates.")
+                setSignupForm({
+                    firstName: "",
+                    lastName: "",
+                    email: "",
+                })
             } catch {
                 setSignupStatus("error")
-                setSignupMessage("Could not save your email in this browser. Try again later.")
+                setSignupMessage("Could not save your information in this browser. Try again later.")
             }
         }, 450)
     }
@@ -131,8 +156,48 @@ export default function Hero() {
                         <form className="email-input-section" id="join" onSubmit={handleSignupSubmit} noValidate>
                             <div className="email-field">
                                 <div className="email-input-wrap">
+                                    <label className="inside-label" htmlFor="updates-first-name">
+                                        First name
+                                    </label>
+
+                                    <input
+                                        id="updates-first-name"
+                                        name="firstName"
+                                        type="text"
+                                        placeholder="First name"
+                                        autoComplete="given-name"
+                                        value={signupForm.firstName}
+                                        aria-invalid={signupStatus === "error" && !signupForm.firstName.trim()}
+                                        disabled={signupStatus === "loading"}
+                                        onChange={(event) => updateSignupField("firstName", event.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="email-field">
+                                <div className="email-input-wrap">
+                                    <label className="inside-label" htmlFor="updates-last-name">
+                                        Last name
+                                    </label>
+
+                                    <input
+                                        id="updates-last-name"
+                                        name="lastName"
+                                        type="text"
+                                        placeholder="Last name"
+                                        autoComplete="family-name"
+                                        value={signupForm.lastName}
+                                        aria-invalid={signupStatus === "error" && !signupForm.lastName.trim()}
+                                        disabled={signupStatus === "loading"}
+                                        onChange={(event) => updateSignupField("lastName", event.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="email-field">
+                                <div className="email-input-wrap">
                                     <label className="inside-label" htmlFor="email-updates">
-                                        Enter your email
+                                        Email
                                     </label>
 
                                     <input
@@ -141,30 +206,15 @@ export default function Hero() {
                                         type="email"
                                         placeholder="example@email.com"
                                         autoComplete="email"
-                                        value={email}
+                                        value={signupForm.email}
                                         aria-describedby={signupMessage ? "email-signup-message" : undefined}
-                                        aria-invalid={signupStatus === "error"}
+                                        aria-invalid={signupStatus === "error" && Boolean(signupForm.email.trim()) && !isValidEmail(signupForm.email.trim())}
                                         disabled={signupStatus === "loading"}
-                                        onChange={(event) => {
-                                            setEmail(event.target.value)
-
-                                            if (signupStatus !== "idle") {
-                                                setSignupStatus("idle")
-                                                setSignupMessage("")
-                                            }
-                                        }}
+                                        onChange={(event) => updateSignupField("email", event.target.value)}
                                     />
                                 </div>
-                                {signupMessage && (
-                                    <p
-                                        className={`email-signup-message email-signup-message-${signupStatus}`}
-                                        id="email-signup-message"
-                                        role={signupStatus === "error" ? "alert" : "status"}
-                                    >
-                                        {signupMessage}
-                                    </p>
-                                )}
                             </div>
+
                             <button
                                 type="submit"
                                 disabled={signupStatus === "loading"}
@@ -177,6 +227,16 @@ export default function Hero() {
                                     {signupStatus === "loading" ? "Signing..." : "Sign Up"}
                                 </span>
                             </button>
+
+                            {signupMessage && (
+                                <p
+                                    className={`email-signup-message email-signup-message-${signupStatus}`}
+                                    id="email-signup-message"
+                                    role={signupStatus === "error" ? "alert" : "status"}
+                                >
+                                    {signupMessage}
+                                </p>
+                            )}
                         </form>
 
                         <img className="chessboard-img" src={Board} alt="Chessboard" />

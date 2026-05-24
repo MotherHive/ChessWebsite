@@ -1,12 +1,13 @@
+import { useEffect, useRef, useState } from "react"
 import MarywoodLogo from "../../assets/MarywoodLogo.png"
 import ScrantonChessClubLogo from "../../assets/ScrantonChessClub.png"
 
 const quickLinks = [
-  { label: "Home", href: "#home" },
-  { label: "Tournaments", href: "#tournaments" },
-  { label: "Blog", href: "#club-updates" },
-  { label: "About", href: "#about" },
-  { label: "Contact", href: "#join" },
+  { label: "Home", href: "/" },
+  { label: "Tournaments", href: "/tournaments" },
+  { label: "Blog", href: "/blog" },
+  { label: "FAQ", href: "/#qa" },
+  { label: "Contact", href: "/#contact" },
 ]
 
 const mapHref = "https://www.google.com/maps/search/?api=1&query=Nazareth%20Center%20Marywood%20University%201300%20University%20Ave%20Scranton%20PA"
@@ -67,34 +68,59 @@ function SocialPlaceholderIcon({ label }) {
 }
 
 export default function End() {
+  const footerRef = useRef(null)
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    const footer = footerRef.current
+
+    if (!footer) {
+      return undefined
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+          observer.unobserve(entry.target)
+        }
+      },
+      { threshold: 0.18 },
+    )
+
+    observer.observe(footer)
+
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <footer className="end" aria-labelledby="end-heading">
+    <footer ref={footerRef} className={`end${isVisible ? " is-visible" : ""}`} aria-labelledby="end-heading">
       <h2 className="sr-only" id="end-heading">Scranton Chess Club footer</h2>
 
       <section className="end-callout" aria-label="Club note">
         <div className="end-callout-inner">
-          <div className="end-quote-mark">
+          <div className="end-quote-mark" style={{ "--end-item-index": 0 }}>
             <QuoteIcon />
           </div>
 
-          <figure className="end-quote">
+          <figure className="end-quote" style={{ "--end-item-index": 1 }}>
             <blockquote>
               &ldquo;Don&rsquo;t play b4 - Yes, and he&rsquo;s going to beat me with it.&rdquo;
             </blockquote>
             <figcaption>- Bruce Wisenburn -</figcaption>
           </figure>
 
-          <div className="end-callout-divider" aria-hidden="true"></div>
+          <div className="end-callout-divider" style={{ "--end-item-index": 2 }} aria-hidden="true"></div>
 
-          <div className="end-partnership-icon">
+          <div className="end-partnership-icon" style={{ "--end-item-index": 3 }}>
             <PeopleIcon />
           </div>
 
-          <p className="end-partnership-text">
+          <p className="end-partnership-text" style={{ "--end-item-index": 4 }}>
             Hosted in partnership with Marywood University and open to the Scranton community. All are welcome.
           </p>
 
-          <a className="end-marywood-link" href="https://www.marywood.edu/" target="_blank" rel="noreferrer">
+          <a className="end-marywood-link" style={{ "--end-item-index": 5 }} href="https://www.marywood.edu/" target="_blank" rel="noreferrer">
             <img src={MarywoodLogo} alt="Marywood University" />
           </a>
         </div>
@@ -102,11 +128,11 @@ export default function End() {
 
       <section className="end-footer" aria-label="Footer navigation and contact">
         <div className="end-footer-inner">
-          <div className="end-brand">
+          <div className="end-brand" style={{ "--end-item-index": 0 }}>
             <img src={ScrantonChessClubLogo} alt="Scranton Chess Club" />
           </div>
 
-          <nav className="end-links" aria-label="Footer quick links">
+          <nav className="end-links" style={{ "--end-item-index": 1 }} aria-label="Footer quick links">
             <h3>Quick Links</h3>
             <div className="end-heading-rule" aria-hidden="true"></div>
             <ul>
@@ -118,7 +144,7 @@ export default function End() {
             </ul>
           </nav>
 
-          <div className="end-location">
+          <div className="end-location" style={{ "--end-item-index": 2 }}>
             <h3>Meeting Location</h3>
             <div className="end-location-body">
               <MapPinIcon />
@@ -135,7 +161,7 @@ export default function End() {
             </div>
           </div>
 
-          <div className="end-contact">
+          <div className="end-contact" id="contact" style={{ "--end-item-index": 3 }}>
             <h3>Get In Touch</h3>
             <ul>
               <li>
@@ -149,7 +175,7 @@ export default function End() {
             </ul>
           </div>
 
-          <div className="end-social">
+          <div className="end-social" style={{ "--end-item-index": 4 }}>
             <h3>Follow Us</h3>
             <div className="end-social-list" aria-label="Social links coming soon">
               <SocialPlaceholderIcon label="Social link coming soon" />

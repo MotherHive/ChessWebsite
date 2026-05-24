@@ -20,7 +20,7 @@ export default function Footer() {
         <a className="site-footer-icon-link" href="https://lichess.org/" target="_blank" rel="noreferrer" aria-label="Join us on Lichess">
           <img className="site-footer-lichess" src={LichessIcon} alt="" />
         </a>
-        <a className="site-footer-icon-link" href="#join" aria-label="Join Scranton Chess Club">
+        <a className="site-footer-icon-link" href="/#join" aria-label="Join Scranton Chess Club">
           <img className="site-footer-pawn" src={ChessComIcon} alt="" />
         </a>
         <a className="site-footer-marywood" href="https://www.marywood.edu/" target="_blank" rel="noreferrer" aria-label="Marywood University">
