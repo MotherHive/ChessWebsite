@@ -4,6 +4,7 @@ import Hero from './components/Hero'
 import Intro from './components/Intro'
 import QandA from './components/QandA'
 import WhatToExpect from './components/WhatToExpect'
+import End from './components/End'
 
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
       <Intro />
       <WhatToExpect />
       <QandA />
+      <End />
     </main>
   )
 }

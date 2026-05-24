@@ -1,4 +1,4 @@
-import CoffeeIcon from "../../assets/icons/Coffee.png"
+import CoffeeIcon from "../../assets/icons/coffee.svg"
 import ExitIcon from "../../assets/icons/exit.svg"
 
 import { useEffect, useRef, useState } from "react"

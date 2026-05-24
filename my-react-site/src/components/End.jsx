@@ -1,0 +1,163 @@
+import MarywoodLogo from "../../assets/MarywoodLogo.png"
+import ScrantonChessClubLogo from "../../assets/ScrantonChessClub.png"
+
+const quickLinks = [
+  { label: "Home", href: "#home" },
+  { label: "Tournaments", href: "#tournaments" },
+  { label: "Blog", href: "#club-updates" },
+  { label: "About", href: "#about" },
+  { label: "Contact", href: "#join" },
+]
+
+const mapHref = "https://www.google.com/maps/search/?api=1&query=Nazareth%20Center%20Marywood%20University%201300%20University%20Ave%20Scranton%20PA"
+
+function QuoteIcon() {
+  return (
+    <svg className="end-icon end-quote-icon" viewBox="0 0 74 96" aria-hidden="true">
+      <path d="M48 13 13 43" />
+      <path d="M12 52h39" />
+      <path d="M14 61 49 87" />
+    </svg>
+  )
+}
+
+function PeopleIcon() {
+  return (
+    <svg className="end-icon end-people-icon" viewBox="0 0 74 74" aria-hidden="true">
+      <circle cx="27" cy="25" r="10" />
+      <circle cx="48" cy="28" r="8" />
+      <path d="M8 62v-9c0-10 8-17 19-17s19 7 19 17v9" />
+      <path d="M45 43c9 1 16 7 16 16v3" />
+    </svg>
+  )
+}
+
+function MailIcon() {
+  return (
+    <svg className="end-contact-icon" viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M5 8h22v16H5z" />
+      <path d="m6 9 10 8 10-8" />
+    </svg>
+  )
+}
+
+function PhoneIcon() {
+  return (
+    <svg className="end-contact-icon" viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M10 5 7 8c0 10 7 17 17 17l3-3-7-5-3 3c-3-1-5-3-6-6l3-3Z" />
+    </svg>
+  )
+}
+
+function MapPinIcon() {
+  return (
+    <svg className="end-location-icon" viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M32 58S13 36 13 23a19 19 0 1 1 38 0c0 13-19 35-19 35Z" />
+      <circle cx="32" cy="23" r="7" />
+    </svg>
+  )
+}
+
+function SocialPlaceholderIcon({ label }) {
+  return (
+    <span className="end-social-placeholder" aria-label={label} role="img">
+      <span></span>
+    </span>
+  )
+}
+
+export default function End() {
+  return (
+    <footer className="end" aria-labelledby="end-heading">
+      <h2 className="sr-only" id="end-heading">Scranton Chess Club footer</h2>
+
+      <section className="end-callout" aria-label="Club note">
+        <div className="end-callout-inner">
+          <div className="end-quote-mark">
+            <QuoteIcon />
+          </div>
+
+          <figure className="end-quote">
+            <blockquote>
+              &ldquo;Don&rsquo;t play b4 - Yes, and he&rsquo;s going to beat me with it.&rdquo;
+            </blockquote>
+            <figcaption>- Bruce Wisenburn -</figcaption>
+          </figure>
+
+          <div className="end-callout-divider" aria-hidden="true"></div>
+
+          <div className="end-partnership-icon">
+            <PeopleIcon />
+          </div>
+
+          <p className="end-partnership-text">
+            Hosted in partnership with Marywood University and open to the Scranton community. All are welcome.
+          </p>
+
+          <a className="end-marywood-link" href="https://www.marywood.edu/" target="_blank" rel="noreferrer">
+            <img src={MarywoodLogo} alt="Marywood University" />
+          </a>
+        </div>
+      </section>
+
+      <section className="end-footer" aria-label="Footer navigation and contact">
+        <div className="end-footer-inner">
+          <div className="end-brand">
+            <img src={ScrantonChessClubLogo} alt="Scranton Chess Club" />
+          </div>
+
+          <nav className="end-links" aria-label="Footer quick links">
+            <h3>Quick Links</h3>
+            <div className="end-heading-rule" aria-hidden="true"></div>
+            <ul>
+              {quickLinks.map((link) => (
+                <li key={link.href}>
+                  <a href={link.href}>{link.label}</a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div className="end-location">
+            <h3>Meeting Location</h3>
+            <div className="end-location-body">
+              <MapPinIcon />
+              <div>
+                <address>
+                  Nazareth Center 2nd Floor<br />
+                  1300 University Ave,<br />
+                  Scranton, PA
+                </address>
+                <a className="end-map-link" href={mapHref} target="_blank" rel="noreferrer">
+                  View on Map
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="end-contact">
+            <h3>Get In Touch</h3>
+            <ul>
+              <li>
+                <MailIcon />
+                <a href="mailto:scrantonchess@gmail.com">scrantonchess@gmail.com</a>
+              </li>
+              <li>
+                <PhoneIcon />
+                <span>000-000-0000</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="end-social">
+            <h3>Follow Us</h3>
+            <div className="end-social-list" aria-label="Social links coming soon">
+              <SocialPlaceholderIcon label="Social link coming soon" />
+              <SocialPlaceholderIcon label="Social link coming soon" />
+            </div>
+          </div>
+        </div>
+      </section>
+    </footer>
+  )
+}
