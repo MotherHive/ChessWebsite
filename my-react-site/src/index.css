@@ -2307,3 +2307,138 @@ button,
     font-size: 1rem;
   }
 }
+
+/* ================================
+   Site Footer
+================================ */
+
+.site-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 67px;
+  width: 100%;
+  padding: 0 25px 0 clamp(2rem, 4.7vw, 5.625rem);
+  background-color: var(--color-chess-black);
+  color: var(--color-chess-white);
+  font-family: var(--font-body);
+}
+
+.site-footer-copy {
+  margin: 0;
+  font-size: clamp(1.15rem, 1.05vw, 1.25rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.site-footer-join {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+  font-size: clamp(1.15rem, 1.05vw, 1.25rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.site-footer-icon-link,
+.site-footer-marywood {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: var(--color-chess-white);
+  text-decoration: none;
+}
+
+.site-footer-icon-link:focus-visible,
+.site-footer-marywood:focus-visible {
+  outline: 3px solid rgb(113 255 125 / 0.55);
+  outline-offset: 5px;
+}
+
+.site-footer-lichess {
+  display: block;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  filter: invert(1);
+}
+
+.site-footer-pawn {
+  display: block;
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+
+.site-footer-marywood img {
+  display: block;
+  width: 52px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.site-footer-discord {
+  display: block;
+  width: 35px;
+  height: 35px;
+  padding: 5px;
+  overflow: visible;
+  fill: var(--color-chess-black);
+  background-color: var(--color-chess-white);
+  border-radius: 50%;
+}
+
+@media (max-width: 760px) {
+  .site-footer {
+    gap: var(--space-4);
+    min-height: 67px;
+    padding-inline: var(--space-5);
+  }
+
+  .site-footer-copy,
+  .site-footer-join {
+    font-size: 1rem;
+  }
+
+  .site-footer-join {
+    gap: 14px;
+  }
+
+  .site-footer-lichess,
+  .site-footer-discord {
+    width: 30px;
+    height: 30px;
+  }
+
+  .site-footer-pawn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .site-footer-marywood img {
+    width: 42px;
+  }
+}
+
+@media (max-width: 560px) {
+  .site-footer {
+    flex-direction: column;
+    justify-content: center;
+    min-height: 104px;
+    padding-block: var(--space-4);
+    text-align: center;
+  }
+
+  .site-footer-join {
+    justify-content: center;
+    flex-wrap: wrap;
+    row-gap: var(--space-3);
+  }
+}

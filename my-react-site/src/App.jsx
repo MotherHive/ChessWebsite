@@ -5,6 +5,7 @@ import Intro from './components/Intro'
 import QandA from './components/QandA'
 import WhatToExpect from './components/WhatToExpect'
 import End from './components/End'
+import Footer from './components/Footer'
 
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
       <WhatToExpect />
       <QandA />
       <End />
+      <Footer />
     </main>
   )
 }
