@@ -106,17 +106,51 @@ export default function Tournaments() {
   const purchaseCloseButtonRef = useRef(null)
   const [isVisible, setIsVisible] = useState(false)
   const [isPurchaseDrawerOpen, setIsPurchaseDrawerOpen] = useState(false)
-  const [purchaseForm, setPurchaseForm] = useState({
-    name: "",
-    email: "",
-    section: "Open",
-    quantity: 1,
+  const [purchaseStep, setPurchaseStep] = useState("entry")
+  const [purchaseForm, setPurchaseForm] = useState(() => {
+    const savedInfo = getSavedJoinInfo()
+
+    return {
+      hasActiveMembership: false,
+      isExpiredMember: false,
+      enteredWithTeam: false,
+      uscfId: "",
+      name: savedInfo.name,
+      email: savedInfo.email,
+      phone: "",
+      address: "",
+      birthDate: "",
+      school: "",
+      section: "Open",
+      byes: [],
+    }
   })
   const [purchaseStatus, setPurchaseStatus] = useState("idle")
   const [purchaseMessage, setPurchaseMessage] = useState("")
 
-  const purchaseQuantity = Math.min(Math.max(Number(purchaseForm.quantity) || 1, 1), 6)
-  const purchaseTotal = entryPrice * purchaseQuantity
+  const membershipTier = getMembershipTier(purchaseForm.birthDate)
+  const membershipPrice = purchaseForm.hasActiveMembership
+    ? 0
+    : Math.max(0, (membershipTier?.price || 0) - (purchaseForm.isExpiredMember ? expiredMembershipDiscount : 0))
+  const byeTotal = purchaseForm.byes.length * byePrice
+  const purchaseTotal = entryPrice + byeTotal + membershipPrice
+  const selectedByeRounds = purchaseForm.byes.map((bye) => bye.round).filter(Boolean)
+  const entryStepCanContinue =
+    Boolean(purchaseForm.section)
+    && purchaseForm.byes.every((bye) => bye.round)
+    && new Set(selectedByeRounds).size === selectedByeRounds.length
+  const infoStepCanContinue =
+    purchaseForm.name.trim()
+    && isValidEmail(purchaseForm.email.trim())
+    && (
+      purchaseForm.hasActiveMembership
+        ? purchaseForm.uscfId.trim()
+        : purchaseForm.address.trim()
+          && purchaseForm.phone.trim()
+          && purchaseForm.birthDate
+          && (!purchaseForm.enteredWithTeam || purchaseForm.school.trim())
+    )
+  const currentStepIndex = purchaseStep === "entry" ? 0 : purchaseStep === "info" ? 1 : 2
 
   const closePurchaseDrawer = useCallback(() => {
     setIsPurchaseDrawerOpen(false)
@@ -193,28 +227,99 @@ export default function Tournaments() {
     }
   }
 
-  const handlePurchaseSubmit = (event) => {
-    event.preventDefault()
+  const addBye = () => {
+    setPurchaseForm((currentForm) => {
+      if (currentForm.byes.length >= tournamentRounds.length) {
+        return currentForm
+      }
 
-    const trimmedForm = {
-      ...purchaseForm,
-      name: purchaseForm.name.trim(),
-      email: purchaseForm.email.trim(),
-      quantity: purchaseQuantity,
-    }
+      return {
+        ...currentForm,
+        byes: [
+          ...currentForm.byes,
+          {
+            id: window.crypto?.randomUUID?.() || `${Date.now()}-${currentForm.byes.length}`,
+            round: "",
+          },
+        ],
+      }
+    })
 
-    if (!trimmedForm.name || !trimmedForm.email) {
+    setPurchaseMessage("")
+  }
+
+  const updateBye = (id, round) => {
+    setPurchaseForm((currentForm) => ({
+      ...currentForm,
+      byes: currentForm.byes.map((bye) => (
+        bye.id === id ? { ...bye, round } : bye
+      )),
+    }))
+
+    setPurchaseMessage("")
+  }
+
+  const removeBye = (id) => {
+    setPurchaseForm((currentForm) => ({
+      ...currentForm,
+      byes: currentForm.byes.filter((bye) => bye.id !== id),
+    }))
+
+    setPurchaseMessage("")
+  }
+
+  const handleEntryContinue = () => {
+    if (!entryStepCanContinue) {
       setPurchaseStatus("error")
-      setPurchaseMessage("Enter your name and email to continue.")
+      setPurchaseMessage("Choose a section and complete each bye round.")
       return
     }
 
-    if (!isValidEmail(trimmedForm.email)) {
+    setPurchaseStatus("idle")
+    setPurchaseMessage("")
+    setPurchaseStep("info")
+  }
+
+  const handleInfoContinue = () => {
+    if (!purchaseForm.name.trim() || !purchaseForm.email.trim()) {
+      setPurchaseStatus("error")
+      setPurchaseMessage("Enter the player name and email.")
+      return
+    }
+
+    if (!isValidEmail(purchaseForm.email.trim())) {
       setPurchaseStatus("error")
       setPurchaseMessage("Use a valid email address, like name@example.com.")
       return
     }
 
+    if (purchaseForm.hasActiveMembership && !purchaseForm.uscfId.trim()) {
+      setPurchaseStatus("error")
+      setPurchaseMessage("Enter the active USCF ID.")
+      return
+    }
+
+    if (!purchaseForm.hasActiveMembership) {
+      if (!purchaseForm.address.trim() || !purchaseForm.phone.trim() || !purchaseForm.birthDate) {
+        setPurchaseStatus("error")
+        setPurchaseMessage("Enter address, phone, and birth date for the membership.")
+        return
+      }
+
+      if (purchaseForm.enteredWithTeam && !purchaseForm.school.trim()) {
+        setPurchaseStatus("error")
+        setPurchaseMessage("Enter the school for the team entry.")
+        return
+      }
+    }
+
+    setPurchaseStatus("idle")
+    setPurchaseMessage("")
+    setPurchaseStep("review")
+  }
+
+  const handlePurchaseSubmit = (event) => {
+    event.preventDefault()
     setPurchaseStatus("loading")
     setPurchaseMessage("")
 
@@ -223,16 +328,21 @@ export default function Tournaments() {
         window.localStorage.setItem(
           "scranton-chess-tournament-purchase",
           JSON.stringify({
-            ...trimmedForm,
+            ...purchaseForm,
+            name: purchaseForm.name.trim(),
+            email: purchaseForm.email.trim(),
             entryPrice,
-            total: entryPrice * trimmedForm.quantity,
+            byePrice,
+            membershipPrice,
+            total: purchaseTotal,
           }),
         )
         setPurchaseStatus("success")
-        setPurchaseMessage("Your purchase request is saved. We will follow up with payment details.")
+        setPurchaseStep("thanks")
+        setPurchaseMessage("Registration submitted.")
       } catch {
         setPurchaseStatus("error")
-        setPurchaseMessage("Could not save your request in this browser. Please email the club.")
+        setPurchaseMessage("Could not save your registration in this browser. Please email the club.")
       }
     }, 450)
   }
