@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import Hermes from "../../assets/hermes.png"
 import Splash from "../../assets/splash.png"
-import PawnIcon from "../../assets/icons/pawn.png"
 
 const staffPositions = [
   {
@@ -77,13 +76,6 @@ export default function Contact() {
         <div className="tournaments-board contact-board" aria-label="Contact page club preview">
           <img className="contact-splash" src={Splash} alt="" aria-hidden="true" />
           <img className="contact-hermes" src={Hermes} alt="Hermes carrying club correspondence" />
-          <div className="tournaments-status">
-            <img src={PawnIcon} alt="" aria-hidden="true" />
-            <div>
-              <span>Main Email</span>
-              <strong>scrantonchess@gmail.com</strong>
-            </div>
-          </div>
         </div>
       </div>
 
