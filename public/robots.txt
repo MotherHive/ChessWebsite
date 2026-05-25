@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://scrantonchessclub.org/sitemap.xml
+Sitemap: https://scrantonchess.org/sitemap.xml
