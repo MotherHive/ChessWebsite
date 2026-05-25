@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react"
 import { tournamentListings } from "../../data/tournaments"
 import PurchaseDrawer from "./PurchaseDrawer"
 import TournamentHero from "./TournamentHero"
-import TournamentInfoPanel from "./TournamentInfoPanel"
 import TournamentList from "./TournamentList"
 import useTournamentPurchase from "./useTournamentPurchase"
 
@@ -10,7 +9,7 @@ export default function TournamentsPage() {
   const sectionRef = useRef(null)
   const featuredTournament = tournamentListings[0]
   const [isVisible, setIsVisible] = useState(false)
-  const [openTournamentId, setOpenTournamentId] = useState(featuredTournament.id)
+  const [openTournamentId, setOpenTournamentId] = useState("")
   const [currentTime, setCurrentTime] = useState(() => Date.now())
   const purchase = useTournamentPurchase(tournamentListings)
 
@@ -51,8 +50,7 @@ export default function TournamentsPage() {
       className={`tournaments-section tournaments-page${isVisible ? " is-visible" : ""}`}
       aria-labelledby="tournaments-heading"
     >
-      <TournamentHero />
-      <TournamentInfoPanel featuredTournament={featuredTournament} />
+      <TournamentHero featuredTournament={featuredTournament} />
       <TournamentList
         currentTime={currentTime}
         isPurchaseDrawerOpen={purchase.isPurchaseDrawerOpen}

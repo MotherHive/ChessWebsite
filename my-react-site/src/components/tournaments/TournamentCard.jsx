@@ -31,17 +31,6 @@ export default function TournamentCard({
             </span>
             <span className="tournament-title-actions">
               <button
-                className="tournament-chevron-button"
-                type="button"
-                aria-label={`${isOpen ? "Hide" : "Show"} ${tournament.title} details`}
-                aria-expanded={isOpen}
-                aria-controls={`${tournament.id}-details`}
-                onClick={onToggleOpen}
-              >
-                <span>Details</span>
-                <span className="tournament-chevron" aria-hidden="true"></span>
-              </button>
-              <button
                 className="button button-large tournament-card-purchase-button"
                 type="button"
                 aria-controls="tournament-purchase-drawer"
@@ -84,36 +73,59 @@ export default function TournamentCard({
         </a>
       </div>
 
-      <div className="tournament-dropdown" id={`${tournament.id}-details`} hidden={!isOpen}>
-        <TournamentSchedule tournament={tournament} />
-        <TournamentPrizes tournament={tournament} />
+      <div className="tournament-bottom-actions">
+        <button
+          className="tournament-details-button"
+          type="button"
+          aria-label={`${isOpen ? "Hide" : "Show"} ${tournament.title} details`}
+          aria-expanded={isOpen}
+          aria-controls={`${tournament.id}-details`}
+          onClick={onToggleOpen}
+        >
+          <span>{isOpen ? "Hide tournament details" : "Show tournament details"}</span>
+          <span className="tournament-details-button-icon" aria-hidden="true"></span>
+        </button>
+      </div>
 
-        <div className="tournament-footer-row">
-          <nav className="tournament-resource-links" aria-label={`${tournament.title} resources`}>
-            {tournament.rulesUrl && (
-              <a href={tournament.rulesUrl} target="_blank" rel="noreferrer">View rules</a>
-            )}
-            {tournament.flyerUrl && (
-              <a
-                className="tournament-icon-link tournament-icon-link-flyer"
-                href={tournament.flyerUrl}
-                aria-label={`${tournament.title} flyer`}
-              >
-                <span aria-hidden="true"></span>
-              </a>
-            )}
-            {tournament.uscfUrl && (
-              <a
-                className="tournament-icon-link tournament-icon-link-uscf"
-                href={tournament.uscfUrl}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={`${tournament.title} USCF listing`}
-              >
-                <span aria-hidden="true"></span>
-              </a>
-            )}
-          </nav>
+      <div
+        className={`tournament-details-panel${isOpen ? " tournament-details-panel-open" : ""}`}
+        id={`${tournament.id}-details`}
+        aria-hidden={!isOpen}
+        inert={!isOpen ? "" : undefined}
+      >
+        <div className="tournament-details-inner">
+          <div className="tournament-details-content">
+            <TournamentSchedule tournament={tournament} />
+            <TournamentPrizes tournament={tournament} />
+
+            <div className="tournament-footer-row">
+              <nav className="tournament-resource-links" aria-label={`${tournament.title} resources`}>
+                {tournament.rulesUrl && (
+                  <a href={tournament.rulesUrl} target="_blank" rel="noreferrer">View rules</a>
+                )}
+                {tournament.flyerUrl && (
+                  <a
+                    className="tournament-icon-link tournament-icon-link-flyer"
+                    href={tournament.flyerUrl}
+                    aria-label={`${tournament.title} flyer`}
+                  >
+                    <span aria-hidden="true"></span>
+                  </a>
+                )}
+                {tournament.uscfUrl && (
+                  <a
+                    className="tournament-icon-link tournament-icon-link-uscf"
+                    href={tournament.uscfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`${tournament.title} USCF listing`}
+                  >
+                    <span aria-hidden="true"></span>
+                  </a>
+                )}
+              </nav>
+            </div>
+          </div>
         </div>
       </div>
     </article>
