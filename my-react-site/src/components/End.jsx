@@ -7,7 +7,7 @@ const quickLinks = [
   { label: "Tournaments", href: "/tournaments" },
   { label: "Blog", href: "/blog" },
   { label: "FAQ", href: "/#qa" },
-  { label: "Contact", href: "/#contact" },
+  { label: "Contact", href: "/contact" },
 ]
 
 const mapHref = "https://www.google.com/maps/search/?api=1&query=Nazareth%20Center%20Marywood%20University%201300%20University%20Ave%20Scranton%20PA"
@@ -53,8 +53,11 @@ function PhoneIcon() {
 function MapPinIcon() {
   return (
     <svg className="end-location-icon" viewBox="0 0 64 64" aria-hidden="true">
-      <path d="M32 58S13 36 13 23a19 19 0 1 1 38 0c0 13-19 35-19 35Z" />
-      <circle cx="32" cy="23" r="7" />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M32 58S13 36 13 23a19 19 0 1 1 38 0c0 13-19 35-19 35ZM32 30a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z"
+      />
     </svg>
   )
 }

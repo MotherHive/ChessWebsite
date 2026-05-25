@@ -135,7 +135,7 @@ export default function Header() {
                             <li><a href="/tournaments" onClick={closeHeaderMenus}>Tournaments</a></li>
                             <li><a href="/blog" onClick={closeHeaderMenus}>Blog</a></li>
                             <li><a href="/#qa" onClick={closeHeaderMenus}>FAQ</a></li>
-                            <li><a href="/#contact" onClick={closeHeaderMenus}>Contact</a></li>
+                            <li><a href="/contact" onClick={closeHeaderMenus}>Contact</a></li>
                         </ul>
                     </nav>
 
