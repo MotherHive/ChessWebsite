@@ -157,6 +157,8 @@ export default function Header() {
                         <form
                             className={`join-dropdown${isJoinOpen ? " join-dropdown-open" : ""}`}
                             id="join-club-form"
+                            aria-hidden={!isJoinOpen}
+                            hidden={!isJoinOpen}
                             onSubmit={handleJoinSubmit}
                             noValidate
                         >

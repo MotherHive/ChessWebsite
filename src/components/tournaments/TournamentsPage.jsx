@@ -51,6 +51,10 @@ export default function TournamentsPage() {
       aria-labelledby="tournaments-heading"
     >
       <TournamentHero featuredTournament={featuredTournament} />
+      <div className="tournaments-list-header">
+        <span>Current events</span>
+        <h2>Upcoming Tournaments</h2>
+      </div>
       <TournamentList
         currentTime={currentTime}
         isPurchaseDrawerOpen={purchase.isPurchaseDrawerOpen}

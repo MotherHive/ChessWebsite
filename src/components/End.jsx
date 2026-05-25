@@ -108,9 +108,9 @@ export default function End() {
 
           <figure className="end-quote" style={{ "--end-item-index": 1 }}>
             <blockquote>
-              &ldquo;Don&rsquo;t play b4 - Yes, and he&rsquo;s going to beat me with it.&rdquo;
+              Chess is a struggle between my desire not to think and my desire not to lose.
             </blockquote>
-            <figcaption>- Bruce Wisenburn -</figcaption>
+            <figcaption>- Jan Gustafsson -</figcaption>
           </figure>
 
           <div className="end-callout-divider" style={{ "--end-item-index": 2 }} aria-hidden="true"></div>

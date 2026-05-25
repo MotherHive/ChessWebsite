@@ -44,6 +44,7 @@ export default function PurchaseDrawer({ purchase }) {
       <div
         className={`purchase-drawer-backdrop${isPurchaseDrawerOpen ? " purchase-drawer-backdrop-open" : ""}`}
         aria-hidden="true"
+        hidden={!isPurchaseDrawerOpen}
         onClick={closePurchaseDrawer}
       ></div>
 
@@ -52,6 +53,7 @@ export default function PurchaseDrawer({ purchase }) {
         id="tournament-purchase-drawer"
         aria-labelledby="purchase-drawer-heading"
         aria-hidden={!isPurchaseDrawerOpen}
+        hidden={!isPurchaseDrawerOpen}
       >
         <div className="purchase-drawer-header">
           <div>

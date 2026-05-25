@@ -1,3 +1,4 @@
+import CalendarIcon from "../../../assets/icons/Calendar.svg"
 import LocationIcon from "../../../assets/icons/Location.svg"
 import { formatPrice } from "../../utils/tournamentPricing"
 import TournamentPrizes from "./TournamentPrizes"
@@ -29,6 +30,13 @@ export default function TournamentCard({
                 {tournament.rating}
               </span>
             </span>
+            <span className="tournament-card-facts" aria-label="Tournament details">
+              <span>
+                <img src={CalendarIcon} alt="" aria-hidden="true" />
+                {tournament.dateRange}
+              </span>
+              <span>{tournament.type}</span>
+            </span>
             <span className="tournament-title-actions">
               <button
                 className="button button-large tournament-card-purchase-button"
@@ -44,7 +52,7 @@ export default function TournamentCard({
           </span>
 
           <span className="tournament-meta-line">
-            <span>{tournament.type}</span>
+            <span className="tournament-price-label">Entry fee</span>
             <span className="tournament-offer-row">
               <span className="tournament-price">
                 <s>{formatPrice(tournament.price)}</s>
@@ -91,7 +99,7 @@ export default function TournamentCard({
         className={`tournament-details-panel${isOpen ? " tournament-details-panel-open" : ""}`}
         id={`${tournament.id}-details`}
         aria-hidden={!isOpen}
-        inert={!isOpen ? "" : undefined}
+        inert={!isOpen}
       >
         <div className="tournament-details-inner">
           <div className="tournament-details-content">

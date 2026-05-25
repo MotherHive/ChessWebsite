@@ -8,16 +8,16 @@ const staffPositions = [
     title: "Club Director",
   },
   {
-    name: "Cian Wescott",
-    title: "Student President",
+    name: "Bernie Sporko",
+    title: "Tournament Director",
   },
   {
-    name: "Kilian ____",
+    name: "Kilian Palmiter",
     title: "Assistant Tournament Director",
   },
   {
-    name: "Bernie Sporko",
-    title: "Tournament Director",
+    name: "Cian Wescott",
+    title: "Student President",
   },
   {
     name: "Casey Ames",
