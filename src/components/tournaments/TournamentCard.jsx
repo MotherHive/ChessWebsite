@@ -17,10 +17,6 @@ export default function TournamentCard({
   const getDisplayedEntryPrice = (fee) => (
     earlyEntryIsExpired || !Number.isFinite(fee.earlyPrice) ? fee.price : fee.earlyPrice
   )
-  const earlyEntryFees = tournament.entryFees
-    .map((fee) => `${formatPrice(Number.isFinite(fee.earlyPrice) ? fee.earlyPrice : fee.price)} ${fee.section}`)
-    .join(" / ")
-
   return (
     <article
       className={`tournament-listing${isOpen ? " tournament-listing-open" : ""}`}
@@ -71,14 +67,14 @@ export default function TournamentCard({
                 ))}
               </span>
               <span className="tournament-discount">
-                <span>
-                  {earlyEntryIsExpired
-                    ? `Early entry ended ${tournament.earlyEntryDeadlineLabel}`
-                    : "Early entry discount ends in"}
-                </span>
-                <strong>
-                  {earlyEntryIsExpired ? earlyEntryFees : countdown}
-                </strong>
+                {earlyEntryIsExpired ? (
+                  <span>Early entry ended</span>
+                ) : (
+                  <>
+                    <span>Early entry discount ends in</span>
+                    <strong>{countdown}</strong>
+                  </>
+                )}
               </span>
             </span>
           </span>
