@@ -1,6 +1,12 @@
 import { expiredMembershipDiscount } from "../../data/tournaments"
 import { formatPrice } from "../../utils/tournamentPricing"
 import { isValidEmail } from "../../utils/tournamentValidation"
+import {
+  PurchaseCheckboxCard,
+  PurchaseField,
+  PurchaseMessage,
+  PurchaseStepFooter,
+} from "./PurchaseFormControls"
 
 export default function PurchaseInfoStep({ purchase }) {
   const {
@@ -14,147 +20,113 @@ export default function PurchaseInfoStep({ purchase }) {
     purchaseMessage,
     purchaseStatus,
     purchaseTotal,
-    updatePurchaseField,
   } = purchase
+  const purchaseMessageId = purchaseMessage ? "purchase-drawer-message" : undefined
+  const findIdLink = (
+    <a href={playerSearchUrl} target="_blank" rel="noreferrer">
+      Find ID
+    </a>
+  )
 
   return (
     <div className="purchase-panel">
-      <div className="purchase-field">
-        <label htmlFor="purchase-name">Player name</label>
-        <input
-          id="purchase-name"
-          type="text"
-          autoComplete="name"
-          value={purchaseForm.name}
-          aria-invalid={purchaseStatus === "error" && !purchaseForm.name.trim()}
-          onChange={(event) => updatePurchaseField("name", event.target.value)}
-        />
-      </div>
+      <PurchaseField
+        field="name"
+        id="purchase-name"
+        label="Player name"
+        autoComplete="name"
+        purchase={purchase}
+        invalid={purchaseStatus === "error" && !purchaseForm.name.trim()}
+      />
 
-      <div className="purchase-field">
-        <label htmlFor="purchase-email">Email</label>
-        <input
-          id="purchase-email"
-          type="email"
-          autoComplete="email"
-          value={purchaseForm.email}
-          aria-describedby={purchaseMessage ? "purchase-drawer-message" : undefined}
-          aria-invalid={
-            purchaseStatus === "error"
-            && Boolean(purchaseForm.email.trim())
-            && !isValidEmail(purchaseForm.email.trim())
-          }
-          onChange={(event) => updatePurchaseField("email", event.target.value)}
-        />
-      </div>
+      <PurchaseField
+        field="email"
+        id="purchase-email"
+        label="Email"
+        type="email"
+        autoComplete="email"
+        purchase={purchase}
+        describedBy={purchaseMessageId}
+        invalid={
+          purchaseStatus === "error"
+          && Boolean(purchaseForm.email.trim())
+          && !isValidEmail(purchaseForm.email.trim())
+        }
+      />
 
       {hasActiveMembership ? (
-        <div className="purchase-field">
-          <div className="purchase-label-row">
-            <label htmlFor="purchase-uscf-id">USCF ID</label>
-            <a href={playerSearchUrl} target="_blank" rel="noreferrer">
-              Find ID
-            </a>
-          </div>
-          <input
-            id="purchase-uscf-id"
-            type="text"
-            inputMode="numeric"
-            value={purchaseForm.uscfId}
-            aria-invalid={purchaseStatus === "error" && !purchaseForm.uscfId.trim()}
-            onChange={(event) => updatePurchaseField("uscfId", event.target.value)}
-          />
-        </div>
+        <PurchaseField
+          field="uscfId"
+          id="purchase-uscf-id"
+          label="USCF ID"
+          inputMode="numeric"
+          purchase={purchase}
+          labelAction={findIdLink}
+          invalid={purchaseStatus === "error" && !purchaseForm.uscfId.trim()}
+        />
       ) : (
         <>
-          <label className="purchase-check-card purchase-check-card-compact">
-            <input
-              type="checkbox"
-              checked={purchaseForm.isExpiredMember}
-              onChange={(event) => updatePurchaseField("isExpiredMember", event.target.checked)}
-            />
-            <span>
-              <strong>Expired USCF membership</strong>
-              <small>{formatPrice(expiredMembershipDiscount)} discount applied.</small>
-            </span>
-          </label>
+          <PurchaseCheckboxCard
+            checkedField="isExpiredMember"
+            title="Expired USCF membership"
+            description={`${formatPrice(expiredMembershipDiscount)} discount applied.`}
+            purchase={purchase}
+          />
 
           {purchaseForm.isExpiredMember && (
-            <div className="purchase-field">
-              <div className="purchase-label-row">
-                <label htmlFor="purchase-expired-uscf-id">Expired USCF ID</label>
-                <a href={playerSearchUrl} target="_blank" rel="noreferrer">
-                  Find ID
-                </a>
-              </div>
-              <input
-                id="purchase-expired-uscf-id"
-                type="text"
-                inputMode="numeric"
-                value={purchaseForm.uscfId}
-                onChange={(event) => updatePurchaseField("uscfId", event.target.value)}
-              />
-            </div>
+            <PurchaseField
+              field="uscfId"
+              id="purchase-expired-uscf-id"
+              label="Expired USCF ID"
+              inputMode="numeric"
+              purchase={purchase}
+              labelAction={findIdLink}
+            />
           )}
 
-          <div className="purchase-field">
-            <label htmlFor="purchase-birth-date">Birth date</label>
-            <input
-              id="purchase-birth-date"
-              type="date"
-              value={purchaseForm.birthDate}
-              aria-invalid={purchaseStatus === "error" && !purchaseForm.birthDate}
-              onChange={(event) => updatePurchaseField("birthDate", event.target.value)}
-            />
-          </div>
+          <PurchaseField
+            field="birthDate"
+            id="purchase-birth-date"
+            label="Birth date"
+            type="date"
+            purchase={purchase}
+            invalid={purchaseStatus === "error" && !purchaseForm.birthDate}
+          />
 
-          <div className="purchase-field">
-            <label htmlFor="purchase-address">Address</label>
-            <input
-              id="purchase-address"
-              type="text"
-              autoComplete="street-address"
-              value={purchaseForm.address}
-              aria-invalid={purchaseStatus === "error" && !purchaseForm.address.trim()}
-              onChange={(event) => updatePurchaseField("address", event.target.value)}
-            />
-          </div>
+          <PurchaseField
+            field="address"
+            id="purchase-address"
+            label="Address"
+            autoComplete="street-address"
+            purchase={purchase}
+            invalid={purchaseStatus === "error" && !purchaseForm.address.trim()}
+          />
 
-          <div className="purchase-field">
-            <label htmlFor="purchase-phone">Phone</label>
-            <input
-              id="purchase-phone"
-              type="tel"
-              autoComplete="tel"
-              value={purchaseForm.phone}
-              aria-invalid={purchaseStatus === "error" && !purchaseForm.phone.trim()}
-              onChange={(event) => updatePurchaseField("phone", event.target.value)}
-            />
-          </div>
+          <PurchaseField
+            field="phone"
+            id="purchase-phone"
+            label="Phone"
+            type="tel"
+            autoComplete="tel"
+            purchase={purchase}
+            invalid={purchaseStatus === "error" && !purchaseForm.phone.trim()}
+          />
 
-          <label className="purchase-check-card purchase-check-card-compact">
-            <input
-              type="checkbox"
-              checked={purchaseForm.enteredWithTeam}
-              onChange={(event) => updatePurchaseField("enteredWithTeam", event.target.checked)}
-            />
-            <span>
-              <strong>Entered with a team</strong>
-              <small>School entry is required for team registrations.</small>
-            </span>
-          </label>
+          <PurchaseCheckboxCard
+            checkedField="enteredWithTeam"
+            title="Entered with a team"
+            description="School entry is required for team registrations."
+            purchase={purchase}
+          />
 
           {purchaseForm.enteredWithTeam && (
-            <div className="purchase-field">
-              <label htmlFor="purchase-school">School</label>
-              <input
-                id="purchase-school"
-                type="text"
-                value={purchaseForm.school}
-                aria-invalid={purchaseStatus === "error" && !purchaseForm.school.trim()}
-                onChange={(event) => updatePurchaseField("school", event.target.value)}
-              />
-            </div>
+            <PurchaseField
+              field="school"
+              id="purchase-school"
+              label="School"
+              purchase={purchase}
+              invalid={purchaseStatus === "error" && !purchaseForm.school.trim()}
+            />
           )}
 
           <div className="purchase-cart-card">
@@ -173,26 +145,14 @@ export default function PurchaseInfoStep({ purchase }) {
         </>
       )}
 
-      {purchaseMessage && (
-        <p
-          className={`purchase-message purchase-message-${purchaseStatus}`}
-          id="purchase-drawer-message"
-          role={purchaseStatus === "error" ? "alert" : "status"}
-        >
-          {purchaseMessage}
-        </p>
-      )}
+      <PurchaseMessage message={purchaseMessage} status={purchaseStatus} />
 
       {infoStepCanContinue && (
-        <div className="purchase-drawer-footer">
-          <div>
-            <span>Order total</span>
-            <strong>{formatPrice(purchaseTotal)}</strong>
-          </div>
+        <PurchaseStepFooter label="Order total" value={formatPrice(purchaseTotal)}>
           <button className="button button-large purchase-submit" type="button" onClick={handleInfoContinue}>
             Continue to Payment
           </button>
-        </div>
+        </PurchaseStepFooter>
       )}
     </div>
   )

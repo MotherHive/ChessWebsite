@@ -1,5 +1,10 @@
 import { byePrice, paymentOptions } from "../../data/tournaments"
 import { formatPrice } from "../../utils/tournamentPricing"
+import {
+  PurchaseMessage,
+  PurchaseSelectField,
+  PurchaseStepFooter,
+} from "./PurchaseFormControls"
 
 export default function PurchaseReviewStep({ purchase }) {
   const {
@@ -14,7 +19,6 @@ export default function PurchaseReviewStep({ purchase }) {
     purchaseMessage,
     purchaseStatus,
     purchaseTotal,
-    updatePurchaseField,
   } = purchase
 
   return (
@@ -76,18 +80,16 @@ export default function PurchaseReviewStep({ purchase }) {
 
       <div className="purchase-review-card purchase-payment-card">
         <span>Payment</span>
-        <div className="purchase-field">
-          <label htmlFor="purchase-payment-method">Payment option</label>
-          <select
-            id="purchase-payment-method"
-            value={purchaseForm.paymentMethod}
-            onChange={(event) => updatePurchaseField("paymentMethod", event.target.value)}
-          >
-            {paymentOptions.map((option) => (
-              <option key={option}>{option}</option>
-            ))}
-          </select>
-        </div>
+        <PurchaseSelectField
+          field="paymentMethod"
+          id="purchase-payment-method"
+          label="Payment option"
+          purchase={purchase}
+        >
+          {paymentOptions.map((option) => (
+            <option key={option}>{option}</option>
+          ))}
+        </PurchaseSelectField>
         <p>
           Final payment handling can change later without changing the
           rest of this registration flow.
@@ -99,17 +101,9 @@ export default function PurchaseReviewStep({ purchase }) {
         )}
       </div>
 
-      {purchaseMessage && (
-        <p
-          className={`purchase-message purchase-message-${purchaseStatus}`}
-          id="purchase-drawer-message"
-          role={purchaseStatus === "error" ? "alert" : "status"}
-        >
-          {purchaseMessage}
-        </p>
-      )}
+      <PurchaseMessage message={purchaseMessage} status={purchaseStatus} />
 
-      <div className="purchase-drawer-footer">
+      <PurchaseStepFooter>
         <button
           className="button button-large purchase-submit"
           type="submit"
@@ -117,7 +111,7 @@ export default function PurchaseReviewStep({ purchase }) {
         >
           {purchaseStatus === "loading" ? "Submitting..." : "Pay & Register"}
         </button>
-      </div>
+      </PurchaseStepFooter>
     </form>
   )
 }

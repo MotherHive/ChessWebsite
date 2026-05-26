@@ -65,8 +65,9 @@ export default function JoinMenu({ isOpen, onToggle }) {
     }
 
     return (
-        <div className="join-menu">
+        <div className="join-menu" id="join">
             <button
+                id="join-menu-trigger"
                 className="button button-medium join-menu-trigger"
                 type="button"
                 aria-controls="join-club-form"

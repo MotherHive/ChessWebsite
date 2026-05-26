@@ -6,8 +6,11 @@ export const tournamentListings = [
     title: "2026 Pennsylvania State Amateur Championship",
     type: "State Championship Event",
     rating: "USCF",
-    price: 17,
-    discountedPrice: 12,
+    entryFees: [
+      { section: "Championship", price: 22, earlyPrice: 17 },
+      { section: "Scholastic", price: 17, earlyPrice: 12 },
+    ],
+    earlyEntryDeadlineLabel: "May 25",
     discountEndsAt: "2026-05-25T23:59:59-04:00",
     dateRange: "May 30-31, 2026",
     location: "Latour Room, Nazareth Student Center, Marywood University",
@@ -86,15 +89,9 @@ export const tournamentListings = [
   },
 ]
 
-export const tournamentEntryPrices = {
-  Championship: 17,
-  Scholastic: 12,
-}
-
 export const byePrice = 5
 export const expiredMembershipDiscount = 3
 
-export const tournamentSections = Object.keys(tournamentEntryPrices)
 export const tournamentRounds = ["Round 1", "Round 2", "Round 3", "Round 4", "Round 5"]
 
 export const membershipAgeTiers = [

@@ -100,7 +100,8 @@ body {
   margin: 0 auto;
 }
 
-body.purchase-drawer-active {
+body.purchase-drawer-active,
+body.construction-popup-active {
   overflow: hidden;
 }
 
@@ -324,7 +325,7 @@ nav ul li a {
     line-height: 1;
   }
 
-  .logo span {
+  .logo-line {
     max-width: 180px;
   }
 
@@ -459,7 +460,7 @@ nav ul li a {
     font-size: 0.68rem;
   }
 
-  .logo span {
+  .logo-line {
     max-width: 150px;
   }
 
@@ -504,6 +505,98 @@ button,
 }
 
 /* ================================
+   Construction Popup
+================================ */
+
+.construction-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background-color: rgb(0 0 0 / 0.58);
+}
+
+.construction-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 110;
+  display: grid;
+  gap: var(--space-4);
+  width: min(92vw, 500px);
+  max-height: calc(100dvh - 32px);
+  padding: clamp(var(--space-5), 4vw, var(--space-7));
+  overflow-y: auto;
+  color: var(--color-chess-black);
+  background-color: var(--color-chess-white);
+  border: 1px solid rgb(0 0 0 / 0.1);
+  border-radius: var(--radius-md);
+  box-shadow: 0 28px 80px rgb(0 0 0 / 0.32);
+  transform: translate(-50%, -50%);
+}
+
+.construction-popup-close {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  background-color: var(--color-charcoal);
+  border-radius: var(--radius-md);
+}
+
+.construction-popup-close span {
+  position: absolute;
+  width: 21px;
+  height: 2px;
+  background-color: var(--color-chess-white);
+}
+
+.construction-popup-close span:first-child {
+  transform: rotate(45deg);
+}
+
+.construction-popup-close span:last-child {
+  transform: rotate(-45deg);
+}
+
+.construction-popup-kicker {
+  display: block;
+  max-width: calc(100% - 56px);
+  color: var(--color-club-green);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.construction-popup h2 {
+  max-width: 12ch;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 7vw, 3rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.construction-popup p {
+  margin: 0;
+  color: var(--color-charcoal);
+  font-family: var(--font-body);
+  font-size: clamp(1rem, 2.7vw, 1.15rem);
+  line-height: 1.55;
+}
+
+.construction-popup-action {
+  width: min(100%, 168px);
+  margin-top: var(--space-2);
+  font-weight: 700;
+}
+
+/* ================================
    Logo
 ================================ */
 
@@ -527,7 +620,7 @@ button,
   text-decoration: none;
 }
 
-.logo span {
+.logo-line {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -748,6 +841,19 @@ button,
   animation: landing-float-up 680ms cubic-bezier(0.2, 0.8, 0.2, 1) 420ms both;
 }
 
+.hero-join-button {
+  width: min(100%, 240px);
+  max-width: 240px;
+  min-height: 55px;
+  height: 55px;
+  padding: 0 var(--space-7);
+  font-size: var(--font-size-20);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  animation: landing-float-up 680ms cubic-bezier(0.2, 0.8, 0.2, 1) 480ms both;
+}
+
 /* Email signup layout */
 .email-input-section {
   display: grid;
@@ -957,6 +1063,11 @@ button,
 
   .signup-button-label-mobile {
     display: inline;
+  }
+
+  .hero-join-button {
+    width: 100%;
+    max-width: 100%;
   }
 
 }
@@ -2694,8 +2805,22 @@ button,
 .tournament-price {
   display: inline-flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: var(--space-2);
-  white-space: nowrap;
+  white-space: normal;
+}
+
+.tournament-price-section {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.tournament-price-section span {
+  color: rgb(0 0 0 / 0.62);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .tournament-price s {
@@ -2734,7 +2859,7 @@ button,
   font-size: 1.05rem;
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .tournament-summary-image {

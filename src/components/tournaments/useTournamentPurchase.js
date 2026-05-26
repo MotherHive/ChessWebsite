@@ -2,7 +2,6 @@ import { useCallback, useRef, useState } from "react"
 import {
   byePrice,
   paymentOptions,
-  tournamentEntryPrices,
   tournamentRounds,
 } from "../../data/tournaments"
 import {
@@ -34,6 +33,70 @@ const getSavedJoinInfo = () => {
   }
 }
 
+const getEntryStepError = (form, selectedByeRounds) => {
+  if (!form.activeMembershipStatus || !form.section || form.byes.some((bye) => !bye.round)) {
+    return "Select membership status, choose a section, and complete each bye round."
+  }
+
+  if (new Set(selectedByeRounds).size !== selectedByeRounds.length) {
+    return "Choose each bye round only once."
+  }
+
+  return ""
+}
+
+const getInfoStepError = (form, { hasActiveMembership, membershipTier, needsMembership }) => {
+  if (!form.name.trim() || !form.email.trim()) {
+    return "Enter the player name and email."
+  }
+
+  if (!isValidEmail(form.email.trim())) {
+    return "Use a valid email address, like name@example.com."
+  }
+
+  if (hasActiveMembership) {
+    return form.uscfId.trim() ? "" : "Enter the active USCF ID."
+  }
+
+  if (!needsMembership) {
+    return "Select an active USCF membership status."
+  }
+
+  if (!form.address.trim() || !form.phone.trim() || !form.birthDate) {
+    return "Enter address, phone, and birth date for the membership."
+  }
+
+  if (!membershipTier) {
+    return "Enter a valid birth date."
+  }
+
+  if (form.enteredWithTeam && !form.school.trim()) {
+    return "Enter the school for the team entry."
+  }
+
+  return ""
+}
+
+const getTournamentEntryFees = (tournament) => (
+  tournament.entryFees?.length ? tournament.entryFees : [{ section: "Championship", price: 0 }]
+)
+
+const getDefaultTournamentSection = (tournament) => getTournamentEntryFees(tournament)[0].section
+
+const hasActiveEarlyEntry = (tournament, now = Date.now()) => {
+  const deadline = new Date(tournament.discountEndsAt).getTime()
+
+  return Number.isFinite(deadline) && deadline > now
+}
+
+const getEntryFeePrice = (fee, tournament) => {
+  if (hasActiveEarlyEntry(tournament) && Number.isFinite(fee.earlyPrice)) {
+    return fee.earlyPrice
+  }
+
+  return fee.price
+}
+
 export default function useTournamentPurchase(tournaments) {
   const purchaseButtonRef = useRef(null)
   const purchaseCloseButtonRef = useRef(null)
@@ -55,7 +118,7 @@ export default function useTournamentPurchase(tournaments) {
       address: "",
       birthDate: "",
       school: "",
-      section: "Championship",
+      section: getDefaultTournamentSection(featuredTournament),
       byes: [],
       paymentMethod: paymentOptions[0],
     }
@@ -69,7 +132,11 @@ export default function useTournamentPurchase(tournaments) {
   const membershipTier = getMembershipTier(purchaseForm.birthDate)
   const hasActiveMembership = purchaseForm.activeMembershipStatus === "yes"
   const needsMembership = purchaseForm.activeMembershipStatus === "no"
-  const entryPrice = tournamentEntryPrices[purchaseForm.section] || tournamentEntryPrices.Championship
+  const tournamentEntryFees = getTournamentEntryFees(selectedTournament)
+  const tournamentSections = tournamentEntryFees.map((fee) => fee.section)
+  const selectedEntryFee =
+    tournamentEntryFees.find((fee) => fee.section === purchaseForm.section) ?? tournamentEntryFees[0]
+  const entryPrice = getEntryFeePrice(selectedEntryFee, selectedTournament)
   const membershipPrice = getMembershipPrice({
     needsMembership,
     membershipTier,
@@ -90,29 +157,25 @@ export default function useTournamentPurchase(tournaments) {
     section: purchaseForm.section,
     possibleByes: maxByeCount,
   }
-  const entryStepCanContinue =
-    Boolean(purchaseForm.activeMembershipStatus)
-    && Boolean(purchaseForm.section)
-    && purchaseForm.byes.every((bye) => bye.round)
-    && new Set(selectedByeRounds).size === selectedByeRounds.length
-  const infoStepCanContinue =
-    purchaseForm.name.trim()
-    && isValidEmail(purchaseForm.email.trim())
-    && (
-      hasActiveMembership
-        ? purchaseForm.uscfId.trim()
-        : needsMembership
-          && purchaseForm.address.trim()
-          && purchaseForm.phone.trim()
-          && purchaseForm.birthDate
-          && (!purchaseForm.enteredWithTeam || purchaseForm.school.trim())
-    )
+  const entryStepError = getEntryStepError(purchaseForm, selectedByeRounds)
+  const infoStepError = getInfoStepError(purchaseForm, { hasActiveMembership, membershipTier, needsMembership })
+  const entryStepCanContinue = !entryStepError
+  const infoStepCanContinue = !infoStepError
   const currentStepIndex = purchaseStep === "entry" ? 0 : purchaseStep === "info" ? 1 : 2
 
+  const clearPurchaseMessage = () => {
+    setPurchaseStatus("idle")
+    setPurchaseMessage("")
+  }
+
+  const showPurchaseError = (message) => {
+    setPurchaseStatus("error")
+    setPurchaseMessage(message)
+  }
+
   const resetPurchaseMessage = () => {
-    if (purchaseStatus !== "idle") {
-      setPurchaseStatus("idle")
-      setPurchaseMessage("")
+    if (purchaseStatus !== "idle" || purchaseMessage) {
+      clearPurchaseMessage()
     }
   }
 
@@ -135,18 +198,23 @@ export default function useTournamentPurchase(tournaments) {
     }
 
     setSelectedTournamentId(nextTournament.id)
+    setPurchaseStep("entry")
     setPurchaseForm((currentForm) => {
-      if (currentForm.byes.length <= nextMaxByeCount) {
+      const nextSection = getTournamentEntryFees(nextTournament).some((fee) => fee.section === currentForm.section)
+        ? currentForm.section
+        : getDefaultTournamentSection(nextTournament)
+
+      if (currentForm.byes.length <= nextMaxByeCount && currentForm.section === nextSection) {
         return currentForm
       }
 
       return {
         ...currentForm,
+        section: nextSection,
         byes: currentForm.byes.slice(0, nextMaxByeCount),
       }
     })
-    setPurchaseStatus("idle")
-    setPurchaseMessage("")
+    clearPurchaseMessage()
     setIsPurchaseDrawerOpen(true)
   }
 
@@ -172,8 +240,7 @@ export default function useTournamentPurchase(tournaments) {
   }, [])
 
   const goToPreviousPurchaseStep = () => {
-    setPurchaseStatus("idle")
-    setPurchaseMessage("")
+    clearPurchaseMessage()
 
     if (purchaseStep === "review") {
       setPurchaseStep("info")
@@ -203,7 +270,7 @@ export default function useTournamentPurchase(tournaments) {
       }
     })
 
-    setPurchaseMessage("")
+    resetPurchaseMessage()
   }
 
   const updateBye = (id, round) => {
@@ -214,7 +281,7 @@ export default function useTournamentPurchase(tournaments) {
       )),
     }))
 
-    setPurchaseMessage("")
+    resetPurchaseMessage()
   }
 
   const removeBye = (id) => {
@@ -223,56 +290,26 @@ export default function useTournamentPurchase(tournaments) {
       byes: currentForm.byes.filter((bye) => bye.id !== id),
     }))
 
-    setPurchaseMessage("")
+    resetPurchaseMessage()
   }
 
   const handleEntryContinue = () => {
-    if (!entryStepCanContinue) {
-      setPurchaseStatus("error")
-      setPurchaseMessage("Select membership status, choose a section, and complete each bye round.")
+    if (entryStepError) {
+      showPurchaseError(entryStepError)
       return
     }
 
-    setPurchaseStatus("idle")
-    setPurchaseMessage("")
+    clearPurchaseMessage()
     setPurchaseStep("info")
   }
 
   const handleInfoContinue = () => {
-    if (!purchaseForm.name.trim() || !purchaseForm.email.trim()) {
-      setPurchaseStatus("error")
-      setPurchaseMessage("Enter the player name and email.")
+    if (infoStepError) {
+      showPurchaseError(infoStepError)
       return
     }
 
-    if (!isValidEmail(purchaseForm.email.trim())) {
-      setPurchaseStatus("error")
-      setPurchaseMessage("Use a valid email address, like name@example.com.")
-      return
-    }
-
-    if (hasActiveMembership && !purchaseForm.uscfId.trim()) {
-      setPurchaseStatus("error")
-      setPurchaseMessage("Enter the active USCF ID.")
-      return
-    }
-
-    if (needsMembership) {
-      if (!purchaseForm.address.trim() || !purchaseForm.phone.trim() || !purchaseForm.birthDate) {
-        setPurchaseStatus("error")
-        setPurchaseMessage("Enter address, phone, and birth date for the membership.")
-        return
-      }
-
-      if (purchaseForm.enteredWithTeam && !purchaseForm.school.trim()) {
-        setPurchaseStatus("error")
-        setPurchaseMessage("Enter the school for the team entry.")
-        return
-      }
-    }
-
-    setPurchaseStatus("idle")
-    setPurchaseMessage("")
+    clearPurchaseMessage()
     setPurchaseStep("review")
   }
 
@@ -302,8 +339,7 @@ export default function useTournamentPurchase(tournaments) {
         setPurchaseStep("thanks")
         setPurchaseMessage("Registration submitted.")
       } catch {
-        setPurchaseStatus("error")
-        setPurchaseMessage("Could not save your registration in this browser. Please email the club.")
+        showPurchaseError("Could not save your registration in this browser. Please email the club.")
       }
     }, 450)
   }
@@ -339,6 +375,7 @@ export default function useTournamentPurchase(tournaments) {
     selectedByeRounds,
     selectedTournament,
     setPurchaseCloseButton,
+    tournamentSections,
     updateBye,
     updatePurchaseField,
   }

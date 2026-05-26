@@ -4,9 +4,13 @@ import {
   membershipAgeTiers,
   membershipPriceRange,
   tournamentRounds,
-  tournamentSections,
 } from "../../data/tournaments"
 import { formatPrice } from "../../utils/tournamentPricing"
+import {
+  PurchaseMessage,
+  PurchaseSelectField,
+  PurchaseStepFooter,
+} from "./PurchaseFormControls"
 
 export default function PurchaseEntryStep({ purchase }) {
   const {
@@ -26,29 +30,25 @@ export default function PurchaseEntryStep({ purchase }) {
     removeBye,
     selectedByeRounds,
     selectedTournament,
+    tournamentSections,
     updateBye,
-    updatePurchaseField,
   } = purchase
 
   return (
     <div className="purchase-panel purchase-entry-panel">
       <div className="purchase-membership-choice-card">
-        <div className="purchase-field">
-          <label htmlFor="purchase-active-membership">
-            Do you have an <strong>active</strong> USCF membership?
-          </label>
-          <select
-            id="purchase-active-membership"
-            required
-            value={purchaseForm.activeMembershipStatus}
-            aria-invalid={purchaseStatus === "error" && !purchaseForm.activeMembershipStatus}
-            onChange={(event) => updatePurchaseField("activeMembershipStatus", event.target.value)}
-          >
-            <option value="">Select one</option>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-          </select>
-        </div>
+        <PurchaseSelectField
+          field="activeMembershipStatus"
+          id="purchase-active-membership"
+          label={<>Do you have an <strong>active</strong> USCF membership?</>}
+          purchase={purchase}
+          required
+          invalid={purchaseStatus === "error" && !purchaseForm.activeMembershipStatus}
+        >
+          <option value="">Select one</option>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </PurchaseSelectField>
         <p>Active members only need ID, name, and email on the next step.</p>
       </div>
 
@@ -102,18 +102,17 @@ export default function PurchaseEntryStep({ purchase }) {
               + Add Bye
             </button>
           </div>
-          <div className="purchase-section-select">
-            <label htmlFor="purchase-section">Section</label>
-            <select
-              id="purchase-section"
-              value={purchaseForm.section}
-              onChange={(event) => updatePurchaseField("section", event.target.value)}
-            >
-              {tournamentSections.map((section) => (
-                <option key={section}>{section}</option>
-              ))}
-            </select>
-          </div>
+          <PurchaseSelectField
+            className="purchase-section-select"
+            field="section"
+            id="purchase-section"
+            label="Section"
+            purchase={purchase}
+          >
+            {tournamentSections.map((section) => (
+              <option key={section}>{section}</option>
+            ))}
+          </PurchaseSelectField>
           <strong>{formatPrice(entryPrice)}</strong>
         </div>
 
@@ -166,30 +165,21 @@ export default function PurchaseEntryStep({ purchase }) {
         )}
       </div>
 
-      {purchaseMessage && (
-        <p
-          className={`purchase-message purchase-message-${purchaseStatus}`}
-          id="purchase-drawer-message"
-          role={purchaseStatus === "error" ? "alert" : "status"}
-        >
-          {purchaseMessage}
-        </p>
-      )}
+      <PurchaseMessage message={purchaseMessage} status={purchaseStatus} />
 
       {entryStepCanContinue && (
-        <div className="purchase-drawer-footer">
-          <div>
-            <span>Current total</span>
-            <strong>
-              {hasActiveMembership || membershipTier
-                ? formatPrice(purchaseTotal)
-                : `${formatPrice(entryPrice + byeTotal)} + membership`}
-            </strong>
-          </div>
+        <PurchaseStepFooter
+          label="Current total"
+          value={
+            hasActiveMembership || membershipTier
+              ? formatPrice(purchaseTotal)
+              : `${formatPrice(entryPrice + byeTotal)} + membership`
+          }
+        >
           <button className="button button-large purchase-submit" type="button" onClick={handleEntryContinue}>
             Continue
           </button>
-        </div>
+        </PurchaseStepFooter>
       )}
     </div>
   )

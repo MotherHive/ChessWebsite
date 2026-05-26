@@ -2,25 +2,25 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import JoinMenu from "./JoinMenu"
 
-export default function Header() {
+export default function Header({ isJoinOpen, onJoinClose, onJoinToggle }) {
     const [isMenuOpen, setIsMenuOpen] = useState(false)
-    const [isJoinOpen, setIsJoinOpen] = useState(false)
     const headerRef = useRef(null)
+    const isNavigationOpen = isMenuOpen || isJoinOpen
 
     useEffect(() => {
-        if (!isMenuOpen && !isJoinOpen) return
+        if (!isNavigationOpen) return
 
         function handleDocumentClick(event) {
             if (!headerRef.current?.contains(event.target)) {
                 setIsMenuOpen(false)
-                setIsJoinOpen(false)
+                onJoinClose()
             }
         }
 
         function handleEscapeKey(event) {
             if (event.key === "Escape") {
                 setIsMenuOpen(false)
-                setIsJoinOpen(false)
+                onJoinClose()
             }
         }
 
@@ -31,11 +31,11 @@ export default function Header() {
             document.removeEventListener("mousedown", handleDocumentClick)
             document.removeEventListener("keydown", handleEscapeKey)
         }
-    }, [isMenuOpen, isJoinOpen])
+    }, [isNavigationOpen, onJoinClose])
 
     const closeHeaderMenus = () => {
         setIsMenuOpen(false)
-        setIsJoinOpen(false)
+        onJoinClose()
     }
 
     return (
@@ -44,11 +44,11 @@ export default function Header() {
                 <div className="logo-section">
                     <Link className="logo" to="/" aria-label="Scranton Chess Club home">
                         <h5>SCRANTON</h5>
-                        <span>
+                        <div className="logo-line">
                             <div className="tapered-left"></div>
                             <h6>CHESS CLUB</h6>
                             <div className="tapered-right"></div>
-                        </span>
+                        </div>
                     </Link>
                     <div className="vertical-divider"></div>
                 </div>
@@ -57,11 +57,15 @@ export default function Header() {
                     className="header-menu-button"
                     type="button"
                     aria-controls="primary-navigation"
-                    aria-expanded={isMenuOpen}
-                    aria-label={isMenuOpen ? "Close navigation" : "Open navigation"}
+                    aria-expanded={isNavigationOpen}
+                    aria-label={isNavigationOpen ? "Close navigation" : "Open navigation"}
                     onClick={() => {
-                        setIsMenuOpen((open) => !open)
-                        setIsJoinOpen(false)
+                        if (isNavigationOpen) {
+                            closeHeaderMenus()
+                            return
+                        }
+
+                        setIsMenuOpen(true)
                     }}
                 >
                     <span></span>
@@ -69,7 +73,7 @@ export default function Header() {
                     <span></span>
                 </button>
 
-                <div className={`nav-section${isMenuOpen ? " nav-section-open" : ""}`}>
+                <div className={`nav-section${isNavigationOpen ? " nav-section-open" : ""}`}>
                     <nav id="primary-navigation">
                         <ul>
                             <li><NavLink to="/tournaments" onClick={closeHeaderMenus}>Tournaments</NavLink></li>
@@ -83,7 +87,7 @@ export default function Header() {
 
                     <JoinMenu
                         isOpen={isJoinOpen}
-                        onToggle={() => setIsJoinOpen((open) => !open)}
+                        onToggle={onJoinToggle}
                     />
                 </div>
             </div>

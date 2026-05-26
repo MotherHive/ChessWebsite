@@ -4,7 +4,6 @@ import Board from "../../assets/Board.jpg"
 import Calendar from "../../assets/icons/Calendar.svg"
 import Clock from "../../assets/icons/Clock.svg"
 import Location from "../../assets/icons/Location.svg"
-import SignupForm from "./SignupForm"
 import {
     createMeetingCalendarHref,
     formatMeetingDateLabel,
@@ -12,11 +11,14 @@ import {
     getNextTuesday,
 } from "../utils/meetingCalendar"
 
-export default function Hero() {
+export default function Hero({ onOpenJoinMenu }) {
     const nextMeetingDate = getNextTuesday()
     const nextMeetingLabel = formatMeetingDateLabel(nextMeetingDate)
     const meetingTimeLabel = formatMeetingTimeLabel()
     const calendarHref = createMeetingCalendarHref(nextMeetingDate)
+    const handleJoinClick = () => {
+        onOpenJoinMenu?.()
+    }
 
     return (
         <section className="hero" id="home">
@@ -34,9 +36,16 @@ export default function Hero() {
                         </div>
                         <div className="horizontal-divider"></div>
                         <p>Scranton Chess Club brings local players together for casual games, 
-                            tournaments, and events in partnership with Marywood University.</p>
+                            tournaments, and events in partnership with Marywood University. Regular club meetings have no fees.</p>
                         <h6 id="club-updates">GET MEETING UPDATES</h6>
-                        <SignupForm />
+                        <button
+                            className="button hero-join-button"
+                            type="button"
+                            aria-describedby="club-updates"
+                            onClick={handleJoinClick}
+                        >
+                            Join the Club
+                        </button>
 
                         <img className="chessboard-img" src={Board} alt="Chessboard" />
                     </div>
