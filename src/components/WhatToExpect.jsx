@@ -1,7 +1,6 @@
 import CoffeeIcon from "../../assets/icons/coffee.svg"
 import ExitIcon from "../../assets/icons/exit.svg"
-
-import { useEffect, useRef, useState } from "react"
+import useScrollVisibility from "../hooks/useScrollVisibility"
 
 const expectationItems = [
   {
@@ -39,30 +38,7 @@ const expectationItems = [
 ]
 
 export default function WhatToExpect() {
-  const sectionRef = useRef(null)
-  const [isVisible, setIsVisible] = useState(false)
-
-  useEffect(() => {
-    const section = sectionRef.current
-
-    if (!section) {
-      return undefined
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true)
-          observer.unobserve(entry.target)
-        }
-      },
-      { threshold: 0.24 },
-    )
-
-    observer.observe(section)
-
-    return () => observer.disconnect()
-  }, [])
+  const [sectionRef, isVisible] = useScrollVisibility({ threshold: 0.24 })
 
   return (
     <section

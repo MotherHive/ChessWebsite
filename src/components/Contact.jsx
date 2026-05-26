@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react"
 import Hermes from "../../assets/hermes.png"
 import Splash from "../../assets/splash.png"
+import useScrollVisibility from "../hooks/useScrollVisibility"
 
 const staffPositions = [
   {
@@ -26,30 +26,7 @@ const staffPositions = [
 ]
 
 export default function Contact() {
-  const sectionRef = useRef(null)
-  const [isVisible, setIsVisible] = useState(false)
-
-  useEffect(() => {
-    const section = sectionRef.current
-
-    if (!section) {
-      return undefined
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true)
-          observer.unobserve(entry.target)
-        }
-      },
-      { threshold: 0.2 },
-    )
-
-    observer.observe(section)
-
-    return () => observer.disconnect()
-  }, [])
+  const [sectionRef, isVisible] = useScrollVisibility({ threshold: 0.2 })
 
   return (
     <section

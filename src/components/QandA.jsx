@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
+import useScrollVisibility from "../hooks/useScrollVisibility"
 
 const questionColumns = [
   [
@@ -90,35 +91,12 @@ function QuestionRow({ answer, isExtra, isOpen, onToggle, question }) {
 }
 
 export default function QandA() {
-  const sectionRef = useRef(null)
-  const [isVisible, setIsVisible] = useState(false)
+  const [sectionRef, isVisible] = useScrollVisibility({ threshold: 0.24 })
   const [openQuestion, setOpenQuestion] = useState(null)
   const [showAllQuestions, setShowAllQuestions] = useState(false)
   const visibleQuestionColumns = questionColumns.map((column) => (
     showAllQuestions ? column : column.slice(0, 3)
   ))
-
-  useEffect(() => {
-    const section = sectionRef.current
-
-    if (!section) {
-      return undefined
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true)
-          observer.unobserve(entry.target)
-        }
-      },
-      { threshold: 0.24 },
-    )
-
-    observer.observe(section)
-
-    return () => observer.disconnect()
-  }, [])
 
   const toggleQuestion = (question) => {
     setOpenQuestion((currentQuestion) => (

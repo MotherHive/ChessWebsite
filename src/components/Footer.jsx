@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom"
 import ChessComIcon from "../../assets/icons/chess.com.svg"
 import LichessIcon from "../../assets/icons/Lichess.svg"
 import MarywoodIcon from "../../assets/icons/marywood.svg"
@@ -20,9 +21,9 @@ export default function Footer() {
         <a className="site-footer-icon-link" href="https://lichess.org/" target="_blank" rel="noreferrer" aria-label="Join us on Lichess">
           <img className="site-footer-lichess" src={LichessIcon} alt="" />
         </a>
-        <a className="site-footer-icon-link" href="/#join" aria-label="Join Scranton Chess Club">
+        <Link className="site-footer-icon-link" to="/#join" aria-label="Join Scranton Chess Club">
           <img className="site-footer-pawn" src={ChessComIcon} alt="" />
-        </a>
+        </Link>
         <a className="site-footer-marywood" href="https://www.marywood.edu/" target="_blank" rel="noreferrer" aria-label="Marywood University">
           <img src={MarywoodIcon} alt="" />
         </a>

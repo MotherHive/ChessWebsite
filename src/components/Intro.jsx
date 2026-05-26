@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react"
+import { Link } from "react-router-dom"
 import KnightIcon from "../../assets/icons/knight.png"
 import PawnIcon from "../../assets/icons/pawn.png"
 import RookIcon from "../../assets/icons/rook.png"
+import useScrollVisibility from "../hooks/useScrollVisibility"
 
 const introCards = [
   {
@@ -31,30 +32,7 @@ const introCards = [
 ]
 
 export default function Intro() {
-  const sectionRef = useRef(null)
-  const [isVisible, setIsVisible] = useState(false)
-
-  useEffect(() => {
-    const section = sectionRef.current
-
-    if (!section) {
-      return undefined
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true)
-          observer.unobserve(entry.target)
-        }
-      },
-      { threshold: 0.28 },
-    )
-
-    observer.observe(section)
-
-    return () => observer.disconnect()
-  }, [])
+  const [sectionRef, isVisible] = useScrollVisibility({ threshold: 0.28 })
 
   return (
     <section
@@ -91,7 +69,7 @@ export default function Intro() {
               <div className="intro-card-body">
                 <h3>{card.title}</h3>
                 <p>{card.description}</p>
-                <a href={card.linkHref}>{card.linkText}</a>
+                <Link to={card.linkHref}>{card.linkText}</Link>
               </div>
             </div>
           </article>

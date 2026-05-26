@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react"
+import { Link } from "react-router-dom"
 import MarywoodLogo from "../../assets/MarywoodLogo.png"
 import ScrantonChessClubLogo from "../../assets/ScrantonChessClub.png"
+import useScrollVisibility from "../hooks/useScrollVisibility"
 
 const quickLinks = [
   { label: "Home", href: "/" },
@@ -71,30 +72,7 @@ function SocialPlaceholderIcon({ label }) {
 }
 
 export default function End() {
-  const footerRef = useRef(null)
-  const [isVisible, setIsVisible] = useState(false)
-
-  useEffect(() => {
-    const footer = footerRef.current
-
-    if (!footer) {
-      return undefined
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true)
-          observer.unobserve(entry.target)
-        }
-      },
-      { threshold: 0.18 },
-    )
-
-    observer.observe(footer)
-
-    return () => observer.disconnect()
-  }, [])
+  const [footerRef, isVisible] = useScrollVisibility({ threshold: 0.18 })
 
   return (
     <footer ref={footerRef} className={`end${isVisible ? " is-visible" : ""}`} aria-labelledby="end-heading">
@@ -141,7 +119,7 @@ export default function End() {
             <ul>
               {quickLinks.map((link) => (
                 <li key={link.href}>
-                  <a href={link.href}>{link.label}</a>
+                  <Link to={link.href}>{link.label}</Link>
                 </li>
               ))}
             </ul>
