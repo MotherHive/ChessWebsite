@@ -93,7 +93,6 @@ export default function JoinMenu({ isOpen, onToggle }) {
                 className={`join-dropdown${isOpen ? " join-dropdown-open" : ""}`}
                 id="join-club-form"
                 aria-hidden={!isOpen}
-                hidden={!isOpen}
                 onSubmit={handleJoinSubmit}
                 noValidate
             >

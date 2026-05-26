@@ -218,20 +218,21 @@ nav ul li a {
   box-shadow: var(--shadow-md);
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-8px);
+  transform: translateY(-10px) scale(0.98);
+  transform-origin: top right;
   visibility: hidden;
-  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    visibility 0ms linear 180ms;
 }
 
 .join-dropdown-open {
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
   visibility: visible;
-}
-
-.join-dropdown[hidden] {
-  display: none;
+  transition-delay: 0ms;
 }
 
 .join-dropdown-field {
@@ -435,14 +436,29 @@ nav ul li a {
   .join-dropdown {
     position: static;
     width: 100%;
-    margin-top: var(--space-3);
+    max-height: 0;
+    margin-top: 0;
+    padding-block: 0;
+    overflow: hidden;
+    border-color: transparent;
     box-shadow: none;
-    transform: none;
-    transition: opacity 180ms ease, visibility 180ms ease;
+    transform: translateY(-6px);
+    transform-origin: top center;
+    transition:
+      opacity 180ms ease,
+      transform 180ms ease,
+      max-height 220ms ease,
+      margin-top 220ms ease,
+      padding-block 220ms ease,
+      border-color 220ms ease,
+      visibility 0ms linear 220ms;
   }
 
-  .join-dropdown:not(.join-dropdown-open) {
-    display: none;
+  .join-dropdown-open {
+    max-height: 540px;
+    margin-top: var(--space-3);
+    padding-block: var(--space-4);
+    border-color: rgb(0 0 0 / 0.12);
   }
 }
 
