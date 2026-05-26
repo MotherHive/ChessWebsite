@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { supabase } from "../lib/supabaseClient"
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
@@ -23,7 +24,7 @@ export default function JoinMenu({ isOpen, onToggle }) {
         }
     }
 
-    const handleJoinSubmit = (event) => {
+    const handleJoinSubmit = async (event) => {
         event.preventDefault()
 
         const trimmedForm = {
@@ -47,21 +48,32 @@ export default function JoinMenu({ isOpen, onToggle }) {
         setJoinStatus("loading")
         setJoinMessage("")
 
-        window.setTimeout(() => {
-            try {
-                window.localStorage.setItem("scranton-chess-club-join", JSON.stringify(trimmedForm))
-                setJoinStatus("success")
-                setJoinMessage("Thanks. Your information is saved.")
-                setJoinForm({
-                    firstName: "",
-                    lastName: "",
-                    email: "",
-                })
-            } catch {
-                setJoinStatus("error")
-                setJoinMessage("Could not save your information in this browser. Try again later.")
-            }
-        }, 450)
+        const { error } = await supabase.from("club_signups").insert({
+            first_name: trimmedForm.firstName,
+            last_name: trimmedForm.lastName,
+            email: trimmedForm.email.toLowerCase(),
+            source: "join_menu",
+        })
+
+        if (error && error.code !== "23505") {
+            setJoinStatus("error")
+            setJoinMessage("Could not save your information. Try again later.")
+            return
+        }
+
+        try {
+            window.localStorage.setItem("scranton-chess-club-join", JSON.stringify(trimmedForm))
+        } catch {
+            // The Supabase insert succeeded, so a blocked local cache should not fail the signup.
+        }
+
+        setJoinStatus("success")
+        setJoinMessage(error?.code === "23505" ? "You are already on the club list." : "Thanks. Your information is saved.")
+        setJoinForm({
+            firstName: "",
+            lastName: "",
+            email: "",
+        })
     }
 
     return (

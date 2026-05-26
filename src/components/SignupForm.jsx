@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { supabase } from "../lib/supabaseClient"
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
@@ -23,7 +24,7 @@ export default function SignupForm() {
         }
     }
 
-    const handleSignupSubmit = (event) => {
+    const handleSignupSubmit = async (event) => {
         event.preventDefault()
 
         const trimmedForm = {
@@ -47,22 +48,33 @@ export default function SignupForm() {
         setSignupStatus("loading")
         setSignupMessage("")
 
-        window.setTimeout(() => {
-            try {
-                window.localStorage.setItem("scranton-chess-club-email", trimmedForm.email)
-                window.localStorage.setItem("scranton-chess-club-meeting-updates", JSON.stringify(trimmedForm))
-                setSignupStatus("success")
-                setSignupMessage("Thanks. Your information is saved for meeting updates.")
-                setSignupForm({
-                    firstName: "",
-                    lastName: "",
-                    email: "",
-                })
-            } catch {
-                setSignupStatus("error")
-                setSignupMessage("Could not save your information in this browser. Try again later.")
-            }
-        }, 450)
+        const { error } = await supabase.from("club_signups").insert({
+            first_name: trimmedForm.firstName,
+            last_name: trimmedForm.lastName,
+            email: trimmedForm.email.toLowerCase(),
+            source: "meeting_updates",
+        })
+
+        if (error && error.code !== "23505") {
+            setSignupStatus("error")
+            setSignupMessage("Could not save your information. Try again later.")
+            return
+        }
+
+        try {
+            window.localStorage.setItem("scranton-chess-club-email", trimmedForm.email)
+            window.localStorage.setItem("scranton-chess-club-meeting-updates", JSON.stringify(trimmedForm))
+        } catch {
+            // The Supabase insert succeeded, so a blocked local cache should not fail the signup.
+        }
+
+        setSignupStatus("success")
+        setSignupMessage(error?.code === "23505" ? "You are already signed up for meeting updates." : "Thanks. Your information is saved for meeting updates.")
+        setSignupForm({
+            firstName: "",
+            lastName: "",
+            email: "",
+        })
     }
 
     return (
