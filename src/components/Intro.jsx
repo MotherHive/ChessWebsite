@@ -2,11 +2,15 @@ import { Link } from "react-router-dom"
 import KnightIcon from "../../assets/icons/knight.png"
 import PawnIcon from "../../assets/icons/pawn.png"
 import RookIcon from "../../assets/icons/rook.png"
+import CasualImage from "../../assets/photos/casual.jpeg"
+import MatchImage from "../../assets/photos/match.jpg"
+import TournamentImage from "../../assets/photos/tournament.jpg"
 import useScrollVisibility from "../hooks/useScrollVisibility"
 
 const introCards = [
   {
     icon: PawnIcon,
+    image: CasualImage,
     title: "CASUAL PLAY",
     description: "Drop in for friendly games and improve at your own pace.",
     id: "casual-play",
@@ -15,6 +19,7 @@ const introCards = [
   },
   {
     icon: RookIcon,
+    image: TournamentImage,
     title: "TOURNAMENTS",
     description: "Compete in local events throughout the year.",
     id: "tournaments-overview",
@@ -23,6 +28,7 @@ const introCards = [
   },
   {
     icon: KnightIcon,
+    image: MatchImage,
     title: "ALL AGES & LEVELS",
     description: "Beginners, advanced players, students, and adults are all welcome.",
     id: "all-levels",
@@ -65,7 +71,9 @@ export default function Intro() {
               <img src={card.icon} alt="" />
             </div>
             <div className="intro-card-shell">
-              <div className="intro-card-media" aria-hidden="true"></div>
+              <div className="intro-card-media" aria-hidden="true">
+                {card.image && <img src={card.image} alt="" />}
+              </div>
               <div className="intro-card-body">
                 <h3>{card.title}</h3>
                 <p>{card.description}</p>

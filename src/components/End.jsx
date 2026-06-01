@@ -1,7 +1,11 @@
+import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import MarywoodLogo from "../../assets/MarywoodLogo.png"
 import ScrantonChessClubLogo from "../../assets/ScrantonChessClub.png"
 import useScrollVisibility from "../hooks/useScrollVisibility"
+import quotes from "../data/quotes"
+
+const QUOTE_INTERVAL_MS = 14000
 
 const quickLinks = [
   { label: "Home", href: "/" },
@@ -13,40 +17,11 @@ const quickLinks = [
 
 const mapHref = "https://www.google.com/maps/search/?api=1&query=Nazareth%20Center%20Marywood%20University%201300%20University%20Ave%20Scranton%20PA"
 
-function QuoteIcon() {
-  return (
-    <svg className="end-icon end-quote-icon" viewBox="0 0 74 96" aria-hidden="true">
-      <path d="M48 13 13 43" />
-      <path d="M12 52h39" />
-      <path d="M14 61 49 87" />
-    </svg>
-  )
-}
-
-function PeopleIcon() {
-  return (
-    <svg className="end-icon end-people-icon" viewBox="0 0 74 74" aria-hidden="true">
-      <circle cx="27" cy="25" r="10" />
-      <circle cx="48" cy="28" r="8" />
-      <path d="M8 62v-9c0-10 8-17 19-17s19 7 19 17v9" />
-      <path d="M45 43c9 1 16 7 16 16v3" />
-    </svg>
-  )
-}
-
 function MailIcon() {
   return (
     <svg className="end-contact-icon" viewBox="0 0 32 32" aria-hidden="true">
       <path d="M5 8h22v16H5z" />
       <path d="m6 9 10 8 10-8" />
-    </svg>
-  )
-}
-
-function PhoneIcon() {
-  return (
-    <svg className="end-contact-icon" viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M10 5 7 8c0 10 7 17 17 17l3-3-7-5-3 3c-3-1-5-3-6-6l3-3Z" />
     </svg>
   )
 }
@@ -63,16 +38,18 @@ function MapPinIcon() {
   )
 }
 
-function SocialPlaceholderIcon({ label }) {
-  return (
-    <span className="end-social-placeholder" aria-label={label} role="img">
-      <span></span>
-    </span>
-  )
-}
-
 export default function End() {
   const [footerRef, isVisible] = useScrollVisibility({ threshold: 0.18 })
+  const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * quotes.length))
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setQuoteIndex((index) => (index + 1) % quotes.length)
+    }, QUOTE_INTERVAL_MS)
+    return () => clearInterval(id)
+  }, [])
+
+  const activeQuote = quotes[quoteIndex]
 
   return (
     <footer ref={footerRef} className={`end${isVisible ? " is-visible" : ""}`} aria-labelledby="end-heading">
@@ -80,30 +57,19 @@ export default function End() {
 
       <section className="end-callout" aria-label="Club note">
         <div className="end-callout-inner">
-          <div className="end-quote-mark" style={{ "--end-item-index": 0 }}>
-            <QuoteIcon />
-          </div>
-
-          <figure className="end-quote" style={{ "--end-item-index": 1 }}>
-            <blockquote>
-              Chess is a struggle between my desire not to think and my desire not to lose.
-            </blockquote>
-            <figcaption>- Jan Gustafsson -</figcaption>
+          <figure className="end-quote" style={{ "--end-item-index": 0 }}>
+            <div key={quoteIndex} className="end-quote-rotator" aria-live="polite">
+              <blockquote>{activeQuote.quote}</blockquote>
+              <figcaption className="end-quote-author">{activeQuote.author}</figcaption>
+            </div>
           </figure>
 
-          <div className="end-callout-divider" style={{ "--end-item-index": 2 }} aria-hidden="true"></div>
-
-          <div className="end-partnership-icon" style={{ "--end-item-index": 3 }}>
-            <PeopleIcon />
-          </div>
-
-          <p className="end-partnership-text" style={{ "--end-item-index": 4 }}>
-            Hosted in partnership with Marywood University and open to the Scranton community. All are welcome.
-          </p>
-
-          <a className="end-marywood-link" style={{ "--end-item-index": 5 }} href="https://www.marywood.edu/" target="_blank" rel="noreferrer">
-            <img src={MarywoodLogo} alt="Marywood University" />
-          </a>
+          <aside className="end-partnership-panel" style={{ "--end-item-index": 1 }} aria-label="Marywood University partnership">
+            <span>In partnership with</span>
+            <a className="end-marywood-link" href="https://www.marywood.edu/" target="_blank" rel="noreferrer">
+              <img src={MarywoodLogo} alt="Marywood University" />
+            </a>
+          </aside>
         </div>
       </section>
 
@@ -149,19 +115,7 @@ export default function End() {
                 <MailIcon />
                 <a href="mailto:scrantonchess@gmail.com">scrantonchess@gmail.com</a>
               </li>
-              <li>
-                <PhoneIcon />
-                <span>000-000-0000</span>
-              </li>
             </ul>
-          </div>
-
-          <div className="end-social" style={{ "--end-item-index": 4 }}>
-            <h3>Follow Us</h3>
-            <div className="end-social-list" aria-label="Social links coming soon">
-              <SocialPlaceholderIcon label="Social link coming soon" />
-              <SocialPlaceholderIcon label="Social link coming soon" />
-            </div>
           </div>
         </div>
       </section>

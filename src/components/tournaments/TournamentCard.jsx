@@ -12,8 +12,15 @@ export default function TournamentCard({
   onOpenPurchaseDrawer,
   onToggleOpen,
   tournament,
+  tournamentStatus,
 }) {
   const earlyEntryIsExpired = countdown === "Expired"
+  const tournamentStatusLabel = tournamentStatus === "over"
+    ? "TOURNAMENT OVER"
+    : tournamentStatus === "in-progress"
+      ? "TOURNAMENT IN PROGRESS"
+      : ""
+  const canPurchaseEntry = tournamentStatus === "upcoming"
   const getDisplayedEntryPrice = (fee) => (
     earlyEntryIsExpired || !Number.isFinite(fee.earlyPrice) ? fee.price : fee.earlyPrice
   )
@@ -39,20 +46,27 @@ export default function TournamentCard({
                 <img src={CalendarIcon} alt="" aria-hidden="true" />
                 {tournament.dateRange}
               </span>
+              {tournamentStatusLabel && (
+                <span className={`tournament-status-badge tournament-status-badge-${tournamentStatus}`}>
+                  {tournamentStatusLabel}
+                </span>
+              )}
               <span>{tournament.type}</span>
             </span>
-            <span className="tournament-title-actions">
-              <button
-                className="button button-large tournament-card-purchase-button"
-                type="button"
-                aria-controls="tournament-purchase-drawer"
-                aria-expanded={isPurchaseDrawerOpen}
-                onClick={onOpenPurchaseDrawer}
-              >
-                <span aria-hidden="true">+</span>
-                Purchase Entry
-              </button>
-            </span>
+            {canPurchaseEntry && (
+              <span className="tournament-title-actions">
+                <button
+                  className="button button-large tournament-card-purchase-button"
+                  type="button"
+                  aria-controls="tournament-purchase-drawer"
+                  aria-expanded={isPurchaseDrawerOpen}
+                  onClick={onOpenPurchaseDrawer}
+                >
+                  <span aria-hidden="true">+</span>
+                  Purchase Entry
+                </button>
+              </span>
+            )}
           </span>
 
           <span className="tournament-meta-line">

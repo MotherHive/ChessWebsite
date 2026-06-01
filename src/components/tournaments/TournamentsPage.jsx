@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useLocation } from "react-router-dom"
 import { tournamentListings } from "../../data/tournaments"
 import useScrollVisibility from "../../hooks/useScrollVisibility"
 import PurchaseDrawer from "./PurchaseDrawer"
@@ -8,10 +9,17 @@ import useTournamentPurchase from "./useTournamentPurchase"
 
 export default function TournamentsPage() {
   const [sectionRef, isVisible] = useScrollVisibility({ threshold: 0.08 })
+  const location = useLocation()
   const featuredTournament = tournamentListings[0]
   const [openTournamentId, setOpenTournamentId] = useState("")
   const [currentTime, setCurrentTime] = useState(() => Date.now())
   const purchase = useTournamentPurchase(tournamentListings)
+  const checkoutStatus = new URLSearchParams(location.search).get("checkout")
+  const checkoutMessage = checkoutStatus === "success"
+    ? "Stripe checkout complete. Your payment will be confirmed shortly."
+    : checkoutStatus === "cancelled"
+      ? "Stripe checkout was cancelled. Your registration was saved as pending payment."
+      : ""
 
   useEffect(() => {
     const countdownTimer = window.setInterval(() => {
@@ -33,6 +41,14 @@ export default function TournamentsPage() {
         <span>Current events</span>
         <h2>Upcoming Tournaments</h2>
       </div>
+      {checkoutMessage && (
+        <p
+          className={`purchase-message purchase-message-${checkoutStatus === "success" ? "success" : "error"}`}
+          role="status"
+        >
+          {checkoutMessage}
+        </p>
+      )}
       <TournamentList
         currentTime={currentTime}
         isPurchaseDrawerOpen={purchase.isPurchaseDrawerOpen}

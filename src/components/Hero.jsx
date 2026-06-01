@@ -6,15 +6,38 @@ import Clock from "../../assets/icons/Clock.svg"
 import Location from "../../assets/icons/Location.svg"
 import {
     createMeetingCalendarHref,
-    formatMeetingDateLabel,
-    formatMeetingTimeLabel,
     getNextTuesday,
 } from "../utils/meetingCalendar"
 
+const getRelativeMeetingLabel = (meetingDate) => {
+    const today = new Date()
+    const startOfToday = new Date(today)
+    const startOfMeeting = new Date(meetingDate)
+
+    startOfToday.setHours(0, 0, 0, 0)
+    startOfMeeting.setHours(0, 0, 0, 0)
+
+    const daysUntilMeeting = Math.round((startOfMeeting - startOfToday) / 86400000)
+
+    if (daysUntilMeeting === 0) {
+        return "Today"
+    }
+
+    if (daysUntilMeeting === 1) {
+        return "In 1 day"
+    }
+
+    return `In ${daysUntilMeeting} days`
+}
+
 export default function Hero({ onOpenJoinMenu }) {
     const nextMeetingDate = getNextTuesday()
-    const nextMeetingLabel = formatMeetingDateLabel(nextMeetingDate)
-    const meetingTimeLabel = formatMeetingTimeLabel()
+    const nextMeetingLabel = nextMeetingDate.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "long",
+        day: "numeric",
+    })
+    const meetingRelativeLabel = getRelativeMeetingLabel(nextMeetingDate)
     const calendarHref = createMeetingCalendarHref(nextMeetingDate)
     const handleJoinClick = () => {
         onOpenJoinMenu?.()
@@ -25,7 +48,7 @@ export default function Hero({ onOpenJoinMenu }) {
             <div className="hero-content">
                 <div className="intro">
                     <img className="scranton-chess-img" src={ScrantonChessClubLogo} alt="Scranton Chess Club Logo" />
-                    <h3>Affiliated with</h3>
+                    <h3>In partnership with</h3>
                     <img className="marywood-img" src={MarywoodLogo} alt="Marywood Logo" />
                 </div>
                 <div className="email-hero">
@@ -53,32 +76,34 @@ export default function Hero({ onOpenJoinMenu }) {
             </div>
             <div className="banner-bar">
                 <div className="banner-card">
-                    <img className="banner-icon" src={Location} alt="Location Icon" />
-                    <div className="banner-text">
-                        <h5>WHERE:</h5>
-                        <h6>Nazareth Center 2nd Floor<br />Marywood University</h6>
+                    <div className="banner-label">
+                        <img className="banner-icon" src={Location} alt="" aria-hidden="true" />
+                        <h5>Where</h5>
                     </div>
+                    <h6>Nazareth Center, 2nd Fl.</h6>
+                    <p>Marywood University, Scranton</p>
                 </div>
 
                 <div className="banner-divider"></div>
                 <div className="banner-card">
-                    <img className="banner-icon" src={Calendar} alt="Calendar Icon" />
-                    <div className="banner-text">
-                        <h5>WHEN:</h5>
-                        <h6>{meetingTimeLabel}</h6>
+                    <div className="banner-label">
+                        <img className="banner-icon" src={Calendar} alt="" aria-hidden="true" />
+                        <h5>When</h5>
                     </div>
+                    <h6>Tuesdays, 6:30-9 PM</h6>
+                    <a href={calendarHref} download="scranton-chess-club.ics" type="text/calendar">
+                        Add to Calendar
+                    </a>
                 </div>
 
                 <div className="banner-divider"></div>
                 <div className="banner-card">
-                    <img className="banner-icon" src={Clock} alt="Clock Icon" />
-                    <div className="banner-text">
-                        <h5>NEXT MEETING:</h5>
-                        <h6>{nextMeetingLabel}</h6>
-                        <a href={calendarHref} download="scranton-chess-club.ics" type="text/calendar">
-                            Add to Calendar
-                        </a>
+                    <div className="banner-label">
+                        <img className="banner-icon" src={Clock} alt="" aria-hidden="true" />
+                        <h5>Next Meeting</h5>
                     </div>
+                    <h6>{nextMeetingLabel}</h6>
+                    <p>{meetingRelativeLabel}</p>
                 </div>
             </div>
         </section>

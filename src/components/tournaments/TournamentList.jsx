@@ -1,4 +1,4 @@
-import { formatCountdown } from "../../utils/tournamentPricing"
+import { formatCountdown, getTournamentStatus } from "../../utils/tournamentPricing"
 import TournamentCard from "./TournamentCard"
 
 export default function TournamentList({
@@ -14,6 +14,7 @@ export default function TournamentList({
       {tournaments.map((tournament, index) => {
         const isOpen = openTournamentId === tournament.id
         const countdown = formatCountdown(tournament.discountEndsAt, currentTime)
+        const tournamentStatus = getTournamentStatus(tournament, currentTime)
 
         return (
           <TournamentCard
@@ -25,6 +26,7 @@ export default function TournamentList({
             onOpenPurchaseDrawer={() => onOpenPurchaseDrawer(tournament.id)}
             onToggleOpen={() => onToggleTournament(isOpen ? "" : tournament.id)}
             tournament={tournament}
+            tournamentStatus={tournamentStatus}
           />
         )
       })}

@@ -4,8 +4,10 @@ export default function PurchaseThanksStep({ purchase }) {
   const {
     closePurchaseDrawer,
     purchaseForm,
+    purchaseResult,
     purchaseTotal,
   } = purchase
+  const isManualPending = purchaseResult?.paymentStatus === "manual_pending"
 
   return (
     <div className="purchase-panel purchase-thanks">
@@ -13,8 +15,9 @@ export default function PurchaseThanksStep({ purchase }) {
       <span>Registration submitted</span>
       <h4>Thank you</h4>
       <p>
-        Your tournament order has been saved. A confirmation and any final
-        payment instructions will be sent to {purchaseForm.email}.
+        {isManualPending
+          ? `Your registration has been saved with payment pending. Payment instructions will be sent to ${purchaseForm.email}.`
+          : `Your tournament order has been saved. A confirmation will be sent to ${purchaseForm.email}.`}
       </p>
       <div className="purchase-total">
         <span>Order total</span>

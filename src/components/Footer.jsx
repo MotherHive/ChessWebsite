@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom"
 import ChessComIcon from "../../assets/icons/chess.com.svg"
 import LichessIcon from "../../assets/icons/Lichess.svg"
 import MarywoodIcon from "../../assets/icons/marywood.svg"
@@ -21,15 +20,21 @@ export default function Footer() {
         <a className="site-footer-icon-link" href="https://lichess.org/" target="_blank" rel="noreferrer" aria-label="Join us on Lichess">
           <img className="site-footer-lichess" src={LichessIcon} alt="" />
         </a>
-        <Link className="site-footer-icon-link" to="/#join" aria-label="Join Scranton Chess Club">
+        <a className="site-footer-icon-link" href="https://www.chess.com/club/marywood-university-chess-club" target="_blank" rel="noreferrer" aria-label="Join us on Chess.com">
           <img className="site-footer-pawn" src={ChessComIcon} alt="" />
-        </Link>
+        </a>
         <a className="site-footer-marywood" href="https://www.marywood.edu/" target="_blank" rel="noreferrer" aria-label="Marywood University">
           <img src={MarywoodIcon} alt="" />
         </a>
         <a className="site-footer-icon-link" href="https://discord.com/" target="_blank" rel="noreferrer" aria-label="Join us on Discord">
           <DiscordIcon />
         </a>
+        <span className="site-footer-placeholder" aria-label="Social link coming soon" role="img">
+          <span></span>
+        </span>
+        <span className="site-footer-placeholder" aria-label="Social link coming soon" role="img">
+          <span></span>
+        </span>
       </div>
     </footer>
   )

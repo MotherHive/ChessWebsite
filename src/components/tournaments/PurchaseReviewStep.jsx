@@ -87,12 +87,12 @@ export default function PurchaseReviewStep({ purchase }) {
           purchase={purchase}
         >
           {paymentOptions.map((option) => (
-            <option key={option}>{option}</option>
+            <option key={option.id} value={option.id}>{option.label}</option>
           ))}
         </PurchaseSelectField>
         <p>
-          Final payment handling can change later without changing the
-          rest of this registration flow.
+          Online card payment redirects to Stripe Checkout. Manual options
+          save the registration with payment pending.
         </p>
         {needsMembership && (
           <p>

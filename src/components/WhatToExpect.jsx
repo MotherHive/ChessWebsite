@@ -1,5 +1,6 @@
 import CoffeeIcon from "../../assets/icons/coffee.svg"
 import ExitIcon from "../../assets/icons/exit.svg"
+import BoardImage from "../../assets/Board.png"
 import useScrollVisibility from "../hooks/useScrollVisibility"
 
 const expectationItems = [
@@ -50,7 +51,9 @@ export default function WhatToExpect() {
       <div className="expect-content">
         <div className="expect-copy">
           <h2 id="expect-heading">WHAT TO EXPECT</h2>
-          <div className="expect-rule" aria-hidden="true"></div>
+          <p className="expect-lede">
+            Low-pressure chess nights with room to play, talk through positions, and leave on your own schedule.
+          </p>
 
           <div className="expect-list">
             {expectationItems.map((item, index) => (
@@ -59,7 +62,7 @@ export default function WhatToExpect() {
                 key={item.title}
                 style={{ "--expect-item-index": index }}
               >
-                <div className="expect-icon">{item.icon}</div>
+                <div className="expect-icon" aria-hidden="true">{item.icon}</div>
                 <h3>{item.title}</h3>
                 <p>{item.description}</p>
               </article>
@@ -67,7 +70,9 @@ export default function WhatToExpect() {
           </div>
         </div>
 
-        <div className="expect-placeholder" aria-hidden="true"></div>
+        <div className="expect-panel" aria-hidden="true">
+          <img src={BoardImage} alt="" />
+        </div>
       </div>
     </section>
   )

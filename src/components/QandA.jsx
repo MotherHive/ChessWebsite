@@ -44,6 +44,7 @@ const questionColumns = [
           .
         </>
       ),
+      searchText: "Marywood student clubs university drop by",
     },
     {
       question: "Do you have tournaments?",
@@ -63,6 +64,12 @@ const questionColumns = [
     },
   ],
 ]
+
+const getQuestionSearchText = (item) => [
+  item.question,
+  typeof item.answer === "string" ? item.answer : "",
+  item.searchText ?? "",
+].join(" ").toLowerCase()
 
 function QuestionRow({ answer, isExtra, isOpen, onToggle, question }) {
   const id = question.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
@@ -94,9 +101,23 @@ export default function QandA() {
   const [sectionRef, isVisible] = useScrollVisibility({ threshold: 0.24 })
   const [openQuestion, setOpenQuestion] = useState(null)
   const [showAllQuestions, setShowAllQuestions] = useState(false)
-  const visibleQuestionColumns = questionColumns.map((column) => (
-    showAllQuestions ? column : column.slice(0, 3)
+  const [searchQuery, setSearchQuery] = useState("")
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
+  const allQuestions = questionColumns.flat()
+  const matchingQuestions = allQuestions.filter((item) => (
+    getQuestionSearchText(item).includes(normalizedSearchQuery)
   ))
+  const splitIndex = Math.ceil(matchingQuestions.length / 2)
+  const visibleQuestionColumns = normalizedSearchQuery
+    ? [
+        matchingQuestions.slice(0, splitIndex),
+        matchingQuestions.slice(splitIndex),
+      ]
+    : questionColumns.map((column) => (
+        showAllQuestions ? column : column.slice(0, 3)
+      ))
+  const hasHiddenQuestions = !normalizedSearchQuery && !showAllQuestions
+  const hasMatchingQuestions = visibleQuestionColumns.some((column) => column.length > 0)
 
   const toggleQuestion = (question) => {
     setOpenQuestion((currentQuestion) => (
@@ -113,40 +134,66 @@ export default function QandA() {
     >
       <div className="qa-content">
         <div className="qa-title">
-          <h2 id="qa-heading">Q &amp; A</h2>
+          <h2 id="qa-heading">QUESTIONS &amp; ANSWERS</h2>
           <div className="qa-rule" aria-hidden="true"></div>
         </div>
 
-        {visibleQuestionColumns.map((column, columnIndex) => (
-          <div
-            className="qa-column"
-            key={columnIndex}
-            style={{ "--qa-column-index": columnIndex }}
-          >
-            {column.map((item, questionIndex) => (
-              <QuestionRow
-                answer={item.answer}
-                isExtra={questionIndex >= 3}
-                isOpen={openQuestion === item.question}
-                question={item.question}
-                key={item.question}
-                onToggle={() => toggleQuestion(item.question)}
-              />
-            ))}
+        <div className="qa-panel">
+          <div className="qa-search">
+            <label htmlFor="qa-search">Search questions</label>
+            <input
+              id="qa-search"
+              type="search"
+              value={searchQuery}
+              placeholder="Search questions..."
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
           </div>
-        ))}
 
-        {!showAllQuestions && (
-          <div className="qa-actions">
-            <button
-              className="qa-show-all"
-              type="button"
-              onClick={() => setShowAllQuestions(true)}
-            >
-              Show All Questions
-            </button>
+          <div className="qa-grid">
+            {hasMatchingQuestions ? (
+              visibleQuestionColumns.map((column, columnIndex) => (
+                <div
+                  className="qa-column"
+                  key={columnIndex}
+                  style={{ "--qa-column-index": columnIndex }}
+                >
+                  {column.map((item, questionIndex) => (
+                    <QuestionRow
+                      answer={item.answer}
+                      isExtra={!normalizedSearchQuery && showAllQuestions && questionIndex >= 3}
+                      isOpen={openQuestion === item.question}
+                      question={item.question}
+                      key={item.question}
+                      onToggle={() => toggleQuestion(item.question)}
+                    />
+                  ))}
+                </div>
+              ))
+            ) : (
+              <p className="qa-empty">No questions match that search.</p>
+            )}
           </div>
-        )}
+
+          <div className="qa-footer">
+            <div className="qa-help">
+              <p>Still confused?</p>
+              <a href="mailto:scrantonchess@gmail.com">Email us</a>
+            </div>
+
+            <div className="qa-actions">
+              {hasHiddenQuestions && (
+                <button
+                  className="qa-show-all"
+                  type="button"
+                  onClick={() => setShowAllQuestions(true)}
+                >
+                  Show More Questions
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   )

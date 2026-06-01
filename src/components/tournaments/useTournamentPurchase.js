@@ -5,6 +5,10 @@ import {
   tournamentRounds,
 } from "../../data/tournaments"
 import {
+  buildTournamentRegistration,
+  getEntryFeePrice,
+} from "../../utils/tournamentCheckout"
+import {
   getMembershipPrice,
   getMembershipTier,
 } from "../../utils/tournamentPricing"
@@ -83,20 +87,6 @@ const getTournamentEntryFees = (tournament) => (
 
 const getDefaultTournamentSection = (tournament) => getTournamentEntryFees(tournament)[0].section
 
-const hasActiveEarlyEntry = (tournament, now = Date.now()) => {
-  const deadline = new Date(tournament.discountEndsAt).getTime()
-
-  return Number.isFinite(deadline) && deadline > now
-}
-
-const getEntryFeePrice = (fee, tournament) => {
-  if (hasActiveEarlyEntry(tournament) && Number.isFinite(fee.earlyPrice)) {
-    return fee.earlyPrice
-  }
-
-  return fee.price
-}
-
 export default function useTournamentPurchase(tournaments) {
   const purchaseButtonRef = useRef(null)
   const purchaseCloseButtonRef = useRef(null)
@@ -120,11 +110,12 @@ export default function useTournamentPurchase(tournaments) {
       school: "",
       section: getDefaultTournamentSection(featuredTournament),
       byes: [],
-      paymentMethod: paymentOptions[0],
+      paymentMethod: paymentOptions[0].id,
     }
   })
   const [purchaseStatus, setPurchaseStatus] = useState("idle")
   const [purchaseMessage, setPurchaseMessage] = useState("")
+  const [purchaseResult, setPurchaseResult] = useState(null)
 
   const selectedTournament =
     tournaments.find((tournament) => tournament.id === selectedTournamentId) || featuredTournament
@@ -199,6 +190,7 @@ export default function useTournamentPurchase(tournaments) {
 
     setSelectedTournamentId(nextTournament.id)
     setPurchaseStep("entry")
+    setPurchaseResult(null)
     setPurchaseForm((currentForm) => {
       const nextSection = getTournamentEntryFees(nextTournament).some((fee) => fee.section === currentForm.section)
         ? currentForm.section
@@ -313,21 +305,54 @@ export default function useTournamentPurchase(tournaments) {
     setPurchaseStep("review")
   }
 
-  const handlePurchaseSubmit = (event) => {
+  const handlePurchaseSubmit = async (event) => {
     event.preventDefault()
+
+    if (infoStepError) {
+      showPurchaseError(infoStepError)
+      return
+    }
+
+    let registration
+
+    try {
+      registration = buildTournamentRegistration({
+        tournamentId: selectedTournament.id,
+        form: purchaseForm,
+      })
+    } catch (error) {
+      showPurchaseError(error.message || "Review the registration details and try again.")
+      return
+    }
+
     setPurchaseStatus("loading")
     setPurchaseMessage("")
 
-    window.setTimeout(() => {
+    try {
+      const response = await fetch("/api/tournament-registration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tournamentId: selectedTournament.id,
+          form: purchaseForm,
+        }),
+      })
+      const result = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(result.error || "Could not submit the registration.")
+      }
+
       try {
         window.localStorage.setItem(
           "scranton-chess-tournament-purchase",
           JSON.stringify({
             ...purchaseForm,
+            registrationId: result.registrationId,
             tournament: checkoutTournamentDetails,
             hasActiveMembership,
-            name: purchaseForm.name.trim(),
-            email: purchaseForm.email.trim(),
+            name: registration.player.name,
+            email: registration.player.email,
             entryPrice,
             byePrice,
             possibleByes: maxByeCount,
@@ -335,13 +360,23 @@ export default function useTournamentPurchase(tournaments) {
             total: purchaseTotal,
           }),
         )
-        setPurchaseStatus("success")
-        setPurchaseStep("thanks")
-        setPurchaseMessage("Registration submitted.")
       } catch {
-        showPurchaseError("Could not save your registration in this browser. Please email the club.")
+        // The server registration succeeded, so a blocked local cache should not fail the purchase.
       }
-    }, 450)
+
+      if (result.checkoutUrl) {
+        setPurchaseMessage("Redirecting to Stripe Checkout...")
+        window.location.assign(result.checkoutUrl)
+        return
+      }
+
+      setPurchaseResult(result)
+      setPurchaseStatus("success")
+      setPurchaseStep("thanks")
+      setPurchaseMessage("Registration submitted. Payment is pending.")
+    } catch (error) {
+      showPurchaseError(error.message || "Could not submit the registration. Try again later.")
+    }
   }
 
   return {
@@ -368,6 +403,7 @@ export default function useTournamentPurchase(tournaments) {
     playerSearchUrl,
     purchaseForm,
     purchaseMessage,
+    purchaseResult,
     purchaseStatus,
     purchaseStep,
     purchaseTotal,

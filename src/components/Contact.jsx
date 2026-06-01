@@ -16,12 +16,20 @@ const staffPositions = [
     title: "Assistant Tournament Director",
   },
   {
-    name: "Cian Wescott",
+    name: "Skylar Milovcevich",
     title: "Student President",
   },
   {
     name: "Casey Ames",
     title: "Student Vice President",
+  },
+  {
+    name: "Cian Wescott",
+    title: "Website Developer",
+  },
+  {
+    name: "Joe Brown",
+    title: "Website Maintainer",
   },
 ]
 

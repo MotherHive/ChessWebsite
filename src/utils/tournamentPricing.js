@@ -1,7 +1,7 @@
 import {
   expiredMembershipDiscount,
   membershipAgeTiers,
-} from "../data/tournaments"
+} from "../data/tournamentCatalog.js"
 
 export const formatPrice = (amount) => `$${amount}`
 
@@ -29,6 +29,21 @@ export const formatCountdown = (endsAt, now) => {
   const padTime = (value) => String(value).padStart(2, "0")
 
   return `${hours}h ${padTime(minutes)}m ${padTime(seconds)}s`
+}
+
+export const getTournamentStatus = (tournament, now) => {
+  const startsAt = new Date(tournament.startsAt).getTime()
+  const endsAt = new Date(tournament.endsAt).getTime()
+
+  if (Number.isFinite(endsAt) && now > endsAt) {
+    return "over"
+  }
+
+  if (Number.isFinite(startsAt) && now >= startsAt) {
+    return "in-progress"
+  }
+
+  return "upcoming"
 }
 
 export const getAgeFromBirthDate = (birthDate) => {
