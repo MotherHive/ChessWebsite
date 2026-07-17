@@ -65,6 +65,19 @@ const createStripeLineItems = (registration) => (
   }))
 )
 
+const loadPublishedCatalog = async (supabase) => {
+  const { data, error } = await supabase
+    .from("tournaments")
+    .select("data")
+    .eq("status", "published")
+
+  if (error || !data?.length) {
+    return null
+  }
+
+  return data.map((row) => row.data)
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST")
@@ -72,16 +85,6 @@ export default async function handler(req, res) {
     return
   }
 
-  let registration
-
-  try {
-    registration = buildTournamentRegistration(parseJsonBody(req))
-  } catch (error) {
-    sendJson(res, 400, { error: error.message || "Invalid registration." })
-    return
-  }
-
-  const usesStripe = isStripePaymentMethod(registration.order.paymentMethod)
   let supabase
 
   try {
@@ -90,6 +93,22 @@ export default async function handler(req, res) {
     sendJson(res, 500, { error: "Supabase admin is not configured." })
     return
   }
+
+  const publishedCatalog = await loadPublishedCatalog(supabase)
+  let registration
+
+  try {
+    registration = buildTournamentRegistration(
+      parseJsonBody(req),
+      Date.now(),
+      publishedCatalog || undefined,
+    )
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Invalid registration." })
+    return
+  }
+
+  const usesStripe = isStripePaymentMethod(registration.order.paymentMethod)
   const initialStatus = usesStripe
     ? { paymentStatus: "checkout_pending", registrationStatus: "pending_payment" }
     : { paymentStatus: "manual_pending", registrationStatus: "manual_pending" }

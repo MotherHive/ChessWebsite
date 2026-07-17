@@ -1,4 +1,4 @@
-import PAAmateurLogo from "../../assets/PAAmateurLogo.png"
+import PAAmateurLogo from "../../assets/PAAmateurLogo.webp"
 import {
   byePrice,
   expiredMembershipDiscount,
@@ -14,10 +14,12 @@ const tournamentImages = {
   "pa-amateur-championship": PAAmateurLogo,
 }
 
-export const tournamentListings = tournamentCatalog.map((tournament) => ({
+export const withTournamentImage = (tournament) => ({
   ...tournament,
-  image: tournamentImages[tournament.id],
-}))
+  image: tournament.imageUrl || tournamentImages[tournament.id],
+})
+
+export const tournamentListings = tournamentCatalog.map(withTournamentImage)
 
 export {
   byePrice,

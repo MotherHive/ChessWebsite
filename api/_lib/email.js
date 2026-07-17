@@ -1,24 +1,31 @@
-import { Resend } from "resend"
+import { Resend } from "resend";
+
+// ============================================================================
+// 1. Initialization & Configuration Helpers
+// ============================================================================
 
 export const getResend = () => {
   if (!process.env.RESEND_KEY) {
-    throw new Error("Resend API key is not configured.")
+    throw new Error("Resend API key is not configured.");
   }
-
-  return new Resend(process.env.RESEND_KEY)
-}
+  return new Resend(process.env.RESEND_KEY);
+};
 
 const fromAddress = () => (
   process.env.RESEND_FROM || "Scranton Chess Club <noreply@scrantonchess.org>"
-)
+);
 
-const formatCents = (cents) => `$${((cents || 0) / 100).toFixed(2)}`
+// ============================================================================
+// 2. Formatting & Sanitization Helpers
+// ============================================================================
+
+const formatCents = (cents) => `$${((cents || 0) / 100).toFixed(2)}`;
 
 const escapeHtml = (value) => String(value ?? "")
   .replace(/&/g, "&amp;")
   .replace(/</g, "&lt;")
   .replace(/>/g, "&gt;")
-  .replace(/"/g, "&quot;")
+  .replace(/"/g, "&quot;");
 
 const detailRows = (details) => [
   ["Tournament", details.tournamentTitle],
@@ -26,26 +33,32 @@ const detailRows = (details) => [
   ["Dates", details.dateRange],
   ["Location", details.location],
   ["Payment", details.paymentMethodLabel],
-].filter(([, value]) => value)
+].filter(([, value]) => value);
+
+// ============================================================================
+// 3. Template Builders: Tournament Registration
+// ============================================================================
 
 const buildHtml = (details) => {
   const intro = details.paid
     ? "Your payment was received and your spot is confirmed."
-    : "We received your registration. Your payment is still pending."
+    : "We received your registration. Your payment is still pending.";
+
   const rows = detailRows(details)
     .map(([label, value]) => `
       <tr>
         <td style="padding:4px 12px 4px 0;color:#6b7280;">${escapeHtml(label)}</td>
         <td style="padding:4px 0;color:#111827;font-weight:600;">${escapeHtml(value)}</td>
       </tr>`)
-    .join("")
+    .join("");
+
   const lineItems = (details.lineItems || [])
     .map((item) => `
       <tr>
         <td style="padding:4px 0;color:#374151;">${escapeHtml(item.label)}</td>
         <td style="padding:4px 0;color:#374151;text-align:right;">${formatCents(item.amount_cents)}</td>
       </tr>`)
-    .join("")
+    .join("");
 
   return `
   <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#111827;">
@@ -59,19 +72,19 @@ const buildHtml = (details) => {
         <td style="padding:8px 0;font-weight:700;text-align:right;border-top:1px solid #e5e7eb;">${formatCents(details.totalAmountCents)}</td>
       </tr>
     </table>
-    <p style="color:#6b7280;font-size:13px;">Questions? Reply to this email and we'll help out.</p>
     <p style="color:#6b7280;font-size:13px;">— Scranton Chess Club</p>
-  </div>`
-}
+  </div>`;
+};
 
 const buildText = (details) => {
   const intro = details.paid
     ? "Your payment was received and your spot is confirmed."
-    : "We received your registration. Your payment is still pending."
-  const rows = detailRows(details).map(([label, value]) => `${label}: ${value}`).join("\n")
+    : "We received your registration. Your payment is still pending.";
+
+  const rows = detailRows(details).map(([label, value]) => `${label}: ${value}`).join("\n");
   const lineItems = (details.lineItems || [])
     .map((item) => `  ${item.label}: ${formatCents(item.amount_cents)}`)
-    .join("\n")
+    .join("\n");
 
   return [
     `You're signed up, ${details.playerName}!`,
@@ -83,10 +96,34 @@ const buildText = (details) => {
     lineItems,
     `Total: ${formatCents(details.totalAmountCents)}`,
     "",
-    "Questions? Reply to this email and we'll help out.",
     "— Scranton Chess Club",
-  ].join("\n")
-}
+  ].join("\n");
+};
+
+// ============================================================================
+// 4. Template Builders: Club Welcome
+// ============================================================================
+
+const buildWelcomeHtml = (firstName) => `
+  <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#111827;">
+    <h1 style="font-size:20px;">Welcome to the Scranton Chess Club, ${escapeHtml(firstName)}!</h1>
+    <p style="color:#374151;">You're signed up. We'll email you meeting updates, events, and tournament news.</p>
+    <p style="color:#6b7280;font-size:13px;">Questions? Reply to this email and we'll help out.</p>
+    <p style="color:#6b7280;font-size:13px;">— Scranton Chess Club</p>
+  </div>`;
+
+const buildWelcomeText = (firstName) => [
+  `Welcome to the Scranton Chess Club, ${firstName}!`,
+  "",
+  "You're signed up. We'll email you meeting updates, events, and tournament news.",
+  "",
+  "Questions? Reply to this email and we'll help out.",
+  "— Scranton Chess Club",
+].join("\n");
+
+// ============================================================================
+// 5. Data Mappers
+// ============================================================================
 
 export const detailsFromRegistration = (registration, { paid = false } = {}) => ({
   playerName: registration.player.name,
@@ -99,7 +136,7 @@ export const detailsFromRegistration = (registration, { paid = false } = {}) => 
   lineItems: registration.order.lineItems,
   totalAmountCents: registration.order.totalAmountCents,
   paid,
-})
+});
 
 export const detailsFromDatabaseRow = (row, { paid = false } = {}) => ({
   playerName: row.player_name,
@@ -112,13 +149,29 @@ export const detailsFromDatabaseRow = (row, { paid = false } = {}) => ({
   lineItems: row.line_items,
   totalAmountCents: row.total_amount_cents,
   paid,
-})
+});
+
+// ============================================================================
+// 6. Core Delivery Functions
+// ============================================================================
+
+export const sendClubWelcomeEmail = async ({ firstName, email }) => {
+  const resend = getResend();
+
+  return resend.emails.send({
+    from: fromAddress(),
+    to: email,
+    subject: "Welcome to the Scranton Chess Club",
+    html: buildWelcomeHtml(firstName),
+    text: buildWelcomeText(firstName),
+  });
+};
 
 export const sendRegistrationEmail = async (details) => {
-  const resend = getResend()
+  const resend = getResend();
   const subject = details.paid
     ? `You're confirmed for ${details.tournamentTitle}`
-    : `Registration received for ${details.tournamentTitle}`
+    : `Registration received for ${details.tournamentTitle}`;
 
   return resend.emails.send({
     from: fromAddress(),
@@ -126,16 +179,47 @@ export const sendRegistrationEmail = async (details) => {
     subject,
     html: buildHtml(details),
     text: buildText(details),
-  })
-}
+  });
+};
 
-// Never let an email failure break the registration flow.
+// ============================================================================
+// 7. Defensive Execution Wrappers
+// ============================================================================
+
+export const trySendClubWelcomeEmail = async (payload) => {
+  try {
+    await sendClubWelcomeEmail(payload);
+    return true;
+  } catch (error) {
+    console.error("Failed to send club welcome email:", error);
+    return false;
+  }
+};
+
 export const trySendRegistrationEmail = async (details) => {
   try {
-    await sendRegistrationEmail(details)
-    return true
+    await sendRegistrationEmail(details);
+    return true;
   } catch (error) {
-    console.error("Failed to send registration email:", error)
-    return false
+    console.error("Failed to send registration email:", error);
+    return false;
   }
-}
+};
+
+/**
+ * Fires both emails concurrently when a new user signs up for an event.
+ * Settles promises independently so a failure in one doesn't kill the sequence.
+ */
+export const trySendRegistrationAndWelcomeEmail = async (details) => {
+  const firstName = details.playerName ? details.playerName.split(" ")[0] : "Player";
+
+  const [regSuccess, welcomeSuccess] = await Promise.all([
+    trySendRegistrationEmail(details),
+    trySendClubWelcomeEmail({ firstName, email: details.email })
+  ]);
+
+  return {
+    registrationEmailSent: regSuccess,
+    welcomeEmailSent: welcomeSuccess
+  };
+};

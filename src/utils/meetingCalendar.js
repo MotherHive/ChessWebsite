@@ -9,12 +9,38 @@ export const meetingDetails = {
     timezone: "America/New_York",
 }
 
-const formatCalendarDate = (date) => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
+const weekdayIndexes = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+}
 
-    return `${year}${month}${day}`
+const getDatePartsInTimezone = (date, timezone = meetingDetails.timezone) => {
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: timezone,
+        weekday: "short",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).formatToParts(date)
+    const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]))
+
+    return {
+        year: Number(values.year),
+        month: Number(values.month),
+        day: Number(values.day),
+        weekday: weekdayIndexes[values.weekday],
+    }
+}
+
+const formatCalendarDate = (date, timezone = meetingDetails.timezone) => {
+    const { year, month, day } = getDatePartsInTimezone(date, timezone)
+
+    return `${year}${String(month).padStart(2, "0")}${String(day).padStart(2, "0")}`
 }
 
 const formatUtcDateTime = (date) => {
@@ -25,22 +51,41 @@ const formatCalendarTime = (hour, minute) => {
     return `${String(hour).padStart(2, "0")}${String(minute).padStart(2, "0")}00`
 }
 
-export const getNextTuesday = (fromDate = new Date()) => {
-    const daysUntilTuesday = (2 - fromDate.getDay() + 7) % 7
-    const nextTuesday = new Date(fromDate)
+export const getNextTuesday = (
+    fromDate = new Date(),
+    timezone = meetingDetails.timezone,
+) => {
+    const { year, month, day, weekday } = getDatePartsInTimezone(fromDate, timezone)
+    const daysUntilTuesday = (2 - weekday + 7) % 7
 
-    nextTuesday.setDate(fromDate.getDate() + daysUntilTuesday)
-    nextTuesday.setHours(0, 0, 0, 0)
-
-    return nextTuesday
+    // Noon UTC keeps this date on the same Eastern calendar day while allowing
+    // callers to continue working with a Date object.
+    return new Date(Date.UTC(year, month - 1, day + daysUntilTuesday, 12))
 }
 
-export const formatMeetingDateLabel = (date) => {
+export const formatMeetingDateLabel = (
+    date,
+    { weekday = "long", timezone = meetingDetails.timezone } = {},
+) => {
     return date.toLocaleDateString("en-US", {
-        weekday: "long",
+        timeZone: timezone,
+        weekday,
         month: "long",
         day: "numeric",
     })
+}
+
+export const getMeetingDayDifference = (
+    meetingDate,
+    fromDate = new Date(),
+    timezone = meetingDetails.timezone,
+) => {
+    const meeting = getDatePartsInTimezone(meetingDate, timezone)
+    const from = getDatePartsInTimezone(fromDate, timezone)
+    const meetingDay = Date.UTC(meeting.year, meeting.month - 1, meeting.day)
+    const fromDay = Date.UTC(from.year, from.month - 1, from.day)
+
+    return Math.round((meetingDay - fromDay) / 86400000)
 }
 
 export const formatMeetingTimeLabel = ({
@@ -64,7 +109,7 @@ export const formatMeetingTimeLabel = ({
 }
 
 export const createMeetingCalendarHref = (meetingDate, details = meetingDetails) => {
-    const date = formatCalendarDate(meetingDate)
+    const date = formatCalendarDate(meetingDate, details.timezone)
     const stamp = formatUtcDateTime(new Date())
     const startTime = formatCalendarTime(details.startHour, details.startMinute)
     const endTime = formatCalendarTime(details.endHour, details.endMinute)
@@ -73,6 +118,7 @@ export const createMeetingCalendarHref = (meetingDate, details = meetingDetails)
         "VERSION:2.0",
         "PRODID:-//Scranton Chess Club//Meeting Calendar//EN",
         "CALSCALE:GREGORIAN",
+        `X-WR-TIMEZONE:${details.timezone}`,
         "BEGIN:VEVENT",
         `UID:scranton-chess-club-${date}@scrantonchessclub.org`,
         `DTSTAMP:${stamp}`,

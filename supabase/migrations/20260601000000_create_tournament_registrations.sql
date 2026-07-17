@@ -73,3 +73,5 @@ for each row
 execute function public.set_tournament_registrations_updated_at();
 
 alter table public.tournament_registrations enable row level security;
+
+grant all on public.tournament_registrations to service_role;

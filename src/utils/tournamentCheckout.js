@@ -37,10 +37,10 @@ const getPaymentMethodLabel = (paymentMethod) => (
   paymentOptions.find((option) => option.id === paymentMethod)?.label || paymentMethod
 )
 
-export const buildTournamentRegistration = (payload, now = Date.now()) => {
+export const buildTournamentRegistration = (payload, now = Date.now(), catalog = tournamentCatalog) => {
   const form = payload?.form || {}
   const tournamentId = trimString(payload?.tournamentId || form.tournamentId)
-  const selectedTournament = tournamentCatalog.find((tournament) => tournament.id === tournamentId)
+  const selectedTournament = catalog.find((tournament) => tournament.id === tournamentId)
 
   if (!selectedTournament) {
     throw new Error("Choose a valid tournament.")

@@ -13,38 +13,8 @@
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://scrantonchess.org/blog</loc>
-    <lastmod>2026-05-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://scrantonchess.org/contact</loc>
     <lastmod>2026-05-25</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://scrantonchess.org/blog/pennsylvania-state-amateur-championship-weekend</loc>
-    <lastmod>2026-05-25</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://scrantonchess.org/blog/first-scranton-chess-club-night</loc>
-    <lastmod>2026-05-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://scrantonchess.org/blog/prepare-for-weekend-tournament</loc>
-    <lastmod>2026-05-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://scrantonchess.org/blog/local-chess-stories-wanted</loc>
-    <lastmod>2026-05-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

@@ -1,16 +1,17 @@
-import './App.css'
 import { useCallback, useEffect, useState } from 'react'
-import { Route, Routes, useLocation, useParams } from 'react-router-dom'
-import Header from "./components/Header"
-import Home from './components/Home'
-import Blog from './components/Blog'
-import BlogPost from './components/BlogPost'
-import ConstructionPopup from './components/ConstructionPopup'
-import Contact from './components/Contact'
-import Tournaments from './components/Tournaments'
-import End from './components/End'
-import Footer from './components/Footer'
-import { getBlogPostBySlug } from './data/blogPosts'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import End from "./components/layout/End"
+import Footer from "./components/layout/Footer"
+import Header from "./components/layout/Header"
+import AdminLayout from "./pages/admin/AdminLayout"
+import AdminLoginPage from "./pages/admin/AdminLoginPage"
+import AdminRegistrationsPage from "./pages/admin/registrations/AdminRegistrationsPage"
+import AdminTournamentEditorPage from "./pages/admin/tournaments/AdminTournamentEditorPage"
+import AdminTournamentPreviewPage from "./pages/admin/tournaments/AdminTournamentPreviewPage"
+import AdminTournamentsPage from "./pages/admin/tournaments/AdminTournamentsPage"
+import ContactPage from "./pages/contact/ContactPage"
+import HomePage from "./pages/home/HomePage"
+import TournamentsPage from "./pages/tournaments/TournamentsPage"
 
 function ScrollToRouteTarget({ onJoinTarget }) {
   const { hash, pathname } = useLocation()
@@ -34,14 +35,10 @@ function ScrollToRouteTarget({ onJoinTarget }) {
   return null
 }
 
-function BlogPostRoute() {
-  const { postSlug } = useParams()
-
-  return <BlogPost post={getBlogPostBySlug(postSlug)} />
-}
-
 function App() {
   const [isJoinOpen, setIsJoinOpen] = useState(false)
+  const { pathname } = useLocation()
+  const isAdminRoute = pathname.startsWith("/admin")
 
   const scrollToJoinMenu = useCallback(() => {
     window.requestAnimationFrame(() => {
@@ -66,22 +63,30 @@ function App() {
   return (
     <main>
       <ScrollToRouteTarget onJoinTarget={openJoinMenu} />
-      <ConstructionPopup />
-      <Header
-        isJoinOpen={isJoinOpen}
-        onJoinClose={closeJoinMenu}
-        onJoinToggle={toggleJoinMenu}
-      />
+      {!isAdminRoute && (
+        <Header
+          isJoinOpen={isJoinOpen}
+          onJoinClose={closeJoinMenu}
+          onJoinToggle={toggleJoinMenu}
+        />
+      )}
       <Routes>
-        <Route path="/" element={<Home onOpenJoinMenu={openJoinMenu} />} />
-        <Route path="/tournaments" element={<Tournaments />} />
-        <Route path="/blog" element={<Blog />} />
-        <Route path="/blog/:postSlug" element={<BlogPostRoute />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="*" element={<Home onOpenJoinMenu={openJoinMenu} />} />
+        <Route path="/" element={<HomePage onOpenJoinMenu={openJoinMenu} />} />
+        <Route path="/tournaments" element={<TournamentsPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="/admin/tournaments" replace />} />
+          <Route path="tournaments" element={<AdminTournamentsPage />} />
+          <Route path="tournaments/new" element={<AdminTournamentEditorPage />} />
+          <Route path="tournaments/:tournamentId" element={<AdminTournamentEditorPage />} />
+          <Route path="tournaments/:tournamentId/preview" element={<AdminTournamentPreviewPage />} />
+          <Route path="registrations" element={<AdminRegistrationsPage />} />
+        </Route>
+        <Route path="*" element={<HomePage onOpenJoinMenu={openJoinMenu} />} />
       </Routes>
-      <End />
-      <Footer />
+      {!isAdminRoute && <End />}
+      {!isAdminRoute && <Footer />}
     </main>
   )
 }

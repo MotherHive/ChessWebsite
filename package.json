@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "node --env-file=.env.local scripts/dev-api-server.mjs",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -12,10 +13,8 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",
     "@vercel/analytics": "^2.0.1",
-    "chess.js": "^1.4.0",
     "puppeteer": "^25.0.4",
     "react": "^19.2.6",
-    "react-chessboard": "^5.10.0",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.15.1",
     "resend": "^6.12.4",
