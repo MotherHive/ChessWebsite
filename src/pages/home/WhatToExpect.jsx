@@ -1,6 +1,6 @@
-import CoffeeIcon from "../../../assets/icons/coffee.svg"
-import ExitIcon from "../../../assets/icons/exit.svg"
-import BoardImage from "../../../assets/Board.webp"
+const CoffeeIcon = "/assets/icons/coffee.svg"
+const ExitIcon = "/assets/icons/exit.svg"
+const BoardImage = "/assets/Board.webp"
 import ProgressiveImage from "../../components/ui/ProgressiveImage"
 import useScrollVisibility from "../../hooks/useScrollVisibility"
 

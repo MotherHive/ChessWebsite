@@ -1,5 +1,7 @@
+"use client"
+
 import { useEffect, useRef, useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import Link from 'next/link'
 import JoinMenu from "./JoinMenu"
 
 export default function Header({ isJoinOpen, onJoinClose, onJoinToggle }) {
@@ -42,7 +44,7 @@ export default function Header({ isJoinOpen, onJoinClose, onJoinToggle }) {
         <header ref={headerRef}>
             <div className="header-container">
                 <div className="logo-section">
-                    <Link className="logo" to="/" aria-label="Scranton Chess Club home">
+                    <Link className="logo" href="/" aria-label="Scranton Chess Club home">
                         <h5>SCRANTON</h5>
                         <div className="logo-line">
                             <div className="tapered-left"></div>
@@ -76,9 +78,9 @@ export default function Header({ isJoinOpen, onJoinClose, onJoinToggle }) {
                 <div className={`nav-section${isNavigationOpen ? " nav-section-open" : ""}`}>
                     <nav id="primary-navigation">
                         <ul>
-                            <li><NavLink to="/tournaments" onClick={closeHeaderMenus}>Tournaments</NavLink></li>
-                            <li><Link to="/#qa" onClick={closeHeaderMenus}>FAQ</Link></li>
-                            <li><NavLink to="/contact" onClick={closeHeaderMenus}>Contact</NavLink></li>
+                            <li><Link href="/tournaments" onClick={closeHeaderMenus}>Tournaments</Link></li>
+                            <li><Link href="/#qa" onClick={closeHeaderMenus}>FAQ</Link></li>
+                            <li><Link href="/contact" onClick={closeHeaderMenus}>Contact</Link></li>
                         </ul>
                     </nav>
 

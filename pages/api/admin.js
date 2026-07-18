@@ -1,5 +1,5 @@
-import { getSupabaseAdmin } from "./_lib/supabaseAdmin.js"
-import { parseJsonBody, sendJson } from "./_lib/http.js"
+import { getSupabaseAdmin } from "../../server/supabaseAdmin.js"
+import { parseJsonBody, sendJson } from "../../server/http.js"
 
 const getAdminEmails = () => (
   (process.env.ADMIN_EMAILS || "")

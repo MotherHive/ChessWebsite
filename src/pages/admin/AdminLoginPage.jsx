@@ -1,18 +1,26 @@
-import { useState } from "react"
-import { Navigate, useNavigate } from "react-router-dom"
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabaseClient"
 import useAdminSession from "./useAdminSession"
 
 export default function AdminLoginPage() {
-  const navigate = useNavigate()
+  const router = useRouter()
   const { session, isLoading } = useAdminSession()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [status, setStatus] = useState("idle")
   const [message, setMessage] = useState("")
 
+  useEffect(() => {
+    if (!isLoading && session) {
+      router.replace("/admin")
+    }
+  }, [isLoading, session, router])
+
   if (!isLoading && session) {
-    return <Navigate to="/admin" replace />
+    return null
   }
 
   const handleSubmit = async (event) => {
@@ -31,7 +39,7 @@ export default function AdminLoginPage() {
       return
     }
 
-    navigate("/admin", { replace: true })
+    router.replace("/admin")
   }
 
   return (

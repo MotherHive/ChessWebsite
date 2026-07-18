@@ -1,9 +1,9 @@
-import ScrantonChessClubLogo from "../../../assets/ScrantonChessClub.svg"
-import MarywoodLogo from "../../../assets/MarywoodLogo.png"
-import Board from "../../../assets/Board.jpg"
-import Calendar from "../../../assets/icons/Calendar.svg"
-import Clock from "../../../assets/icons/Clock.svg"
-import Location from "../../../assets/icons/Location.svg"
+const ScrantonChessClubLogo = "/assets/ScrantonChessClub.svg"
+const MarywoodLogo = "/assets/MarywoodLogo.png"
+const Board = "/assets/Board.jpg"
+const Calendar = "/assets/icons/Calendar.svg"
+const Clock = "/assets/icons/Clock.svg"
+const Location = "/assets/icons/Location.svg"
 import {
     createMeetingCalendarHref,
     formatMeetingDateLabel,

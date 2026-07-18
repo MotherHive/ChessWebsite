@@ -1,5 +1,5 @@
-import TournamentSplash from "../../../assets/splash.webp"
-import TournamentBanner from "../../../assets/TournamentBannerTransparent.webp"
+const TournamentSplash = "/assets/splash.webp"
+const TournamentBanner = "/assets/TournamentBannerTransparent.webp"
 import ProgressiveImage from "../../components/ui/ProgressiveImage"
 
 export default function TournamentHero({ featuredTournament }) {

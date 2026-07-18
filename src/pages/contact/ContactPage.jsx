@@ -1,5 +1,7 @@
-import Hermes from "../../../assets/hermes.webp"
-import Splash from "../../../assets/splash.webp"
+"use client"
+
+const Hermes = "/assets/hermes.webp"
+const Splash = "/assets/splash.webp"
 import ProgressiveImage from "../../components/ui/ProgressiveImage"
 import useScrollVisibility from "../../hooks/useScrollVisibility"
 

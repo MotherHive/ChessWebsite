@@ -1,5 +1,7 @@
+"use client"
+
 import { useCallback, useEffect, useState } from "react"
-import { Link } from "react-router-dom"
+import Link from "next/link"
 import { adminRequest } from "../../../lib/adminApi"
 
 const statusLabels = {
@@ -53,7 +55,7 @@ export default function AdminTournamentsPage() {
     <section className="admin-section" aria-label="Tournaments">
       <div className="admin-section-header">
         <h2>Tournaments</h2>
-        <Link className="button" to="/admin/tournaments/new">New tournament</Link>
+        <Link className="button" href="/admin/tournaments/new">New tournament</Link>
       </div>
       {message && <p className="admin-error" role="alert">{message}</p>}
       {isLoading ? (
@@ -87,8 +89,8 @@ export default function AdminTournamentsPage() {
                     </td>
                     <td>
                       <div className="admin-row-actions">
-                        <Link to={`/admin/tournaments/${tournament.id}`}>Edit</Link>
-                        <Link to={`/admin/tournaments/${tournament.id}/preview`}>Preview</Link>
+                        <Link href={`/admin/tournaments/${tournament.id}`}>Edit</Link>
+                        <Link href={`/admin/tournaments/${tournament.id}/preview`}>Preview</Link>
                         {tournament.status !== "published" && (
                           <button disabled={isBusy} onClick={() => runAction(tournament.id, "publish")} type="button">
                             Publish
