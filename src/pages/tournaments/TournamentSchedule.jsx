@@ -1,4 +1,4 @@
-import CalendarIcon from "../../../assets/icons/Calendar.svg"
+const CalendarIcon = "/assets/icons/Calendar.svg"
 
 export default function TournamentSchedule({ tournament }) {
   return (

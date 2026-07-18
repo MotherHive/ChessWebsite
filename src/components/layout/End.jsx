@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
-import MarywoodLogo from "../../../assets/MarywoodLogo.png"
-import ScrantonChessClubLogo from "../../../assets/ScrantonChessClub.png"
+import Link from "next/link"
+const MarywoodLogo = "/assets/MarywoodLogo.png"
+const ScrantonChessClubLogo = "/assets/ScrantonChessClub.png"
 import quotes from "../../data/quotes"
 import useScrollVisibility from "../../hooks/useScrollVisibility"
 
@@ -84,7 +84,7 @@ export default function End() {
             <ul>
               {quickLinks.map((link) => (
                 <li key={link.href}>
-                  <Link to={link.href}>{link.label}</Link>
+                  <Link href={link.href}>{link.label}</Link>
                 </li>
               ))}
             </ul>

@@ -1,4 +1,4 @@
-import PAAmateurLogo from "../../assets/PAAmateurLogo.webp"
+const PAAmateurLogo = "/assets/PAAmateurLogo.webp"
 import {
   byePrice,
   expiredMembershipDiscount,

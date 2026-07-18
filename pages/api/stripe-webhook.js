@@ -1,10 +1,10 @@
-import { getSupabaseAdmin } from "./_lib/supabaseAdmin.js"
-import { getStripe } from "./_lib/stripe.js"
-import { sendJson } from "./_lib/http.js"
+import { getSupabaseAdmin } from "../../server/supabaseAdmin.js"
+import { getStripe } from "../../server/stripe.js"
+import { sendJson } from "../../server/http.js"
 import {
   detailsFromDatabaseRow,
   trySendRegistrationEmail,
-} from "./_lib/email.js"
+} from "../../server/email.js"
 
 export const config = {
   api: {

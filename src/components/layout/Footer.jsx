@@ -1,6 +1,6 @@
-import ChessComIcon from "../../../assets/icons/chess.com.svg"
-import LichessIcon from "../../../assets/icons/Lichess.svg"
-import MarywoodIcon from "../../../assets/icons/marywood.svg"
+const ChessComIcon = "/assets/icons/chess.com.svg"
+const LichessIcon = "/assets/icons/Lichess.svg"
+const MarywoodIcon = "/assets/icons/marywood.svg"
 
 function DiscordIcon() {
   return (

@@ -1,18 +1,18 @@
-import { getSupabaseAdmin } from "./_lib/supabaseAdmin.js"
-import { getStripe } from "./_lib/stripe.js"
+import { getSupabaseAdmin } from "../../server/supabaseAdmin.js"
+import { getStripe } from "../../server/stripe.js"
 import {
   getSiteUrl,
   parseJsonBody,
   sendJson,
-} from "./_lib/http.js"
+} from "../../server/http.js"
 import {
   buildTournamentRegistration,
   isStripePaymentMethod,
-} from "../src/utils/tournamentCheckout.js"
+} from "../../src/utils/tournamentCheckout.js"
 import {
   detailsFromRegistration,
   trySendRegistrationEmail,
-} from "./_lib/email.js"
+} from "../../server/email.js"
 
 const toDatabaseRegistration = (registration, status) => ({
   tournament_id: registration.tournament.id,

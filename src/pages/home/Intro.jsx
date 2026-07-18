@@ -1,10 +1,10 @@
-import { Link } from "react-router-dom"
-import KnightIcon from "../../../assets/icons/knight.png"
-import PawnIcon from "../../../assets/icons/pawn.png"
-import RookIcon from "../../../assets/icons/rook.png"
-import CasualImage from "../../../assets/photos/casual.webp"
-import MatchImage from "../../../assets/photos/match.webp"
-import TournamentImage from "../../../assets/photos/tournament.webp"
+import Link from "next/link"
+const KnightIcon = "/assets/icons/knight.png"
+const PawnIcon = "/assets/icons/pawn.png"
+const RookIcon = "/assets/icons/rook.png"
+const CasualImage = "/assets/photos/casual.webp"
+const MatchImage = "/assets/photos/match.webp"
+const TournamentImage = "/assets/photos/tournament.webp"
 import ProgressiveImage from "../../components/ui/ProgressiveImage"
 import useScrollVisibility from "../../hooks/useScrollVisibility"
 
@@ -85,7 +85,7 @@ export default function Intro() {
               <div className="intro-card-body">
                 <h3>{card.title}</h3>
                 <p>{card.description}</p>
-                <Link to={card.linkHref}>{card.linkText}</Link>
+                <Link href={card.linkHref}>{card.linkText}</Link>
               </div>
             </div>
           </article>

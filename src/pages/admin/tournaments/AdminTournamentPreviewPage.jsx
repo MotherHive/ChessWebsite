@@ -1,5 +1,8 @@
+"use client"
+
 import { useEffect, useState } from "react"
-import { Link, useParams } from "react-router-dom"
+import Link from "next/link"
+import { useParams } from "next/navigation"
 import { adminRequest } from "../../../lib/adminApi"
 import { withTournamentImage } from "../../../data/tournaments"
 import { formatCountdown, getTournamentStatus } from "../../../utils/tournamentPricing"
@@ -57,8 +60,8 @@ export default function AdminTournamentPreviewPage() {
       <div className="admin-section-header">
         <h2>Preview{tournamentStatus ? ` (${tournamentStatus})` : ""}</h2>
         <div className="admin-row-actions">
-          <Link to={`/admin/tournaments/${tournamentId}`}>Edit</Link>
-          <Link to="/admin/tournaments">Back to list</Link>
+          <Link href={`/admin/tournaments/${tournamentId}`}>Edit</Link>
+          <Link href="/admin/tournaments">Back to list</Link>
         </div>
       </div>
       <p className="admin-muted">

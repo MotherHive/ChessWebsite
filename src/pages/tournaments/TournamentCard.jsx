@@ -1,5 +1,5 @@
-import CalendarIcon from "../../../assets/icons/Calendar.svg"
-import LocationIcon from "../../../assets/icons/Location.svg"
+const CalendarIcon = "/assets/icons/Calendar.svg"
+const LocationIcon = "/assets/icons/Location.svg"
 import ProgressiveImage from "../../components/ui/ProgressiveImage"
 import { formatPrice } from "../../utils/tournamentPricing"
 import TournamentPrizes from "./TournamentPrizes"

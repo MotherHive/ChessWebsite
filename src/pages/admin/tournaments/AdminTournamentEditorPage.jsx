@@ -1,5 +1,8 @@
+"use client"
+
 import { useEffect, useState } from "react"
-import { Link, useNavigate, useParams } from "react-router-dom"
+import Link from "next/link"
+import { useParams, useRouter } from "next/navigation"
 import { adminRequest } from "../../../lib/adminApi"
 
 const blankTournament = () => ({
@@ -40,7 +43,7 @@ export default function AdminTournamentEditorPage() {
 }
 
 function TournamentEditor({ tournamentId }) {
-  const navigate = useNavigate()
+  const router = useRouter()
   const isNew = !tournamentId
   const [form, setForm] = useState(blankTournament)
   const [status, setStatus] = useState(isNew ? "ready" : "loading")
@@ -125,7 +128,7 @@ function TournamentEditor({ tournamentId }) {
       setMessage(nextStatus === "published" ? "Saved and published." : "Saved.")
 
       if (isNew) {
-        navigate(`/admin/tournaments/${result.tournament.id}`, { replace: true })
+        router.replace(`/admin/tournaments/${result.tournament.id}`)
       }
     } catch (error) {
       setSaveState("error")
@@ -141,7 +144,7 @@ function TournamentEditor({ tournamentId }) {
     return (
       <section className="admin-section">
         <p className="admin-error">Tournament not found.</p>
-        <Link to="/admin/tournaments">Back to tournaments</Link>
+        <Link href="/admin/tournaments">Back to tournaments</Link>
       </section>
     )
   }
@@ -151,8 +154,8 @@ function TournamentEditor({ tournamentId }) {
       <div className="admin-section-header">
         <h2>{isNew ? "New tournament" : form.title || tournamentId}</h2>
         <div className="admin-row-actions">
-          {!isNew && <Link to={`/admin/tournaments/${tournamentId}/preview`}>Preview</Link>}
-          <Link to="/admin/tournaments">Back to list</Link>
+          {!isNew && <Link href={`/admin/tournaments/${tournamentId}/preview`}>Preview</Link>}
+          <Link href="/admin/tournaments">Back to list</Link>
         </div>
       </div>
 
