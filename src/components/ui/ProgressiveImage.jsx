@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useCallback, useState } from "react"
 
 export default function ProgressiveImage({
   className = "",
@@ -6,15 +6,23 @@ export default function ProgressiveImage({
   onLoad,
   ...imageProps
 }) {
-  const [isLoaded, setIsLoaded] = useState(false)
+  const imageSource = imageProps.src
+  const [loadedSource, setLoadedSource] = useState("")
+  const isLoaded = loadedSource === imageSource
+
+  const setImageRef = useCallback((image) => {
+    if (image?.complete) {
+      setLoadedSource(imageSource)
+    }
+  }, [imageSource])
 
   const handleLoad = (event) => {
-    setIsLoaded(true)
+    setLoadedSource(imageSource)
     onLoad?.(event)
   }
 
   const handleError = (event) => {
-    setIsLoaded(true)
+    setLoadedSource(imageSource)
     onError?.(event)
   }
 
@@ -24,6 +32,7 @@ export default function ProgressiveImage({
       className={`${className} progressive-image${isLoaded ? " progressive-image-loaded" : ""}`.trim()}
       onError={handleError}
       onLoad={handleLoad}
+      ref={setImageRef}
     />
   )
 }
