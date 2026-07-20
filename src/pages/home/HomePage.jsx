@@ -6,12 +6,12 @@ import Intro from './Intro'
 import QandA from './QandA'
 import WhatToExpect from './WhatToExpect'
 
-export default function HomePage() {
+export default function HomePage({ meetingReferenceTime }) {
   const openJoinMenu = useOpenJoinMenu()
 
   return (
     <>
-      <Hero onOpenJoinMenu={openJoinMenu} />
+      <Hero meetingReferenceTime={meetingReferenceTime} onOpenJoinMenu={openJoinMenu} />
       <Intro />
       <WhatToExpect />
       <QandA />

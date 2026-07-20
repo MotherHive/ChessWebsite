@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { adminRequest } from "../../../lib/adminApi"
 
 const paymentStatusLabels = {
@@ -43,33 +43,111 @@ const csvColumns = [
 ]
 
 export default function AdminRegistrationsPage() {
+  const detailRequestRef = useRef(0)
   const [registrations, setRegistrations] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isDetailLoading, setIsDetailLoading] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const [message, setMessage] = useState("")
   const [tournamentFilter, setTournamentFilter] = useState("")
   const [sectionFilter, setSectionFilter] = useState("")
   const [paymentFilter, setPaymentFilter] = useState("")
   const [teamFilter, setTeamFilter] = useState("")
   const [searchText, setSearchText] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
   const [openRegistrationId, setOpenRegistrationId] = useState("")
+  const [openRegistration, setOpenRegistration] = useState(null)
+  const [tournamentOptions, setTournamentOptions] = useState([])
+  const [sectionOptions, setSectionOptions] = useState([])
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: 25,
+    total: 0,
+    totalPages: 1,
+  })
+
+  const registrationQuery = useMemo(() => ({
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+    payment: paymentFilter,
+    q: searchQuery,
+    section: sectionFilter,
+    team: teamFilter,
+    tournament: tournamentFilter,
+  }), [
+    pagination.page,
+    pagination.pageSize,
+    paymentFilter,
+    searchQuery,
+    sectionFilter,
+    teamFilter,
+    tournamentFilter,
+  ])
+
+  useEffect(() => {
+    const nextSearchQuery = searchText.trim()
+
+    if (nextSearchQuery === searchQuery) {
+      return undefined
+    }
+
+    const timer = window.setTimeout(() => {
+      detailRequestRef.current += 1
+      setIsLoading(true)
+      setSearchQuery(nextSearchQuery)
+      setPagination((current) => ({ ...current, page: 1 }))
+      setOpenRegistrationId("")
+      setOpenRegistration(null)
+    }, 300)
+
+    return () => window.clearTimeout(timer)
+  }, [searchQuery, searchText])
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    adminRequest("registrations", {
+      query: registrationQuery,
+      signal: controller.signal,
+    })
+      .then((result) => {
+        setRegistrations(result.registrations || [])
+        setPagination(result.pagination || {
+          page: 1,
+          pageSize: 25,
+          total: 0,
+          totalPages: 1,
+        })
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          setMessage(error.message)
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsLoading(false)
+        }
+      })
+
+    return () => {
+      controller.abort()
+    }
+  }, [registrationQuery])
 
   useEffect(() => {
     let isActive = true
 
-    adminRequest("registrations")
+    adminRequest("registration-options")
       .then((result) => {
         if (isActive) {
-          setRegistrations(result.registrations || [])
+          setTournamentOptions(result.tournaments || [])
+          setSectionOptions(result.sections || [])
         }
       })
       .catch((error) => {
         if (isActive) {
           setMessage(error.message)
-        }
-      })
-      .finally(() => {
-        if (isActive) {
-          setIsLoading(false)
         }
       })
 
@@ -78,85 +156,96 @@ export default function AdminRegistrationsPage() {
     }
   }, [])
 
-  const tournamentOptions = useMemo(() => {
-    const byId = new Map()
+  const updateFilter = (setter, value) => {
+    detailRequestRef.current += 1
+    setIsLoading(true)
+    setter(value)
+    setPagination((current) => ({ ...current, page: 1 }))
+    setOpenRegistrationId("")
+    setOpenRegistration(null)
+  }
 
-    registrations.forEach((row) => {
-      if (!byId.has(row.tournament_id)) {
-        byId.set(row.tournament_id, row.tournament_title || row.tournament_id)
-      }
-    })
+  const changePage = (page) => {
+    detailRequestRef.current += 1
+    setIsLoading(true)
+    setPagination((current) => ({ ...current, page }))
+    setOpenRegistrationId("")
+    setOpenRegistration(null)
+  }
 
-    return [...byId.entries()]
-  }, [registrations])
+  const paymentOptions = Object.keys(paymentStatusLabels)
 
-  const sectionOptions = useMemo(() => (
-    [...new Set(registrations.map((row) => row.section).filter(Boolean))].sort()
-  ), [registrations])
-
-  const paymentOptions = useMemo(() => (
-    [...new Set(registrations.map((row) => row.payment_status).filter(Boolean))].sort()
-  ), [registrations])
-
-  const filteredRegistrations = useMemo(() => {
-    const query = searchText.trim().toLowerCase()
-
-    return registrations.filter((row) => {
-      if (tournamentFilter && row.tournament_id !== tournamentFilter) {
-        return false
-      }
-
-      if (sectionFilter && row.section !== sectionFilter) {
-        return false
-      }
-
-      if (paymentFilter && row.payment_status !== paymentFilter) {
-        return false
-      }
-
-      if (teamFilter === "team" && !row.entered_with_team) {
-        return false
-      }
-
-      if (teamFilter === "individual" && row.entered_with_team) {
-        return false
-      }
-
-      if (!query) {
-        return true
-      }
-
-      return [row.player_name, row.email, row.uscf_id, row.school]
-        .some((field) => field && field.toLowerCase().includes(query))
-    })
-  }, [registrations, tournamentFilter, sectionFilter, paymentFilter, teamFilter, searchText])
-
-  const totals = useMemo(() => {
+  const pageTotals = useMemo(() => {
     let collectedCents = 0
     let outstandingCents = 0
+    let paidCount = 0
 
-    filteredRegistrations.forEach((row) => {
+    registrations.forEach((row) => {
       if (row.payment_status === "paid") {
+        paidCount += 1
         collectedCents += row.total_amount_cents || 0
       } else {
         outstandingCents += row.total_amount_cents || 0
       }
     })
 
-    return {
-      count: filteredRegistrations.length,
-      paidCount: filteredRegistrations.filter((row) => row.payment_status === "paid").length,
-      collectedCents,
-      outstandingCents,
+    return { collectedCents, outstandingCents, paidCount }
+  }, [registrations])
+
+  const toggleRegistration = async (row) => {
+    if (openRegistrationId === row.id) {
+      detailRequestRef.current += 1
+      setOpenRegistrationId("")
+      setOpenRegistration(null)
+      return
     }
-  }, [filteredRegistrations])
 
-  const openRegistration = filteredRegistrations.find((row) => row.id === openRegistrationId)
-    || registrations.find((row) => row.id === openRegistrationId)
+    const requestId = detailRequestRef.current + 1
+    detailRequestRef.current = requestId
+    setOpenRegistrationId(row.id)
+    setOpenRegistration(null)
+    setIsDetailLoading(true)
 
-  const exportCsv = () => {
+    try {
+      const result = await adminRequest("registration", { query: { id: row.id } })
+      if (detailRequestRef.current === requestId) {
+        setOpenRegistration(result.registration || null)
+      }
+    } catch (error) {
+      if (detailRequestRef.current === requestId) {
+        setMessage(error.message)
+        setOpenRegistrationId("")
+      }
+    } finally {
+      if (detailRequestRef.current === requestId) {
+        setIsDetailLoading(false)
+      }
+    }
+  }
+
+  const exportCsv = async () => {
+    setIsExporting(true)
+    setMessage("")
+
+    let result
+
+    try {
+      result = await adminRequest("registration-export", {
+        query: {
+          ...registrationQuery,
+          page: undefined,
+          pageSize: undefined,
+        },
+      })
+    } catch (error) {
+      setMessage(error.message)
+      setIsExporting(false)
+      return
+    }
+
+    const exportRows = result.registrations || []
     const header = csvColumns.map(([label]) => label).join(",")
-    const lines = filteredRegistrations.map((row) => (
+    const lines = exportRows.map((row) => (
       csvColumns.map(([, getValue]) => csvEscape(getValue(row))).join(",")
     ))
     const csvContent = [header, ...lines].join("\n")
@@ -170,14 +259,24 @@ export default function AdminRegistrationsPage() {
     link.click()
     link.remove()
     URL.revokeObjectURL(url)
+    setIsExporting(false)
+
+    if (result.truncated) {
+      setMessage(`The export was limited to ${exportRows.length} of ${result.total} registrations.`)
+    }
   }
 
   return (
     <section className="admin-section" aria-label="Registrations">
       <div className="admin-section-header">
         <h2>Registrations</h2>
-        <button className="button admin-export-button" disabled={!filteredRegistrations.length} onClick={exportCsv} type="button">
-          Export CSV ({filteredRegistrations.length})
+        <button
+          className="button admin-export-button"
+          disabled={!pagination.total || isExporting}
+          onClick={exportCsv}
+          type="button"
+        >
+          {isExporting ? "Preparing export..." : `Export CSV (${pagination.total})`}
         </button>
       </div>
 
@@ -185,16 +284,18 @@ export default function AdminRegistrationsPage() {
 
       <div className="admin-stats" aria-label="Registration totals">
         <div className="admin-stat">
-          <span className="admin-stat-value">{totals.count}</span>
-          <span className="admin-stat-label">Registrations</span>
+          <span className="admin-stat-value">{pagination.total}</span>
+          <span className="admin-stat-label">Matching registrations</span>
         </div>
         <div className="admin-stat">
-          <span className="admin-stat-value">{formatCents(totals.collectedCents)}</span>
-          <span className="admin-stat-label">Collected ({totals.paidCount} paid)</span>
+          <span className="admin-stat-value">{formatCents(pageTotals.collectedCents)}</span>
+          <span className="admin-stat-label">This page collected ({pageTotals.paidCount} paid)</span>
         </div>
         <div className="admin-stat">
-          <span className="admin-stat-value">{formatCents(totals.outstandingCents)}</span>
-          <span className="admin-stat-label">Outstanding ({totals.count - totals.paidCount} unpaid)</span>
+          <span className="admin-stat-value">{formatCents(pageTotals.outstandingCents)}</span>
+          <span className="admin-stat-label">
+            This page outstanding ({registrations.length - pageTotals.paidCount} unpaid)
+          </span>
         </div>
       </div>
 
@@ -210,16 +311,22 @@ export default function AdminRegistrationsPage() {
         </label>
         <label>
           Tournament
-          <select onChange={(event) => setTournamentFilter(event.target.value)} value={tournamentFilter}>
+          <select
+            onChange={(event) => updateFilter(setTournamentFilter, event.target.value)}
+            value={tournamentFilter}
+          >
             <option value="">All tournaments</option>
-            {tournamentOptions.map(([id, title]) => (
-              <option key={id} value={id}>{title}</option>
+            {tournamentOptions.map((tournament) => (
+              <option key={tournament.id} value={tournament.id}>{tournament.title}</option>
             ))}
           </select>
         </label>
         <label>
           Section
-          <select onChange={(event) => setSectionFilter(event.target.value)} value={sectionFilter}>
+          <select
+            onChange={(event) => updateFilter(setSectionFilter, event.target.value)}
+            value={sectionFilter}
+          >
             <option value="">All sections</option>
             {sectionOptions.map((section) => (
               <option key={section} value={section}>{section}</option>
@@ -228,7 +335,10 @@ export default function AdminRegistrationsPage() {
         </label>
         <label>
           Payment status
-          <select onChange={(event) => setPaymentFilter(event.target.value)} value={paymentFilter}>
+          <select
+            onChange={(event) => updateFilter(setPaymentFilter, event.target.value)}
+            value={paymentFilter}
+          >
             <option value="">All statuses</option>
             {paymentOptions.map((paymentStatus) => (
               <option key={paymentStatus} value={paymentStatus}>
@@ -239,7 +349,10 @@ export default function AdminRegistrationsPage() {
         </label>
         <label>
           Team entry
-          <select onChange={(event) => setTeamFilter(event.target.value)} value={teamFilter}>
+          <select
+            onChange={(event) => updateFilter(setTeamFilter, event.target.value)}
+            value={teamFilter}
+          >
             <option value="">All entries</option>
             <option value="team">Team entries</option>
             <option value="individual">Individual entries</option>
@@ -263,11 +376,11 @@ export default function AdminRegistrationsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredRegistrations.map((row) => (
+              {registrations.map((row) => (
                 <tr
                   className={`admin-clickable-row${openRegistrationId === row.id ? " admin-row-open" : ""}`}
                   key={row.id}
-                  onClick={() => setOpenRegistrationId(openRegistrationId === row.id ? "" : row.id)}
+                  onClick={() => toggleRegistration(row)}
                 >
                   <td>{formatDate(row.created_at)}</td>
                   <td>
@@ -284,7 +397,7 @@ export default function AdminRegistrationsPage() {
                   </td>
                 </tr>
               ))}
-              {!filteredRegistrations.length && (
+              {!registrations.length && (
                 <tr>
                   <td colSpan={6} className="admin-muted">No registrations match the filters.</td>
                 </tr>
@@ -294,13 +407,53 @@ export default function AdminRegistrationsPage() {
         </div>
       )}
 
+      {!isLoading && pagination.total > 0 && (
+        <nav className="admin-pagination" aria-label="Registration pages">
+          <span>
+            Showing {(pagination.page - 1) * pagination.pageSize + 1}–{Math.min(
+              pagination.page * pagination.pageSize,
+              pagination.total,
+            )} of {pagination.total}
+          </span>
+          <div>
+            <button
+              className="admin-link-button"
+              disabled={pagination.page <= 1}
+              onClick={() => changePage(Math.max(1, pagination.page - 1))}
+              type="button"
+            >
+              Previous
+            </button>
+            <span>Page {pagination.page} of {pagination.totalPages}</span>
+            <button
+              className="admin-link-button"
+              disabled={pagination.page >= pagination.totalPages}
+              onClick={() => changePage(Math.min(pagination.totalPages, pagination.page + 1))}
+              type="button"
+            >
+              Next
+            </button>
+          </div>
+        </nav>
+      )}
+
+      {isDetailLoading && (
+        <p className="admin-muted admin-detail-loading" role="status">
+          Loading registration details...
+        </p>
+      )}
+
       {openRegistration && (
         <aside className="admin-detail" aria-label={`Registration for ${openRegistration.player_name}`}>
           <div className="admin-detail-header">
             <h3>{openRegistration.player_name}</h3>
             <button
               className="admin-link-button"
-              onClick={() => setOpenRegistrationId("")}
+              onClick={() => {
+                detailRequestRef.current += 1
+                setOpenRegistrationId("")
+                setOpenRegistration(null)
+              }}
               type="button"
             >
               Close

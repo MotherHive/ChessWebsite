@@ -1,13 +1,11 @@
-export const sendJson = (res, statusCode, body) => {
-  res.status(statusCode).json(body)
-}
+export const jsonResponse = (status, body, headers) => (
+  Response.json(body, { status, headers })
+)
 
-export const parseJsonBody = (req) => {
-  if (typeof req.body === "string") {
-    return JSON.parse(req.body || "{}")
-  }
+export const parseJsonRequest = async (request) => {
+  const body = await request.text()
 
-  return req.body || {}
+  return body ? JSON.parse(body) : {}
 }
 
 export const getSiteUrl = () => {

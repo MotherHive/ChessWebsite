@@ -167,19 +167,22 @@ export const sendClubWelcomeEmail = async ({ firstName, email }) => {
   });
 };
 
-export const sendRegistrationEmail = async (details) => {
+export const sendRegistrationEmail = async (details, { idempotencyKey } = {}) => {
   const resend = getResend();
   const subject = details.paid
     ? `You're confirmed for ${details.tournamentTitle}`
     : `Registration received for ${details.tournamentTitle}`;
 
-  return resend.emails.send({
-    from: fromAddress(),
-    to: details.email,
-    subject,
-    html: buildHtml(details),
-    text: buildText(details),
-  });
+  return resend.emails.send(
+    {
+      from: fromAddress(),
+      to: details.email,
+      subject,
+      html: buildHtml(details),
+      text: buildText(details),
+    },
+    idempotencyKey ? { idempotencyKey } : undefined,
+  );
 };
 
 // ============================================================================
@@ -188,7 +191,12 @@ export const sendRegistrationEmail = async (details) => {
 
 export const trySendClubWelcomeEmail = async (payload) => {
   try {
-    await sendClubWelcomeEmail(payload);
+    const result = await sendClubWelcomeEmail(payload);
+
+    if (result?.error) {
+      throw result.error;
+    }
+
     return true;
   } catch (error) {
     console.error("Failed to send club welcome email:", error);
@@ -196,9 +204,14 @@ export const trySendClubWelcomeEmail = async (payload) => {
   }
 };
 
-export const trySendRegistrationEmail = async (details) => {
+export const trySendRegistrationEmail = async (details, options) => {
   try {
-    await sendRegistrationEmail(details);
+    const result = await sendRegistrationEmail(details, options);
+
+    if (result?.error) {
+      throw result.error;
+    }
+
     return true;
   } catch (error) {
     console.error("Failed to send registration email:", error);

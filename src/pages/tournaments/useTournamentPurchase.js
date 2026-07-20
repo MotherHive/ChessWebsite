@@ -1,217 +1,80 @@
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useReducer, useRef } from "react"
+import { byePrice } from "../../data/tournaments"
 import {
-  byePrice,
-  paymentOptions,
-  tournamentRounds,
-} from "../../data/tournaments"
+  createRegistrationAttemptKey,
+  readSavedJoinInfo,
+  savePurchaseReceipt,
+  submitTournamentRegistration,
+} from "../../features/tournament-registration/purchaseGateway"
 import {
-  buildTournamentRegistration,
-  getEntryFeePrice,
-} from "../../utils/tournamentCheckout"
-import {
-  getMembershipPrice,
-  getMembershipTier,
-} from "../../utils/tournamentPricing"
-import {
-  getPlayerSearchUrl,
-  isValidEmail,
-} from "../../utils/tournamentValidation"
+  createPurchaseState,
+  derivePurchase,
+  emptyTournament,
+  purchaseReducer,
+} from "../../features/tournament-registration/purchaseModel"
+import { buildTournamentRegistration } from "../../utils/tournamentCheckout"
 
-const getSavedJoinInfo = () => {
-  try {
-    const savedJoinInfo = window.localStorage.getItem("scranton-chess-club-join")
-
-    if (!savedJoinInfo) {
-      return { name: "", email: "" }
-    }
-
-    const parsedInfo = JSON.parse(savedJoinInfo)
-    const name = [parsedInfo.firstName, parsedInfo.lastName].filter(Boolean).join(" ")
-
-    return {
-      name,
-      email: parsedInfo.email || "",
-    }
-  } catch {
-    return { name: "", email: "" }
-  }
-}
-
-const getEntryStepError = (form, selectedByeRounds) => {
-  if (!form.activeMembershipStatus || !form.section || form.byes.some((bye) => !bye.round)) {
-    return "Select membership status, choose a section, and complete each bye round."
-  }
-
-  if (new Set(selectedByeRounds).size !== selectedByeRounds.length) {
-    return "Choose each bye round only once."
-  }
-
-  return ""
-}
-
-const getInfoStepError = (form, { hasActiveMembership, membershipTier, needsMembership }) => {
-  if (!form.name.trim() || !form.email.trim()) {
-    return "Enter the player name and email."
-  }
-
-  if (!isValidEmail(form.email.trim())) {
-    return "Use a valid email address, like name@example.com."
-  }
-
-  if (hasActiveMembership) {
-    return form.uscfId.trim() ? "" : "Enter the active USCF ID."
-  }
-
-  if (!needsMembership) {
-    return "Select an active USCF membership status."
-  }
-
-  if (!form.address.trim() || !form.phone.trim() || !form.birthDate) {
-    return "Enter address, phone, and birth date for the membership."
-  }
-
-  if (!membershipTier) {
-    return "Enter a valid birth date."
-  }
-
-  if (form.enteredWithTeam && !form.school.trim()) {
-    return "Enter the school for the team entry."
-  }
-
-  return ""
-}
-
-const getTournamentEntryFees = (tournament) => (
-  tournament.entryFees?.length ? tournament.entryFees : [{ section: "Championship", price: 0 }]
-)
-
-const getDefaultTournamentSection = (tournament) => getTournamentEntryFees(tournament)[0].section
-
-export default function useTournamentPurchase(tournaments) {
+export default function useTournamentPurchase(tournaments, currentTime) {
   const purchaseButtonRef = useRef(null)
   const purchaseCloseButtonRef = useRef(null)
-  const featuredTournament = tournaments[0] || { id: "", title: "", entryFees: [] }
-  const [isPurchaseDrawerOpen, setIsPurchaseDrawerOpen] = useState(false)
-  const [selectedTournamentId, setSelectedTournamentId] = useState(featuredTournament.id)
-  const [purchaseStep, setPurchaseStep] = useState("entry")
-  const [purchaseForm, setPurchaseForm] = useState(() => {
-    const savedInfo = getSavedJoinInfo()
-
-    return {
-      activeMembershipStatus: "",
-      isExpiredMember: false,
-      enteredWithTeam: false,
-      uscfId: "",
-      name: savedInfo.name,
-      email: savedInfo.email,
-      phone: "",
-      address: "",
-      birthDate: "",
-      school: "",
-      section: getDefaultTournamentSection(featuredTournament),
-      byes: [],
-      paymentMethod: paymentOptions[0].id,
-    }
-  })
-  const [purchaseStatus, setPurchaseStatus] = useState("idle")
-  const [purchaseMessage, setPurchaseMessage] = useState("")
-  const [purchaseResult, setPurchaseResult] = useState(null)
-
+  const purchaseAttemptKeyRef = useRef("")
+  const featuredTournament = tournaments[0] || emptyTournament
+  const [state, dispatch] = useReducer(
+    purchaseReducer,
+    featuredTournament,
+    (tournament) => createPurchaseState(tournament, {}),
+  )
+  const {
+    isPurchaseDrawerOpen,
+    purchaseForm,
+    purchaseMessage,
+    purchaseResult,
+    purchaseStatus,
+    purchaseStep,
+    selectedTournamentId,
+  } = state
   const selectedTournament =
     tournaments.find((tournament) => tournament.id === selectedTournamentId) || featuredTournament
-  const maxByeCount = selectedTournament.maxByes ?? tournamentRounds.length
-  const membershipTier = getMembershipTier(purchaseForm.birthDate)
-  const hasActiveMembership = purchaseForm.activeMembershipStatus === "yes"
-  const needsMembership = purchaseForm.activeMembershipStatus === "no"
-  const tournamentEntryFees = getTournamentEntryFees(selectedTournament)
-  const tournamentSections = tournamentEntryFees.map((fee) => fee.section)
-  const selectedEntryFee =
-    tournamentEntryFees.find((fee) => fee.section === purchaseForm.section) ?? tournamentEntryFees[0]
-  const entryPrice = getEntryFeePrice(selectedEntryFee, selectedTournament)
-  const membershipPrice = getMembershipPrice({
-    needsMembership,
-    membershipTier,
-    isExpiredMember: purchaseForm.isExpiredMember,
-  })
-  const byeTotal = purchaseForm.byes.length * byePrice
-  const purchaseTotal = entryPrice + byeTotal + membershipPrice
-  const selectedByeRounds = purchaseForm.byes.map((bye) => bye.round).filter(Boolean)
-  const playerSearchUrl = getPlayerSearchUrl(purchaseForm.name)
-  const checkoutTournamentDetails = {
-    id: selectedTournament.id,
-    title: selectedTournament.title,
-    type: selectedTournament.type,
-    rating: selectedTournament.rating,
-    dateRange: selectedTournament.dateRange,
-    location: selectedTournament.location,
-    address: selectedTournament.address,
-    section: purchaseForm.section,
-    possibleByes: maxByeCount,
-  }
-  const entryStepError = getEntryStepError(purchaseForm, selectedByeRounds)
-  const infoStepError = getInfoStepError(purchaseForm, { hasActiveMembership, membershipTier, needsMembership })
-  const entryStepCanContinue = !entryStepError
-  const infoStepCanContinue = !infoStepError
+  const purchaseDetails = derivePurchase(selectedTournament, purchaseForm, currentTime)
+  const {
+    checkoutTournamentDetails,
+    entryPrice,
+    entryStepError,
+    hasActiveMembership,
+    infoStepError,
+    maxByeCount,
+    membershipPrice,
+    purchaseTotal,
+  } = purchaseDetails
   const currentStepIndex = purchaseStep === "entry" ? 0 : purchaseStep === "info" ? 1 : 2
 
-  const clearPurchaseMessage = () => {
-    setPurchaseStatus("idle")
-    setPurchaseMessage("")
+  const invalidatePurchaseAttempt = () => {
+    purchaseAttemptKeyRef.current = ""
   }
 
   const showPurchaseError = (message) => {
-    setPurchaseStatus("error")
-    setPurchaseMessage(message)
-  }
-
-  const resetPurchaseMessage = () => {
-    if (purchaseStatus !== "idle" || purchaseMessage) {
-      clearPurchaseMessage()
-    }
+    dispatch({ type: "show-error", message })
   }
 
   const updatePurchaseField = (field, value) => {
-    setPurchaseForm((currentForm) => ({
-      ...currentForm,
-      [field]: value,
-    }))
-
-    resetPurchaseMessage()
+    invalidatePurchaseAttempt()
+    dispatch({ type: "update-field", field, value })
   }
 
   const openPurchaseDrawer = (tournamentId = featuredTournament.id) => {
-    const nextTournament =
-      tournaments.find((tournament) => tournament.id === tournamentId) || featuredTournament
-    const nextMaxByeCount = nextTournament.maxByes ?? tournamentRounds.length
+    const tournament =
+      tournaments.find((candidate) => candidate.id === tournamentId) || featuredTournament
 
     if (document.activeElement instanceof HTMLElement) {
       purchaseButtonRef.current = document.activeElement
     }
 
-    setSelectedTournamentId(nextTournament.id)
-    setPurchaseStep("entry")
-    setPurchaseResult(null)
-    setPurchaseForm((currentForm) => {
-      const nextSection = getTournamentEntryFees(nextTournament).some((fee) => fee.section === currentForm.section)
-        ? currentForm.section
-        : getDefaultTournamentSection(nextTournament)
-
-      if (currentForm.byes.length <= nextMaxByeCount && currentForm.section === nextSection) {
-        return currentForm
-      }
-
-      return {
-        ...currentForm,
-        section: nextSection,
-        byes: currentForm.byes.slice(0, nextMaxByeCount),
-      }
-    })
-    clearPurchaseMessage()
-    setIsPurchaseDrawerOpen(true)
+    invalidatePurchaseAttempt()
+    dispatch({ type: "open", tournament, savedInfo: readSavedJoinInfo() })
   }
 
   const closePurchaseDrawer = useCallback(() => {
-    setIsPurchaseDrawerOpen(false)
+    dispatch({ type: "close" })
     window.setTimeout(() => {
       purchaseButtonRef.current?.focus()
     }, 0)
@@ -232,57 +95,26 @@ export default function useTournamentPurchase(tournaments) {
   }, [])
 
   const goToPreviousPurchaseStep = () => {
-    clearPurchaseMessage()
-
-    if (purchaseStep === "review") {
-      setPurchaseStep("info")
-      return
-    }
-
-    if (purchaseStep === "info") {
-      setPurchaseStep("entry")
-    }
+    dispatch({ type: "previous" })
   }
 
   const addBye = () => {
-    setPurchaseForm((currentForm) => {
-      if (currentForm.byes.length >= maxByeCount) {
-        return currentForm
-      }
-
-      return {
-        ...currentForm,
-        byes: [
-          ...currentForm.byes,
-          {
-            id: window.crypto?.randomUUID?.() || `${Date.now()}-${currentForm.byes.length}`,
-            round: "",
-          },
-        ],
-      }
+    invalidatePurchaseAttempt()
+    dispatch({
+      type: "add-bye",
+      id: window.crypto?.randomUUID?.() || `${Date.now()}-${purchaseForm.byes.length}`,
+      maxByeCount,
     })
-
-    resetPurchaseMessage()
   }
 
   const updateBye = (id, round) => {
-    setPurchaseForm((currentForm) => ({
-      ...currentForm,
-      byes: currentForm.byes.map((bye) => (
-        bye.id === id ? { ...bye, round } : bye
-      )),
-    }))
-
-    resetPurchaseMessage()
+    invalidatePurchaseAttempt()
+    dispatch({ type: "update-bye", id, round })
   }
 
   const removeBye = (id) => {
-    setPurchaseForm((currentForm) => ({
-      ...currentForm,
-      byes: currentForm.byes.filter((bye) => bye.id !== id),
-    }))
-
-    resetPurchaseMessage()
+    invalidatePurchaseAttempt()
+    dispatch({ type: "remove-bye", id })
   }
 
   const handleEntryContinue = () => {
@@ -291,8 +123,7 @@ export default function useTournamentPurchase(tournaments) {
       return
     }
 
-    clearPurchaseMessage()
-    setPurchaseStep("info")
+    dispatch({ type: "continue", step: "info" })
   }
 
   const handleInfoContinue = () => {
@@ -301,8 +132,7 @@ export default function useTournamentPurchase(tournaments) {
       return
     }
 
-    clearPurchaseMessage()
-    setPurchaseStep("review")
+    dispatch({ type: "continue", step: "review" })
   }
 
   const handlePurchaseSubmit = async (event) => {
@@ -325,93 +155,63 @@ export default function useTournamentPurchase(tournaments) {
       return
     }
 
-    setPurchaseStatus("loading")
-    setPurchaseMessage("")
+    dispatch({ type: "submit-started" })
+    const idempotencyKey = purchaseAttemptKeyRef.current || createRegistrationAttemptKey()
+    purchaseAttemptKeyRef.current = idempotencyKey
 
     try {
-      const response = await fetch("/api/tournament-registration", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tournamentId: selectedTournament.id,
-          form: purchaseForm,
-        }),
+      const result = await submitTournamentRegistration({
+        idempotencyKey,
+        tournamentId: selectedTournament.id,
+        form: purchaseForm,
       })
-      const result = await response.json().catch(() => ({}))
 
-      if (!response.ok) {
-        throw new Error(result.error || "Could not submit the registration.")
-      }
-
-      try {
-        window.localStorage.setItem(
-          "scranton-chess-tournament-purchase",
-          JSON.stringify({
-            ...purchaseForm,
-            registrationId: result.registrationId,
-            tournament: checkoutTournamentDetails,
-            hasActiveMembership,
-            name: registration.player.name,
-            email: registration.player.email,
-            entryPrice,
-            byePrice,
-            possibleByes: maxByeCount,
-            membershipPrice,
-            total: purchaseTotal,
-          }),
-        )
-      } catch {
-        // The server registration succeeded, so a blocked local cache should not fail the purchase.
-      }
+      savePurchaseReceipt({
+        ...purchaseForm,
+        registrationId: result.registrationId,
+        tournament: checkoutTournamentDetails,
+        hasActiveMembership,
+        name: registration.player.name,
+        email: registration.player.email,
+        entryPrice,
+        byePrice,
+        possibleByes: maxByeCount,
+        membershipPrice,
+        total: purchaseTotal,
+      })
 
       if (result.checkoutUrl) {
-        setPurchaseMessage("Redirecting to Stripe Checkout...")
+        dispatch({ type: "redirecting" })
         window.location.assign(result.checkoutUrl)
         return
       }
 
-      setPurchaseResult(result)
-      setPurchaseStatus("success")
-      setPurchaseStep("thanks")
-      setPurchaseMessage("Registration submitted. Payment is pending.")
+      dispatch({ type: "submit-succeeded", result })
     } catch (error) {
       showPurchaseError(error.message || "Could not submit the registration. Try again later.")
     }
   }
 
   return {
+    ...purchaseDetails,
     addBye,
-    byeTotal,
-    checkoutTournamentDetails,
     closePurchaseDrawer,
     currentStepIndex,
-    entryPrice,
-    entryStepCanContinue,
     focusCloseButton,
     goToPreviousPurchaseStep,
     handleEntryContinue,
     handleInfoContinue,
     handlePurchaseSubmit,
-    hasActiveMembership,
-    infoStepCanContinue,
     isPurchaseDrawerOpen,
-    maxByeCount,
-    membershipPrice,
-    membershipTier,
-    needsMembership,
     openPurchaseDrawer,
-    playerSearchUrl,
     purchaseForm,
     purchaseMessage,
     purchaseResult,
     purchaseStatus,
     purchaseStep,
-    purchaseTotal,
     removeBye,
-    selectedByeRounds,
     selectedTournament,
     setPurchaseCloseButton,
-    tournamentSections,
     updateBye,
     updatePurchaseField,
   }

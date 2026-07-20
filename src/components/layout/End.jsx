@@ -39,7 +39,7 @@ function MapPinIcon() {
 
 export default function End() {
   const [footerRef, isVisible] = useScrollVisibility({ threshold: 0.18 })
-  const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * quotes.length))
+  const [quoteIndex, setQuoteIndex] = useState(0)
 
   useEffect(() => {
     const id = setInterval(() => {

@@ -108,9 +108,13 @@ export const formatMeetingTimeLabel = ({
     return `${dayLabel} ${formatTime(startHour, startMinute, startPeriod !== endPeriod)} - ${formatTime(endHour, endMinute, true)}`
 }
 
-export const createMeetingCalendarHref = (meetingDate, details = meetingDetails) => {
+export const createMeetingCalendarHref = (
+    meetingDate,
+    generatedAt = meetingDate,
+    details = meetingDetails,
+) => {
     const date = formatCalendarDate(meetingDate, details.timezone)
-    const stamp = formatUtcDateTime(new Date())
+    const stamp = formatUtcDateTime(generatedAt)
     const startTime = formatCalendarTime(details.startHour, details.startMinute)
     const endTime = formatCalendarTime(details.endHour, details.endMinute)
     const calendarLines = [

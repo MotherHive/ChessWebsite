@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import { supabase } from "../lib/supabaseClient"
 import { tournamentListings, withTournamentImage } from "../data/tournaments"
 
 const sortByStart = (tournaments) => (
@@ -16,17 +15,22 @@ export default function usePublishedTournaments() {
     let isActive = true
 
     const loadTournaments = async () => {
-      const { data, error } = await supabase
-        .from("tournaments")
-        .select("id, data")
-        .eq("status", "published")
+      let response
+      let result
+
+      try {
+        response = await fetch("/api/tournaments")
+        result = await response.json()
+      } catch {
+        result = null
+      }
 
       if (!isActive) {
         return
       }
 
-      if (!error && data) {
-        setTournaments(sortByStart(data.map((row) => withTournamentImage({ ...row.data, id: row.id }))))
+      if (response?.ok && Array.isArray(result?.tournaments)) {
+        setTournaments(sortByStart(result.tournaments.map(withTournamentImage)))
       }
 
       setIsLoading(false)

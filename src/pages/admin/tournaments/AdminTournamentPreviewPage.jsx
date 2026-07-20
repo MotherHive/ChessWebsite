@@ -8,13 +8,13 @@ import { withTournamentImage } from "../../../data/tournaments"
 import { formatCountdown, getTournamentStatus } from "../../../utils/tournamentPricing"
 import TournamentCard from "../../tournaments/TournamentCard"
 
-export default function AdminTournamentPreviewPage() {
+export default function AdminTournamentPreviewPage({ initialTime }) {
   const { tournamentId } = useParams()
   const [tournament, setTournament] = useState(null)
   const [tournamentStatus, setTournamentStatus] = useState("")
   const [message, setMessage] = useState("Loading preview...")
   const [isOpen, setIsOpen] = useState(true)
-  const [currentTime, setCurrentTime] = useState(() => Date.now())
+  const [currentTime, setCurrentTime] = useState(() => new Date(initialTime).getTime())
 
   useEffect(() => {
     let isActive = true
@@ -48,11 +48,17 @@ export default function AdminTournamentPreviewPage() {
   }, [tournamentId])
 
   useEffect(() => {
+    const initialUpdate = window.setTimeout(() => {
+      setCurrentTime(Date.now())
+    }, 0)
     const countdownTimer = window.setInterval(() => {
       setCurrentTime(Date.now())
     }, 1000)
 
-    return () => window.clearInterval(countdownTimer)
+    return () => {
+      window.clearTimeout(initialUpdate)
+      window.clearInterval(countdownTimer)
+    }
   }, [])
 
   return (

@@ -11,8 +11,8 @@ import {
     getNextTuesday,
 } from "../../utils/meetingCalendar"
 
-const getRelativeMeetingLabel = (meetingDate) => {
-    const daysUntilMeeting = getMeetingDayDifference(meetingDate)
+const getRelativeMeetingLabel = (meetingDate, referenceDate) => {
+    const daysUntilMeeting = getMeetingDayDifference(meetingDate, referenceDate)
 
     if (daysUntilMeeting === 0) {
         return "Today"
@@ -25,11 +25,12 @@ const getRelativeMeetingLabel = (meetingDate) => {
     return `In ${daysUntilMeeting} days`
 }
 
-export default function Hero({ onOpenJoinMenu }) {
-    const nextMeetingDate = getNextTuesday()
+export default function Hero({ meetingReferenceTime, onOpenJoinMenu }) {
+    const meetingReferenceDate = new Date(meetingReferenceTime)
+    const nextMeetingDate = getNextTuesday(meetingReferenceDate)
     const nextMeetingLabel = formatMeetingDateLabel(nextMeetingDate, { weekday: "short" })
-    const meetingRelativeLabel = getRelativeMeetingLabel(nextMeetingDate)
-    const calendarHref = createMeetingCalendarHref(nextMeetingDate)
+    const meetingRelativeLabel = getRelativeMeetingLabel(nextMeetingDate, meetingReferenceDate)
+    const calendarHref = createMeetingCalendarHref(nextMeetingDate, meetingReferenceDate)
     const handleJoinClick = () => {
         onOpenJoinMenu?.()
     }

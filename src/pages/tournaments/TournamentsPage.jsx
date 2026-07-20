@@ -9,14 +9,14 @@ import TournamentHero from "./TournamentHero"
 import TournamentList from "./TournamentList"
 import useTournamentPurchase from "./useTournamentPurchase"
 
-export default function TournamentsPage() {
+export default function TournamentsPage({ initialTime }) {
   const [sectionRef, isVisible] = useScrollVisibility({ threshold: 0.08 })
   const searchParams = useSearchParams()
   const { tournaments, isLoading } = usePublishedTournaments()
   const featuredTournament = tournaments[0]
   const [openTournamentId, setOpenTournamentId] = useState("")
-  const [currentTime, setCurrentTime] = useState(() => Date.now())
-  const purchase = useTournamentPurchase(tournaments)
+  const [currentTime, setCurrentTime] = useState(() => new Date(initialTime).getTime())
+  const purchase = useTournamentPurchase(tournaments, currentTime)
   const checkoutStatus = searchParams.get("checkout")
   const checkoutMessage = checkoutStatus === "success"
     ? "Stripe checkout complete. Your payment will be confirmed shortly."
@@ -25,11 +25,17 @@ export default function TournamentsPage() {
       : ""
 
   useEffect(() => {
+    const initialUpdate = window.setTimeout(() => {
+      setCurrentTime(Date.now())
+    }, 0)
     const countdownTimer = window.setInterval(() => {
       setCurrentTime(Date.now())
     }, 1000)
 
-    return () => window.clearInterval(countdownTimer)
+    return () => {
+      window.clearTimeout(initialUpdate)
+      window.clearInterval(countdownTimer)
+    }
   }, [])
 
   return (
