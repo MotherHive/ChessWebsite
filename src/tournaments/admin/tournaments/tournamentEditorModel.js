@@ -10,6 +10,16 @@ const shortDateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 })
 
+const pad = (part) => String(part).padStart(2, "0")
+
+// Schedule entry details with special meaning to the editor.
+const registrationStartDetail = "Registration start"
+const registrationEndDetail = "Registration end"
+
+// Older tournaments stored derived start/end rows in the schedule itself.
+// Timing is now derived from the schedule, so these are stripped on load.
+const legacyTimingDetails = ["Tournament starts", "Tournament ends"]
+
 export const toDateTimeInputValue = (value) => {
   const date = new Date(value)
 
@@ -17,19 +27,7 @@ export const toDateTimeInputValue = (value) => {
     return ""
   }
 
-  const pad = (part) => String(part).padStart(2, "0")
-
-  return [
-    date.getFullYear(),
-    "-",
-    pad(date.getMonth() + 1),
-    "-",
-    pad(date.getDate()),
-    "T",
-    pad(date.getHours()),
-    ":",
-    pad(date.getMinutes()),
-  ].join("")
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 export const fromDateTimeInputValue = (value) => {
@@ -90,8 +88,6 @@ export const scheduleDateInputValue = (label, startsAt) => {
     return ""
   }
 
-  const pad = (part) => String(part).padStart(2, "0")
-
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
@@ -102,7 +98,7 @@ export const hydrateScheduleDates = (days, startsAt) => (
     sections: (day.sections || []).map((section) => ({
       ...section,
       times: (section.times || []).filter((time) => (
-        !["Tournament starts", "Tournament ends"].includes(time.detail)
+        !legacyTimingDetails.includes(time.detail)
       )),
     })),
   }))
@@ -121,9 +117,11 @@ export const deriveTournamentTiming = (days) => {
     .sort((left, right) => left.dateValue.localeCompare(right.dateValue))
   const firstDay = scheduledDays[0]
   const lastDay = scheduledDays[scheduledDays.length - 1]
+  // The earliest "Registration end" entry on the first day is when play
+  // effectively starts, so it drives the published startsAt timestamp.
   const registrationEndTimes = (firstDay?.sections || [])
     .flatMap((section) => section.times || [])
-    .filter((time) => time.detail.trim().toLowerCase() === "registration end")
+    .filter((time) => time.detail.trim().toLowerCase() === registrationEndDetail.toLowerCase())
     .map((time) => dateTimeFromScheduleEntry(firstDay.dateValue, time.label))
     .filter(Boolean)
     .sort()
@@ -159,7 +157,7 @@ export const timeLabelToInputValue = (label) => {
     hours = (hours % 12) + (meridiem === "PM" ? 12 : 0)
   }
 
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
+  return `${pad(hours)}:${pad(minutes)}`
 }
 
 export const formatTimeLabel = (value) => {
@@ -185,12 +183,16 @@ export const getNextRoundDetail = (times) => {
   return `Round ${highestRound + 1}`
 }
 
+const defaultRegistrationTimes = () => ([
+  { label: "8:30 AM", detail: registrationStartDetail },
+  { label: "9:30 AM", detail: registrationEndDetail },
+])
+
 export const createBlankTournament = (recentTournament = {}) => ({
   title: "",
   type: "Tournament",
   rating: recentTournament.rating || "USCF",
   entryFees: [{ section: recentTournament.entryFees?.[0]?.section || "Open", price: 0 }],
-  earlyEntryDeadlineLabel: "",
   discountEndsAt: "",
   startsAt: "",
   endsAt: "",
@@ -215,10 +217,7 @@ export const createBlankTournament = (recentTournament = {}) => ({
     sections: [{
       name: recentTournament.entryFees?.[0]?.section || "Open",
       control: "",
-      times: [
-        { label: "8:30 AM", detail: "Registration start" },
-        { label: "9:30 AM", detail: "Registration end" },
-      ],
+      times: defaultRegistrationTimes(),
     }],
   }],
   prizes: [{
@@ -303,11 +302,6 @@ export const getPrizeGroupPresets = (tournaments) => {
 
   return [...new Set([...defaultPrizeGroups, ...savedGroups].filter(Boolean))]
 }
-
-const defaultRegistrationTimes = () => ([
-  { label: "8:30 AM", detail: "Registration start" },
-  { label: "9:30 AM", detail: "Registration end" },
-])
 
 export const syncScheduleSections = (days, entryFees) => {
   const sectionNames = (entryFees || []).map((fee) => fee.section)

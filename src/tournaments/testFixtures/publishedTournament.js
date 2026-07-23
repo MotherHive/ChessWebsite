@@ -7,7 +7,6 @@ export const publishedTournamentFixture = {
       { section: "Championship", price: 22, earlyPrice: 17 },
       { section: "Scholastic", price: 17, earlyPrice: 12 },
     ],
-    earlyEntryDeadlineLabel: "May 25",
     discountEndsAt: "2026-05-25T23:59:59-04:00",
     startsAt: "2026-05-30T08:30:00-04:00",
     endsAt: "2026-05-31T17:00:00-04:00",

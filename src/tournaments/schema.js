@@ -61,7 +61,6 @@ export const tournamentDraftSchema = z.object({
   type: shortText.default(""),
   rating: shortText.default(""),
   entryFees: z.array(entryFeeSchema).max(30).default([]),
-  earlyEntryDeadlineLabel: shortText.default(""),
   discountEndsAt: blankOrDateTime.default(""),
   startsAt: blankOrDateTime.default(""),
   endsAt: blankOrDateTime.default(""),

@@ -27,6 +27,16 @@ const updateAt = (list, index, patch) => (
   list.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item))
 )
 
+const derivePresetChoices = (form, locations, directors) => ({
+  venue: locations.some((location) => location.location === form.location)
+    ? form.location
+    : "__new__",
+  director: directors.find((director) => (
+    director.name === (form.director?.name || "")
+      && director.email === (form.director?.email || "")
+  ))?.key || "__new__",
+})
+
 export default function AdminTournamentEditorPage() {
   const { tournamentId } = useParams()
 
@@ -70,13 +80,11 @@ function TournamentEditor({ tournamentId }) {
 
         if (isNew) {
           const nextForm = createBlankTournament(tournaments[0]?.data)
+          const choices = derivePresetChoices(nextForm, locations, directors)
+
           setForm(nextForm)
-          setVenueChoice(locations.some((location) => location.location === nextForm.location)
-            ? nextForm.location
-            : "__new__")
-          setDirectorChoice(directors.find((director) => (
-            director.name === nextForm.director.name && director.email === nextForm.director.email
-          ))?.key || "__new__")
+          setVenueChoice(choices.venue)
+          setDirectorChoice(choices.director)
           setStatus("ready")
           return
         }
@@ -98,14 +106,11 @@ function TournamentEditor({ tournamentId }) {
           prizes: syncPrizeSections(nextForm.prizes, nextForm.entryFees),
         }
 
+        const choices = derivePresetChoices(hydratedForm, locations, directors)
+
         setForm(hydratedForm)
-        setVenueChoice(locations.some((location) => location.location === hydratedForm.location)
-          ? hydratedForm.location
-          : "__new__")
-        setDirectorChoice(directors.find((director) => (
-          director.name === hydratedForm.director?.name
-            && director.email === hydratedForm.director?.email
-        ))?.key || "__new__")
+        setVenueChoice(choices.venue)
+        setDirectorChoice(choices.director)
         setStatus("ready")
       })
       .catch((error) => {
