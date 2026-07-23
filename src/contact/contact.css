@@ -1,0 +1,192 @@
+/* ================================
+   Contact page
+================================ */
+
+/* Contact hero */
+
+.contact-page {
+background:
+    linear-gradient(145deg, rgb(25 25 25 / 0.96), rgb(0 0 0 / 0.98)),
+    var(--color-charcoal);
+}
+
+.contact-hero .tournaments-copy h2 {
+max-width: 760px;
+}
+
+.contact-hero {
+grid-template-columns: minmax(0, 0.68fr) minmax(420px, 1.12fr);
+  gap: clamp(var(--space-6), 4.5vw, 5.75rem);
+}
+
+.contact-board {
+isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: clamp(340px, 36vw, 540px);
+  padding: 0;
+}
+
+.contact-board::before {
+display: none;
+}
+
+.contact-board::after {
+display: none;
+}
+
+.contact-board .contact-splash {
+position: absolute;
+  z-index: 0;
+  width: min(124%, 1040px);
+  min-height: 0;
+  max-height: none;
+  object-fit: contain;
+  border: 0;
+  border-radius: 0;
+  filter: drop-shadow(0 28px 70px rgb(0 0 0 / 0.32));
+}
+
+.contact-board .contact-hermes {
+position: relative;
+  z-index: 1;
+  width: min(96%, 860px);
+  min-height: 0;
+  max-height: none;
+  object-fit: contain;
+  border: 0;
+  border-radius: 0;
+  filter: contrast(1.08);
+  mix-blend-mode: multiply;
+}
+
+/* Club staff */
+
+.contact-staff {
+width: min(100%, 1380px);
+  margin: clamp(var(--space-7), 6vw, 7.5rem) auto 0;
+}
+
+.contact-staff-heading {
+max-width: 760px;
+}
+
+.contact-staff-heading h3 {
+margin: 0;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 3vw, 3.6rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.contact-staff-board {
+display: grid;
+  margin-top: var(--space-5);
+  min-width: 0;
+  background-color: rgb(255 255 255 / 0.07);
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.contact-staff-row {
+display: grid;
+  grid-template-columns: minmax(190px, 0.7fr) minmax(220px, 1fr);
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: clamp(var(--space-4), 2.2vw, var(--space-5));
+  border-top: 1px solid rgb(255 255 255 / 0.12);
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 600ms ease,
+    transform 760ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition-delay: calc(660ms + (var(--staff-index, 0) * 80ms));
+}
+
+.contact-staff-row:first-child {
+border-top: 0;
+}
+
+.contact-page.is-visible .contact-staff-row {
+opacity: 1;
+  transform: translateY(0);
+}
+
+.contact-staff-row strong {
+min-width: 0;
+  color: var(--color-chess-white);
+  font-family: var(--font-heading);
+  font-size: clamp(1.35rem, 1.45vw, 1.85rem);
+  line-height: 1.05;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.contact-staff-row span {
+display: block;
+  color: rgb(255 255 255 / 0.9);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1100px) {
+  .contact-staff {
+  max-width: 760px;
+  }
+
+  .contact-hero {
+  grid-template-columns: 1fr;
+  }
+
+  .contact-staff-row {
+  grid-template-columns: 1fr;
+      gap: var(--space-2);
+  }
+
+  .contact-board {
+  min-height: clamp(300px, 54vw, 460px);
+  }
+
+  .contact-board .contact-splash {
+  width: min(118%, 820px);
+      min-height: 0;
+  }
+
+  .contact-board .contact-hermes {
+  width: min(94%, 700px);
+      min-height: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .contact-board {
+  min-height: clamp(250px, 72vw, 340px);
+      padding-inline: 0;
+  }
+
+  .contact-board .contact-splash {
+  width: min(132%, 560px);
+      min-height: 0;
+  }
+
+  .contact-board .contact-hermes {
+  width: min(100%, 480px);
+      min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contact-staff-row {
+  opacity: 1;
+      transform: none;
+      transition: none;
+      animation: none;
+      clip-path: none;
+      filter: none;
+  }
+}

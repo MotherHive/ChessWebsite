@@ -1,6 +1,11 @@
 import { Analytics } from '@vercel/analytics/next'
 import AppShell from '@/shared/components/layout/AppShell'
-import '../src/index.css'
+import '../src/shared/shared.css'
+import '../src/home/home.css'
+import '../src/tournaments/tournaments.css'
+import '../src/tournaments/purchase.css'
+import '../src/contact/contact.css'
+import '../src/tournaments/admin/admin.css'
 
 export const metadata = {
   title: "Scranton Chess Club",

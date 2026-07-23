@@ -1,0 +1,832 @@
+/* ================================
+   Tournament purchase flow
+================================ */
+
+/* Drawer shell */
+
+body.purchase-drawer-active {
+overflow: hidden;
+}
+
+.purchase-drawer-backdrop {
+position: fixed;
+  inset: 0;
+  z-index: 80;
+  background-color: rgb(0 0 0 / 0.58);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+.purchase-drawer-backdrop-open {
+opacity: 1;
+  pointer-events: auto;
+}
+
+.purchase-drawer-backdrop[hidden],
+.purchase-drawer[hidden] {
+display: none;
+}
+
+.purchase-drawer {
+position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  width: min(500px, 100vw);
+  height: 100dvh;
+  padding: clamp(var(--space-5), 4vw, var(--space-7));
+  overflow-y: auto;
+  color: var(--color-chess-black);
+  background-color: var(--color-chess-white);
+  box-shadow: -24px 0 60px rgb(0 0 0 / 0.28);
+  pointer-events: none;
+  transform: translateX(100%);
+  visibility: hidden;
+  transition:
+    transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    visibility 280ms ease;
+}
+
+.purchase-drawer-open {
+pointer-events: auto;
+  transform: translateX(0);
+  visibility: visible;
+}
+
+.purchase-drawer-header {
+display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.purchase-drawer-header span,
+.purchase-tournament-title > span {
+display: block;
+  color: var(--color-club-green);
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.purchase-drawer-header h3 {
+margin: var(--space-2) 0 0;
+  font-family: var(--font-heading);
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.purchase-drawer-close {
+position: relative;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background-color: var(--color-charcoal);
+  border-radius: var(--radius-md);
+}
+
+.purchase-drawer-close span {
+position: absolute;
+  width: 22px;
+  height: 2px;
+  background-color: var(--color-chess-white);
+}
+
+.purchase-drawer-close span:first-child {
+transform: rotate(45deg);
+}
+
+.purchase-drawer-close span:last-child {
+transform: rotate(-45deg);
+}
+
+/* Tournament selection */
+
+.purchase-drawer-summary {
+padding: var(--space-5);
+  background-color: rgb(6 170 19 / 0.08);
+  border: 1px solid rgb(6 170 19 / 0.2);
+  border-radius: var(--radius-md);
+}
+
+.purchase-total {
+display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.purchase-tournament-row > strong,
+.purchase-total strong {
+font-family: var(--font-heading);
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.purchase-tournament-row {
+display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(130px, 0.62fr) auto;
+  align-items: start;
+  gap: var(--space-3);
+}
+
+.purchase-tournament-title {
+display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.purchase-tournament-title strong {
+font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.purchase-section-select {
+display: grid;
+  gap: var(--space-1);
+}
+
+.purchase-section-select label {
+color: rgb(0 0 0 / 0.58);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.purchase-add-bye-link {
+justify-self: start;
+  min-height: 0;
+  margin-top: var(--space-1);
+  padding: 0;
+  color: var(--color-club-green);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 900;
+  line-height: 1.3;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+
+.purchase-add-bye-link:disabled {
+cursor: not-allowed;
+  opacity: 0.54;
+}
+
+.purchase-bye-limit {
+display: block;
+  margin-top: var(--space-3);
+  color: rgb(0 0 0 / 0.62);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.purchase-drawer-summary p {
+margin: var(--space-4) 0 0;
+  color: rgb(0 0 0 / 0.72);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* Form steps and fields */
+
+.purchase-panel {
+display: grid;
+  gap: var(--space-4);
+}
+
+.purchase-progress {
+display: grid;
+  gap: var(--space-3);
+}
+
+.purchase-steps {
+display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.purchase-step {
+display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  color: rgb(0 0 0 / 0.46);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.purchase-step span {
+display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  color: var(--color-chess-white);
+  background-color: rgb(0 0 0 / 0.22);
+  border-radius: 999px;
+  font-size: 0.76rem;
+}
+
+.purchase-step-active {
+color: var(--color-chess-black);
+}
+
+.purchase-step-active span {
+background-color: var(--color-club-green);
+}
+
+.purchase-field {
+display: grid;
+  gap: var(--space-2);
+}
+
+.purchase-field label {
+font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.purchase-label-row {
+display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.purchase-label-row a,
+.purchase-member-id-link {
+color: var(--color-chess-black);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+
+.purchase-field input,
+.purchase-field select,
+.purchase-section-select select,
+.purchase-bye-row select {
+width: 100%;
+  min-height: 48px;
+  padding: 0 var(--space-3);
+  color: var(--color-chess-black);
+  background-color: var(--color-chess-white);
+  border: 1px solid rgb(0 0 0 / 0.18);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: var(--font-size-16);
+}
+
+.purchase-field input:focus,
+.purchase-field select:focus,
+.purchase-section-select select:focus,
+.purchase-bye-row select:focus {
+border-color: var(--color-club-green);
+  outline: 3px solid rgb(6 170 19 / 0.18);
+  outline-offset: 1px;
+}
+
+.purchase-field input[aria-invalid="true"] {
+border-color: #d92d20;
+}
+
+.purchase-field input:disabled,
+.purchase-field select:disabled,
+.purchase-submit:disabled {
+cursor: wait;
+  opacity: 0.7;
+}
+
+.purchase-total {
+min-height: 64px;
+  padding: 0 var(--space-4);
+  background-color: var(--color-charcoal);
+  border-radius: var(--radius-md);
+  color: var(--color-chess-white);
+}
+
+.purchase-total span {
+font-family: var(--font-body);
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.purchase-message {
+margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.purchase-message-error {
+color: #b42318;
+}
+
+.purchase-message-success {
+color: var(--color-club-green);
+}
+
+.purchase-submit {
+width: 100%;
+}
+
+.purchase-check-card,
+.purchase-membership-choice-card,
+.purchase-cart-card,
+/* Review and payment */
+
+.purchase-review-card {
+min-width: 0;
+  padding: var(--space-4);
+  background-color: rgb(0 0 0 / 0.035);
+  border: 1px solid rgb(0 0 0 / 0.1);
+  border-radius: var(--radius-md);
+}
+
+.purchase-check-card {
+display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+
+.purchase-membership-choice-card {
+display: grid;
+  gap: var(--space-3);
+}
+
+.purchase-membership-choice-card label {
+font-weight: 500;
+}
+
+.purchase-membership-choice-card label strong {
+font-weight: 900;
+}
+
+.purchase-check-card input {
+flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--color-club-green);
+}
+
+.purchase-check-card span,
+.purchase-cart-card > div,
+.purchase-review-card {
+display: grid;
+  gap: var(--space-1);
+}
+
+.purchase-check-card strong,
+.purchase-bye-heading strong,
+.purchase-cart-card strong {
+font-family: var(--font-body);
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.purchase-check-card small,
+.purchase-membership-choice-card p,
+.purchase-bye-heading small,
+.purchase-cart-card p,
+.purchase-review-card p {
+margin: 0;
+  color: rgb(0 0 0 / 0.68);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.purchase-check-card-compact {
+padding: var(--space-3);
+}
+
+.purchase-cart-card {
+position: relative;
+  background-color: rgb(6 170 19 / 0.08);
+  border-color: rgb(6 170 19 / 0.22);
+}
+
+.purchase-cart-card-header {
+display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.purchase-membership-title-row {
+display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.purchase-membership-price {
+display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.purchase-range {
+display: block;
+  margin-top: 0;
+  font-family: var(--font-heading);
+  font-size: clamp(1.55rem, 4vw, 2.1rem);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.purchase-entry-panel .purchase-tournament-row > strong {
+font-size: 1.28rem;
+}
+
+.purchase-entry-panel .purchase-range {
+font-size: clamp(1.12rem, 3vw, 1.45rem);
+}
+
+.purchase-entry-panel .purchase-bye-row span {
+font-size: 0.78rem;
+}
+
+.purchase-entry-panel .purchase-drawer-footer > div strong {
+font-size: 1.08rem;
+}
+
+.purchase-info-menu {
+position: relative;
+}
+
+.purchase-info-menu summary {
+display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--color-club-green);
+  background-color: var(--color-chess-white);
+  border: 1px solid rgb(6 170 19 / 0.28);
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1;
+  list-style: none;
+}
+
+.purchase-info-menu summary::-webkit-details-marker {
+display: none;
+}
+
+.purchase-info-menu summary:focus-visible {
+outline: 3px solid rgb(6 170 19 / 0.18);
+  outline-offset: 2px;
+}
+
+.purchase-info-popover {
+position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 3;
+  width: min(220px, calc(100vw - 48px));
+  padding: var(--space-3);
+  background-color: var(--color-chess-white);
+  border: 1px solid rgb(0 0 0 / 0.14);
+  border-radius: var(--radius-md);
+  box-shadow: 0 18px 45px rgb(0 0 0 / 0.14);
+}
+
+.purchase-info-popover > strong {
+display: block;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.purchase-info-popover ul {
+display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.purchase-info-popover li {
+display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: rgb(0 0 0 / 0.72);
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+  line-height: 1.3;
+}
+
+.purchase-info-popover li strong {
+color: var(--color-chess-black);
+  font-family: var(--font-heading);
+  font-size: 0.98rem;
+  white-space: nowrap;
+}
+
+.purchase-cart-card > div > span,
+.purchase-bye-heading span,
+.purchase-review-card > span {
+color: var(--color-club-green);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.purchase-bye-row label {
+font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.purchase-bye-heading {
+display: block;
+}
+
+.purchase-back-button,
+.purchase-bye-row button {
+min-height: 40px;
+  padding: 0 var(--space-3);
+  color: var(--color-chess-black);
+  background-color: var(--color-chess-white);
+  border: 1px solid rgb(0 0 0 / 0.16);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.purchase-bye-row button {
+display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  width: 40px;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.purchase-bye-row .purchase-bye-remove {
+color: rgb(0 0 0 / 0.36);
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.purchase-bye-row .purchase-bye-remove span {
+display: block;
+  font-family: var(--font-body);
+  font-size: 1.8rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.purchase-bye-row .purchase-bye-remove:hover,
+.purchase-bye-row .purchase-bye-remove:focus-visible {
+color: rgb(0 0 0 / 0.62);
+  background-color: rgb(0 0 0 / 0.045);
+  border-color: rgb(0 0 0 / 0.08);
+}
+
+.purchase-bye-list {
+display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.purchase-bye-row {
+display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.purchase-bye-row span {
+color: var(--color-club-green);
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.purchase-line-item {
+display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid rgb(0 0 0 / 0.08);
+}
+
+.purchase-line-item p {
+margin: 0;
+  color: var(--color-chess-black);
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.purchase-line-item strong {
+font-family: var(--font-heading);
+  font-size: 1.05rem;
+  white-space: nowrap;
+}
+
+.purchase-drawer-footer {
+position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  padding: var(--space-4) 0 0;
+  background-color: var(--color-chess-white);
+  border-top: 1px solid rgb(0 0 0 / 0.1);
+}
+
+.purchase-drawer-footer > div {
+display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.purchase-drawer-footer > div span {
+color: rgb(0 0 0 / 0.56);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.purchase-drawer-footer > div strong {
+font-family: var(--font-heading);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.purchase-drawer-footer .purchase-submit {
+grid-column: 1 / -1;
+}
+
+.purchase-review-card .purchase-total {
+margin-top: var(--space-3);
+}
+
+.purchase-payment-card {
+gap: var(--space-3);
+}
+
+/* Completion state */
+
+.purchase-thanks {
+align-content: start;
+  text-align: left;
+}
+
+.purchase-thanks-mark {
+width: 54px;
+  height: 54px;
+  background-color: var(--color-club-green);
+  border-radius: 999px;
+}
+
+.purchase-thanks-mark::after {
+content: "";
+  display: block;
+  width: 22px;
+  height: 12px;
+  margin: 17px auto 0;
+  border-bottom: 4px solid var(--color-chess-white);
+  border-left: 4px solid var(--color-chess-white);
+  transform: rotate(-45deg);
+}
+
+.purchase-thanks > span {
+color: var(--color-club-green);
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.purchase-thanks h4 {
+font-family: var(--font-heading);
+  font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1;
+}
+
+.purchase-thanks p {
+margin: 0;
+  color: rgb(0 0 0 / 0.72);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+  .purchase-drawer {
+  padding: var(--space-5) var(--space-4);
+  }
+
+  .purchase-steps {
+  gap: var(--space-1);
+  }
+
+  .purchase-step {
+  gap: 6px;
+      font-size: 0.72rem;
+  }
+
+  .purchase-step span {
+  flex-basis: 22px;
+      width: 22px;
+      height: 22px;
+  }
+
+  .purchase-tournament-row,
+  .purchase-bye-row,
+  .purchase-drawer-footer {
+  grid-template-columns: 1fr;
+  }
+
+  .purchase-tournament-row > strong {
+  justify-self: start;
+  }
+
+  .purchase-bye-row {
+  align-items: stretch;
+  }
+
+  .purchase-bye-row span {
+  justify-self: start;
+  }
+
+  .purchase-membership-title-row {
+  align-items: flex-start;
+      flex-direction: column;
+  }
+
+  .purchase-membership-price {
+  width: 100%;
+      justify-content: space-between;
+  }
+
+  .purchase-info-popover {
+  right: 0;
+  }
+
+  .purchase-bye-row button {
+  justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .purchase-drawer,
+  .purchase-drawer-backdrop {
+  transition: none;
+  }
+}
