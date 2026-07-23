@@ -1,5 +1,6 @@
 import {
   detailsFromRegistration,
+  trySendClubWelcomeEmail,
   trySendRegistrationEmail,
 } from "@/shared/server/email"
 import {
@@ -72,12 +73,6 @@ const createStripeLineItems = (registration) => (
   }))
 )
 
-const loadPublishedCatalog = async (supabase, tournamentId) => {
-  const tournament = await getPublishedTournament(supabase, tournamentId)
-
-  return tournament ? [tournament] : []
-}
-
 const loadRegistrationByIdempotencyKey = async (supabase, idempotencyKey) => (
   supabase
     .from("tournament_registrations")
@@ -85,6 +80,26 @@ const loadRegistrationByIdempotencyKey = async (supabase, idempotencyKey) => (
     .eq("idempotency_key", idempotencyKey)
     .maybeSingle()
 )
+
+const trySendFirstRegistrationWelcomeEmail = async (supabase, registrationRow) => {
+  const { count, error } = await supabase
+    .from("tournament_registrations")
+    .select("id", { count: "exact", head: true })
+    .eq("email", registrationRow.email)
+    .neq("id", registrationRow.id)
+
+  if (error || count > 0) {
+    return
+  }
+
+  await trySendClubWelcomeEmail(
+    {
+      firstName: registrationRow.player_name?.split(" ")[0] || "Player",
+      email: registrationRow.email,
+    },
+    { idempotencyKey: `registration-${registrationRow.id}-welcome` },
+  )
+}
 
 const registrationResponse = (registration) => jsonResponse(200, {
   registrationId: registration.id,
@@ -96,13 +111,14 @@ const registrationResponse = (registration) => jsonResponse(200, {
 const continueStripeCheckout = async ({
   idempotencyKey,
   registration,
-  siteUrl,
   stripe,
   supabase,
 }) => {
   if (registration.payment_status === "paid" || registration.stripe_checkout_url) {
     return registrationResponse(registration)
   }
+
+  const siteUrl = getSiteUrl()
 
   let session
 
@@ -226,7 +242,6 @@ export async function registerTournament(request) {
     return continueStripeCheckout({
       idempotencyKey,
       registration: existing,
-      siteUrl: getSiteUrl(),
       stripe,
       supabase,
     })
@@ -235,10 +250,10 @@ export async function registerTournament(request) {
   const requestedTournamentId = String(
     registrationPayload.tournamentId || registrationPayload.form?.tournamentId || "",
   )
-  let publishedCatalog
+  let publishedTournament
 
   try {
-    publishedCatalog = await loadPublishedCatalog(supabase, requestedTournamentId)
+    publishedTournament = await getPublishedTournament(supabase, requestedTournamentId)
   } catch {
     return jsonResponse(500, {
       error: "Could not validate the published tournament configuration.",
@@ -251,7 +266,7 @@ export async function registerTournament(request) {
     registration = buildTournamentRegistration(
       registrationPayload,
       Date.now(),
-      publishedCatalog,
+      publishedTournament,
     )
   } catch (error) {
     return jsonResponse(400, { error: error.message || "Invalid registration." })
@@ -296,7 +311,6 @@ export async function registerTournament(request) {
           ? continueStripeCheckout({
             idempotencyKey,
             registration: racedRegistration,
-            siteUrl: getSiteUrl(),
             stripe,
             supabase,
           })
@@ -313,6 +327,8 @@ export async function registerTournament(request) {
     return jsonResponse(500, { error: "Could not save the registration." })
   }
 
+  await trySendFirstRegistrationWelcomeEmail(supabase, data)
+
   if (!usesStripe) {
     await trySendRegistrationEmail(detailsFromRegistration(registration, { paid: false }), {
       idempotencyKey: `registration-${data.id}-received`,
@@ -324,7 +340,6 @@ export async function registerTournament(request) {
   return continueStripeCheckout({
     idempotencyKey,
     registration: data,
-    siteUrl: getSiteUrl(),
     stripe,
     supabase,
   })

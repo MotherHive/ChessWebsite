@@ -152,7 +152,7 @@ export default function useTournamentPurchase(tournaments, currentTime) {
           form: purchaseForm,
         },
         currentTime,
-        [selectedTournament],
+        selectedTournament,
       )
     } catch (error) {
       showPurchaseError(error.message || "Review the registration details and try again.")

@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs"
-// 1. Import the combined runner function
-import { trySendRegistrationAndWelcomeEmail } from "../src/shared/server/email.js"
+import {
+  trySendClubWelcomeEmail,
+  trySendRegistrationEmail,
+} from "../src/shared/server/email.js"
 
 // Load .env.local into process.env (simple parser, no dep).
 for (const line of readFileSync(new URL("../.env.local", import.meta.url), "utf8").split("\n")) {
@@ -10,9 +12,7 @@ for (const line of readFileSync(new URL("../.env.local", import.meta.url), "utf8
   }
 }
 
-// 2. Pass the full registration object.
-// The function will automatically extract the first name for the welcome email.
-const result = await trySendRegistrationAndWelcomeEmail({
+const registrationEmailSent = await trySendRegistrationEmail({
   playerName: "Cian Wescott",
   email: "cianwknight@gmail.com",
   tournamentTitle: "Scranton Chess Club Test Event",
@@ -25,5 +25,9 @@ const result = await trySendRegistrationAndWelcomeEmail({
   paid: true,
 })
 
-// 3. This will log a clean object showing the success status of both emails
-console.log("Delivery Status:", JSON.stringify(result, null, 2))
+const welcomeEmailSent = await trySendClubWelcomeEmail({
+  firstName: "Cian",
+  email: "cianwknight@gmail.com",
+})
+
+console.log("Delivery Status:", JSON.stringify({ registrationEmailSent, welcomeEmailSent }, null, 2))

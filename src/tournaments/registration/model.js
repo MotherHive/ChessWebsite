@@ -3,7 +3,10 @@ import {
   paymentOptions,
   tournamentRounds,
 } from "./constants.js"
-import { getEntryFeePrice } from "./buildRegistration.js"
+import {
+  getEntryFeePrice,
+  getTournamentEntryFees,
+} from "./buildRegistration.js"
 import {
   getMembershipPrice,
   getMembershipTier,
@@ -11,15 +14,12 @@ import {
 import {
   getPlayerSearchUrl,
   isValidEmail,
+  registrationMessages,
 } from "./validation.js"
 
 export const emptyTournament = { id: "", title: "", entryFees: [] }
 
-export const getTournamentEntryFees = (tournament) => (
-  tournament.entryFees?.length ? tournament.entryFees : [{ section: "Championship", price: 0 }]
-)
-
-export const getDefaultTournamentSection = (tournament) => getTournamentEntryFees(tournament)[0].section
+const getDefaultTournamentSection = (tournament) => getTournamentEntryFees(tournament)[0].section
 
 export const createPurchaseForm = (tournament, savedInfo = {}) => ({
   activeMembershipStatus: "",
@@ -59,7 +59,7 @@ export const getEntryStepError = (form, selectedByeRounds) => {
   }
 
   if (new Set(selectedByeRounds).size !== selectedByeRounds.length) {
-    return "Choose each bye round only once."
+    return registrationMessages.duplicateByes
   }
 
   return ""
@@ -67,31 +67,31 @@ export const getEntryStepError = (form, selectedByeRounds) => {
 
 export const getInfoStepError = (form, { hasActiveMembership, membershipTier, needsMembership }) => {
   if (!form.name.trim() || !form.email.trim()) {
-    return "Enter the player name and email."
+    return registrationMessages.nameAndEmail
   }
 
   if (!isValidEmail(form.email.trim())) {
-    return "Use a valid email address, like name@example.com."
+    return registrationMessages.invalidEmail
   }
 
   if (hasActiveMembership) {
-    return form.uscfId.trim() ? "" : "Enter the active USCF ID."
+    return form.uscfId.trim() ? "" : registrationMessages.activeUscfId
   }
 
   if (!needsMembership) {
-    return "Select an active USCF membership status."
+    return registrationMessages.membershipStatus
   }
 
   if (!form.address.trim() || !form.phone.trim() || !form.birthDate) {
-    return "Enter address, phone, and birth date for the membership."
+    return registrationMessages.membershipContact
   }
 
   if (!membershipTier) {
-    return "Enter a valid birth date."
+    return registrationMessages.invalidBirthDate
   }
 
   if (form.enteredWithTeam && !form.school.trim()) {
-    return "Enter the school for the team entry."
+    return registrationMessages.teamSchool
   }
 
   return ""

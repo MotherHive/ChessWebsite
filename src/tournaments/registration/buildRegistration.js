@@ -8,13 +8,13 @@ import {
   getMembershipPrice,
   getMembershipTier,
 } from "./pricing.js"
-import { isValidEmail } from "./validation.js"
+import { isValidEmail, registrationMessages } from "./validation.js"
 
 const dollarsToCents = (amount) => Math.round(amount * 100)
 
 const trimString = (value) => (typeof value === "string" ? value.trim() : "")
 
-const getTournamentEntryFees = (tournament) => (
+export const getTournamentEntryFees = (tournament) => (
   tournament.entryFees?.length ? tournament.entryFees : [{ section: "Championship", price: 0 }]
 )
 
@@ -36,10 +36,10 @@ const getPaymentMethodLabel = (paymentMethod) => (
   paymentOptions.find((option) => option.id === paymentMethod)?.label || paymentMethod
 )
 
-export const buildTournamentRegistration = (payload, now = Date.now(), catalog = []) => {
+export const buildTournamentRegistration = (payload, now = Date.now(), tournament = null) => {
   const form = payload?.form || {}
   const tournamentId = trimString(payload?.tournamentId || form.tournamentId)
-  const selectedTournament = catalog.find((tournament) => tournament.id === tournamentId)
+  const selectedTournament = tournament?.id === tournamentId ? tournament : null
 
   if (!selectedTournament) {
     throw new Error("Choose a valid tournament.")
@@ -63,18 +63,18 @@ export const buildTournamentRegistration = (payload, now = Date.now(), catalog =
   const activeMembershipStatus = trimString(form.activeMembershipStatus)
 
   if (!["yes", "no"].includes(activeMembershipStatus)) {
-    throw new Error("Select an active USCF membership status.")
+    throw new Error(registrationMessages.membershipStatus)
   }
 
   const name = trimString(form.name)
   const email = trimString(form.email).toLowerCase()
 
   if (!name || !email) {
-    throw new Error("Enter the player name and email.")
+    throw new Error(registrationMessages.nameAndEmail)
   }
 
   if (!isValidEmail(email)) {
-    throw new Error("Use a valid email address.")
+    throw new Error(registrationMessages.invalidEmail)
   }
 
   const hasActiveMembership = activeMembershipStatus === "yes"
@@ -82,7 +82,7 @@ export const buildTournamentRegistration = (payload, now = Date.now(), catalog =
   const uscfId = trimString(form.uscfId)
 
   if (hasActiveMembership && !uscfId) {
-    throw new Error("Enter the active USCF ID.")
+    throw new Error(registrationMessages.activeUscfId)
   }
 
   const byes = Array.isArray(form.byes)
@@ -101,7 +101,7 @@ export const buildTournamentRegistration = (payload, now = Date.now(), catalog =
   const selectedByeRounds = byes.map((bye) => bye.round)
 
   if (new Set(selectedByeRounds).size !== selectedByeRounds.length) {
-    throw new Error("Choose each bye round only once.")
+    throw new Error(registrationMessages.duplicateByes)
   }
 
   const isExpiredMember = Boolean(form.isExpiredMember)
@@ -113,15 +113,15 @@ export const buildTournamentRegistration = (payload, now = Date.now(), catalog =
   const membershipTier = needsMembership ? getMembershipTier(birthDate) : null
 
   if (needsMembership && (!address || !phone || !birthDate)) {
-    throw new Error("Enter address, phone, and birth date for the membership.")
+    throw new Error(registrationMessages.membershipContact)
   }
 
   if (needsMembership && !membershipTier) {
-    throw new Error("Enter a valid birth date.")
+    throw new Error(registrationMessages.invalidBirthDate)
   }
 
   if (enteredWithTeam && !school) {
-    throw new Error("Enter the school for the team entry.")
+    throw new Error(registrationMessages.teamSchool)
   }
 
   const entryPrice = getEntryFeePrice(selectedEntryFee, selectedTournament, now)

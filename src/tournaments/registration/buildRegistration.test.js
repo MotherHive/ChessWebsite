@@ -2,7 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import { buildTournamentRegistration } from "./buildRegistration.js"
 
-test("builds registrations from a database-provided tournament catalog", () => {
+test("builds registrations from a database-provided tournament", () => {
   const tournament = {
     id: "admin-created-open",
     title: "Admin Created Open",
@@ -25,7 +25,7 @@ test("builds registrations from a database-provided tournament catalog", () => {
       section: "Open",
       uscfId: "12345678",
     },
-  }, Date.now(), [tournament])
+  }, Date.now(), tournament)
 
   assert.equal(registration.tournament.id, tournament.id)
   assert.equal(registration.order.totalAmountCents, 3000)

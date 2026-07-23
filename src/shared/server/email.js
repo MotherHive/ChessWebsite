@@ -155,16 +155,19 @@ export const detailsFromDatabaseRow = (row, { paid = false } = {}) => ({
 // 6. Core Delivery Functions
 // ============================================================================
 
-export const sendClubWelcomeEmail = async ({ firstName, email }) => {
+export const sendClubWelcomeEmail = async ({ firstName, email }, { idempotencyKey } = {}) => {
   const resend = getResend();
 
-  return resend.emails.send({
-    from: fromAddress(),
-    to: email,
-    subject: "Welcome to the Scranton Chess Club",
-    html: buildWelcomeHtml(firstName),
-    text: buildWelcomeText(firstName),
-  });
+  return resend.emails.send(
+    {
+      from: fromAddress(),
+      to: email,
+      subject: "Welcome to the Scranton Chess Club",
+      html: buildWelcomeHtml(firstName),
+      text: buildWelcomeText(firstName),
+    },
+    idempotencyKey ? { idempotencyKey } : undefined,
+  );
 };
 
 export const sendRegistrationEmail = async (details, { idempotencyKey } = {}) => {
@@ -189,9 +192,9 @@ export const sendRegistrationEmail = async (details, { idempotencyKey } = {}) =>
 // 7. Defensive Execution Wrappers
 // ============================================================================
 
-export const trySendClubWelcomeEmail = async (payload) => {
+export const trySendClubWelcomeEmail = async (payload, options) => {
   try {
-    const result = await sendClubWelcomeEmail(payload);
+    const result = await sendClubWelcomeEmail(payload, options);
 
     if (result?.error) {
       throw result.error;
@@ -217,22 +220,4 @@ export const trySendRegistrationEmail = async (details, options) => {
     console.error("Failed to send registration email:", error);
     return false;
   }
-};
-
-/**
- * Fires both emails concurrently when a new user signs up for an event.
- * Settles promises independently so a failure in one doesn't kill the sequence.
- */
-export const trySendRegistrationAndWelcomeEmail = async (details) => {
-  const firstName = details.playerName ? details.playerName.split(" ")[0] : "Player";
-
-  const [regSuccess, welcomeSuccess] = await Promise.all([
-    trySendRegistrationEmail(details),
-    trySendClubWelcomeEmail({ firstName, email: details.email })
-  ]);
-
-  return {
-    registrationEmailSent: regSuccess,
-    welcomeEmailSent: welcomeSuccess
-  };
 };
