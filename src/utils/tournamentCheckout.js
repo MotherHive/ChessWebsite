@@ -2,9 +2,8 @@ import {
   byePrice,
   paymentMethods,
   paymentOptions,
-  tournamentCatalog,
   tournamentRounds,
-} from "../data/tournamentCatalog.js"
+} from "../data/tournamentRegistration.js"
 import {
   getMembershipPrice,
   getMembershipTier,
@@ -37,7 +36,7 @@ const getPaymentMethodLabel = (paymentMethod) => (
   paymentOptions.find((option) => option.id === paymentMethod)?.label || paymentMethod
 )
 
-export const buildTournamentRegistration = (payload, now = Date.now(), catalog = tournamentCatalog) => {
+export const buildTournamentRegistration = (payload, now = Date.now(), catalog = []) => {
   const form = payload?.form || {}
   const tournamentId = trimString(payload?.tournamentId || form.tournamentId)
   const selectedTournament = catalog.find((tournament) => tournament.id === tournamentId)

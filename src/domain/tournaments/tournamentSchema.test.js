@@ -1,14 +1,14 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { tournamentCatalog } from "../../data/tournamentCatalog.js"
+import { publishedTournamentFixture } from "../../testFixtures/publishedTournament.js"
 import {
   publishedTournamentSchema,
   tournamentDraftSchema,
 } from "./tournamentSchema.js"
 
-const validPublishedTournament = tournamentCatalog[0]
+const validPublishedTournament = publishedTournamentFixture
 
-test("the bundled tournament catalog satisfies the published contract", () => {
+test("a complete tournament fixture satisfies the published contract", () => {
   assert.equal(publishedTournamentSchema.safeParse(validPublishedTournament).success, true)
 })
 

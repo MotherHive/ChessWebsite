@@ -6,9 +6,8 @@ import {
   membershipPriceRange,
   paymentMethods,
   paymentOptions,
-  tournamentCatalog,
   tournamentRounds,
-} from "./tournamentCatalog.js"
+} from "./tournamentRegistration.js"
 
 const tournamentImages = {
   "pa-amateur-championship": PAAmateurLogo,
@@ -18,8 +17,6 @@ export const withTournamentImage = (tournament) => ({
   ...tournament,
   image: tournament.imageUrl || tournamentImages[tournament.id] || "/assets/TournamentBannerTransparent.webp",
 })
-
-export const tournamentListings = tournamentCatalog.map(withTournamentImage)
 
 export {
   byePrice,

@@ -2,7 +2,7 @@ import {
   byePrice,
   paymentOptions,
   tournamentRounds,
-} from "../../data/tournamentCatalog.js"
+} from "../../data/tournamentRegistration.js"
 import { getEntryFeePrice } from "../../utils/tournamentCheckout.js"
 import {
   getMembershipPrice,

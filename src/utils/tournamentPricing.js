@@ -1,7 +1,7 @@
 import {
   expiredMembershipDiscount,
   membershipAgeTiers,
-} from "../data/tournamentCatalog.js"
+} from "../data/tournamentRegistration.js"
 
 export const formatPrice = (amount) => `$${amount}`
 

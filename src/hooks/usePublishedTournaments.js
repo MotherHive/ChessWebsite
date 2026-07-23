@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { tournamentListings, withTournamentImage } from "../data/tournaments"
+import { withTournamentImage } from "../data/tournaments"
 
 const sortByStart = (tournaments) => (
   [...tournaments].sort((first, second) => (
@@ -8,7 +8,7 @@ const sortByStart = (tournaments) => (
 )
 
 export default function usePublishedTournaments() {
-  const [tournaments, setTournaments] = useState(tournamentListings)
+  const [tournaments, setTournaments] = useState([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
