@@ -1,4 +1,4 @@
-import HomePage from "../src/features/home/HomePage"
+import HomePage from "@/home/components/HomePage"
 
 export const revalidate = 3600
 

@@ -24,9 +24,26 @@ Framework Preset: Next.js
 Build Command: npm run build
 ```
 
-Routes and layouts live in `app`. Reusable feature implementations live in
-`src/features`, shared UI in `src/components`, and server-only integrations in
-`server`.
+## Architecture
+
+The project uses a feature-first structure with a thin Next.js routing layer:
+
+```text
+app/                  URL routes and API entry points
+src/tournaments/      tournament UI, registration rules, admin tools, and server workflows
+src/home/             home page implementation
+src/contact/          contact page implementation
+src/shared/           site-wide components and external-service infrastructure
+```
+
+Files in `app` should stay small: they define a URL and hand work to the relevant
+feature. Tournament code belongs in `src/tournaments`; code should move into
+`src/shared` only when multiple features genuinely use it. The `@/` import alias
+points to `src/`.
+
+Tournament server code lives beside the feature in `src/tournaments/server`.
+Supabase, Stripe, email, HTTP, and admin-authentication infrastructure lives in
+`src/shared/server`. Browser code must not import either server directory.
 
 ## Tournament Payments
 

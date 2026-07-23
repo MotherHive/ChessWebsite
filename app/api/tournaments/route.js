@@ -1,6 +1,6 @@
-import { jsonResponse } from "../../../server/http.js"
-import { getSupabaseAdmin } from "../../../server/supabaseAdmin.js"
-import { listPublishedTournaments } from "../../../server/tournamentRepository.js"
+import { jsonResponse } from "@/shared/server/http"
+import { getSupabaseAdmin } from "@/shared/server/supabaseAdmin"
+import { listPublishedTournaments } from "@/tournaments/server/repository"
 
 export const dynamic = "force-dynamic"
 

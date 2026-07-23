@@ -1,5 +1,5 @@
 import { Analytics } from '@vercel/analytics/next'
-import AppShell from '../src/components/layout/AppShell'
+import AppShell from '@/shared/components/layout/AppShell'
 import '../src/index.css'
 
 export const metadata = {

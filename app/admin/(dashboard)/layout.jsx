@@ -1,4 +1,4 @@
-import AdminLayout from '../../../src/features/admin/AdminLayout'
+import AdminLayout from '@/tournaments/admin/AdminLayout'
 
 export const metadata = {
   title: "Club Admin | Scranton Chess Club",

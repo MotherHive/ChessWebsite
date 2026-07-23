@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs"
 // 1. Import the combined runner function
-import { trySendRegistrationAndWelcomeEmail } from "../server/email.js"
+import { trySendRegistrationAndWelcomeEmail } from "../src/shared/server/email.js"
 
 // Load .env.local into process.env (simple parser, no dep).
 for (const line of readFileSync(new URL("../.env.local", import.meta.url), "utf8").split("\n")) {
