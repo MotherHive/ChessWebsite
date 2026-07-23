@@ -17,7 +17,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['pages/api/**/*.js', 'server/**/*.js', 'scripts/**/*.js', 'scripts/**/*.mjs', 'next.config.mjs'],
+    files: ['server/**/*.js', 'scripts/**/*.js', 'scripts/**/*.mjs', 'next.config.mjs'],
     languageOptions: {
       globals: globals.node,
     },

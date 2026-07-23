@@ -59,9 +59,11 @@ export default function TournamentsPage({ initialTime }) {
         </p>
       )}
       {!isLoading && tournaments.length === 0 && (
-        <p className="purchase-message" role="status">
-          No upcoming tournaments right now. Check back soon.
-        </p>
+        <div className="tournaments-empty-state" role="status">
+          <span>Schedule update</span>
+          <h3>No upcoming tournaments</h3>
+          <p>New events will appear here as soon as registration opens. Check back soon.</p>
+        </div>
       )}
       <TournamentList
         currentTime={currentTime}

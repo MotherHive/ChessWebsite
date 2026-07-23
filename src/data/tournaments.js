@@ -16,7 +16,7 @@ const tournamentImages = {
 
 export const withTournamentImage = (tournament) => ({
   ...tournament,
-  image: tournament.imageUrl || tournamentImages[tournament.id],
+  image: tournament.imageUrl || tournamentImages[tournament.id] || "/assets/TournamentBannerTransparent.webp",
 })
 
 export const tournamentListings = tournamentCatalog.map(withTournamentImage)

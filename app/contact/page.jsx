@@ -1,4 +1,4 @@
-import ContactPage from '../../src/pages/contact/ContactPage'
+import ContactPage from '../../src/features/contact/ContactPage'
 
 export const metadata = {
   title: "Contact | Scranton Chess Club",

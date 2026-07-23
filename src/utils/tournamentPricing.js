@@ -16,7 +16,13 @@ export const formatPrizePlace = (row) => {
 }
 
 export const formatCountdown = (endsAt, now) => {
-  const remainingMs = new Date(endsAt).getTime() - now
+  const deadline = new Date(endsAt).getTime()
+
+  if (!Number.isFinite(deadline)) {
+    return ""
+  }
+
+  const remainingMs = deadline - now
 
   if (remainingMs <= 0) {
     return "Expired"

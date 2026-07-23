@@ -28,3 +28,4 @@ dist-ssr
 # next.js
 .next
 out
+.claude

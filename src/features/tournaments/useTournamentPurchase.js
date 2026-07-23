@@ -146,10 +146,14 @@ export default function useTournamentPurchase(tournaments, currentTime) {
     let registration
 
     try {
-      registration = buildTournamentRegistration({
-        tournamentId: selectedTournament.id,
-        form: purchaseForm,
-      })
+      registration = buildTournamentRegistration(
+        {
+          tournamentId: selectedTournament.id,
+          form: purchaseForm,
+        },
+        currentTime,
+        [selectedTournament],
+      )
     } catch (error) {
       showPurchaseError(error.message || "Review the registration details and try again.")
       return

@@ -1,9 +1,20 @@
 const CalendarIcon = "/assets/icons/Calendar.svg"
 
 export default function TournamentSchedule({ tournament }) {
+  const days = tournament.days
+    .map((day) => ({
+      ...day,
+      sections: day.sections.filter((section) => section.control || section.times.length),
+    }))
+    .filter((day) => day.sections.length)
+
+  if (!days.length) {
+    return null
+  }
+
   return (
     <div className="tournament-day-grid" aria-label={`${tournament.title} schedule`}>
-      {tournament.days.map((day) => (
+      {days.map((day) => (
         <section className="tournament-day-card" key={day.date}>
           <div className="tournament-day-date">
             <img src={CalendarIcon} alt="" aria-hidden="true" />

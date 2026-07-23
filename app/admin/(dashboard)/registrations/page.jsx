@@ -1,1 +1,1 @@
-export { default } from '../../../../src/pages/admin/registrations/AdminRegistrationsPage'
+export { default } from '../../../../src/features/admin/registrations/AdminRegistrationsPage'

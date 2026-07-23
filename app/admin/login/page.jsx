@@ -1,4 +1,4 @@
-import AdminLoginPage from '../../../src/pages/admin/AdminLoginPage'
+import AdminLoginPage from '../../../src/features/admin/AdminLoginPage'
 
 export const metadata = {
   title: "Admin sign in | Scranton Chess Club",

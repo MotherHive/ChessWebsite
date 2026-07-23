@@ -1,6 +1,21 @@
 import { formatPrizePlace } from "../../utils/tournamentPricing"
 
+const formatEligibility = (brackets) => (
+  brackets.map((bracket) => bracket === "Overall" ? "All players" : bracket).join(", ")
+)
+
 export default function TournamentPrizes({ tournament }) {
+  const prizeSections = tournament.prizes
+    .map((section) => ({
+      ...section,
+      rows: section.rows.filter((row) => row.prize.trim() || row.place.trim()),
+    }))
+    .filter((section) => section.rows.length)
+
+  if (!prizeSections.length) {
+    return null
+  }
+
   return (
     <section className="tournament-prizes-card" aria-label={`${tournament.title} prizes`}>
       <div className="tournament-card-heading">
@@ -8,7 +23,7 @@ export default function TournamentPrizes({ tournament }) {
         <h3>Sections & brackets</h3>
       </div>
       <div className="tournament-prize-grid">
-        {tournament.prizes.map((section) => (
+        {prizeSections.map((section) => (
           <div className="tournament-prize-section" key={section.section}>
             <strong>{section.section}</strong>
             <div className="tournament-prize-table-wrap">
@@ -16,7 +31,7 @@ export default function TournamentPrizes({ tournament }) {
                 <caption>{section.section} prize table</caption>
                 <thead>
                   <tr>
-                    <th scope="col">Bracket(s)</th>
+                    <th scope="col">Eligible players</th>
                     <th scope="col">Prize</th>
                     <th scope="col">Place</th>
                   </tr>
@@ -24,9 +39,9 @@ export default function TournamentPrizes({ tournament }) {
                 <tbody>
                   {section.rows.map((row) => (
                     <tr key={`${section.section}-${row.prize}-${row.place}-${row.brackets.join("-")}`}>
-                      <td data-label="Bracket(s)">
+                      <td data-label="Eligible players">
                         <span className="tournament-prize-brackets">
-                          {row.brackets.join(", ")}
+                          {formatEligibility(row.brackets)}
                         </span>
                       </td>
                       <td data-label="Prize">

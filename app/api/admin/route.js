@@ -1,8 +1,13 @@
+import { randomUUID } from "node:crypto"
 import {
   jsonResponse,
   parseJsonRequest,
 } from "../../../server/http.js"
 import { getSupabaseAdmin } from "../../../server/supabaseAdmin.js"
+import {
+  tournamentImageTypes,
+  validateTournamentImage,
+} from "../../../server/tournamentImageUpload.js"
 import {
   formatTournamentSchemaError,
   publishedTournamentSchema,
@@ -376,6 +381,87 @@ const loadRegistration = async (supabase, searchParams) => {
     : jsonResponse(404, { error: "Registration not found." })
 }
 
+const markRegistrationPaidInPerson = async (supabase, body) => {
+  const id = String(body?.id || "")
+
+  if (!id) {
+    return jsonResponse(400, { error: "Provide the registration id." })
+  }
+
+  const { data, error } = await supabase
+    .from("tournament_registrations")
+    .update({
+      paid_at: new Date().toISOString(),
+      payment_method: "pay_at_event",
+      payment_status: "paid",
+      registration_status: "confirmed",
+    })
+    .eq("id", id)
+    .neq("payment_status", "paid")
+    .select(registrationDetailColumns)
+    .maybeSingle()
+
+  if (error) {
+    return jsonResponse(500, { error: "Could not record the in-person payment." })
+  }
+
+  if (data) {
+    return jsonResponse(200, { registration: data })
+  }
+
+  const { data: current, error: loadError } = await supabase
+    .from("tournament_registrations")
+    .select(registrationDetailColumns)
+    .eq("id", id)
+    .maybeSingle()
+
+  if (loadError) {
+    return jsonResponse(500, { error: "Could not verify the registration payment." })
+  }
+
+  if (!current) {
+    return jsonResponse(404, { error: "Registration not found." })
+  }
+
+  return jsonResponse(409, { error: "This registration is already marked paid." })
+}
+
+const uploadTournamentImage = async (supabase, request) => {
+  let formData
+
+  try {
+    formData = await request.formData()
+  } catch {
+    return jsonResponse(400, { error: "Could not read the image upload." })
+  }
+
+  const file = formData.get("image")
+  const validationError = validateTournamentImage(file)
+
+  if (validationError) {
+    return jsonResponse(400, { error: validationError })
+  }
+
+  const extension = tournamentImageTypes.get(file.type)
+  const objectPath = `${new Date().getUTCFullYear()}/${randomUUID()}.${extension}`
+  const fileBytes = new Uint8Array(await file.arrayBuffer())
+  const { error } = await supabase.storage
+    .from("tournament-images")
+    .upload(objectPath, fileBytes, {
+      cacheControl: "31536000",
+      contentType: file.type,
+      upsert: false,
+    })
+
+  if (error) {
+    return jsonResponse(500, { error: "Could not store the tournament image." })
+  }
+
+  const { data } = supabase.storage.from("tournament-images").getPublicUrl(objectPath)
+
+  return jsonResponse(200, { imageUrl: data.publicUrl })
+}
+
 const listRegistrationOptions = async (supabase) => {
   const { data, error } = await supabase
     .from("tournaments")
@@ -456,6 +542,10 @@ const handleAdminRequest = async (request) => {
   }
 
   if (request.method === "POST") {
+    if (resource === "tournament-image") {
+      return uploadTournamentImage(supabase, request)
+    }
+
     let body
 
     try {
@@ -470,6 +560,10 @@ const handleAdminRequest = async (request) => {
 
     if (resource === "tournament-action") {
       return runTournamentAction(supabase, body)
+    }
+
+    if (resource === "registration-payment") {
+      return markRegistrationPaidInPerson(supabase, body)
     }
   }
 

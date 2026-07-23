@@ -48,6 +48,8 @@ export default function AdminRegistrationsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isDetailLoading, setIsDetailLoading] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [paymentActionState, setPaymentActionState] = useState("idle")
+  const [paymentActionMessage, setPaymentActionMessage] = useState("")
   const [message, setMessage] = useState("")
   const [tournamentFilter, setTournamentFilter] = useState("")
   const [sectionFilter, setSectionFilter] = useState("")
@@ -205,6 +207,8 @@ export default function AdminRegistrationsPage() {
     setOpenRegistrationId(row.id)
     setOpenRegistration(null)
     setIsDetailLoading(true)
+    setPaymentActionState("idle")
+    setPaymentActionMessage("")
 
     try {
       const result = await adminRequest("registration", { query: { id: row.id } })
@@ -220,6 +224,35 @@ export default function AdminRegistrationsPage() {
       if (detailRequestRef.current === requestId) {
         setIsDetailLoading(false)
       }
+    }
+  }
+
+  const markPaidInPerson = async () => {
+    if (!openRegistration || !window.confirm(
+      `Record ${formatCents(openRegistration.total_amount_cents)} received in person from ${openRegistration.player_name}?`,
+    )) {
+      return
+    }
+
+    setPaymentActionState("saving")
+    setPaymentActionMessage("")
+
+    try {
+      const result = await adminRequest("registration-payment", {
+        method: "POST",
+        body: { id: openRegistration.id },
+      })
+      const updatedRegistration = result.registration
+
+      setOpenRegistration(updatedRegistration)
+      setRegistrations((current) => current.map((row) => (
+        row.id === updatedRegistration.id ? { ...row, ...updatedRegistration } : row
+      )))
+      setPaymentActionState("saved")
+      setPaymentActionMessage("In-person payment recorded.")
+    } catch (error) {
+      setPaymentActionState("error")
+      setPaymentActionMessage(error.message)
     }
   }
 
@@ -522,7 +555,9 @@ export default function AdminRegistrationsPage() {
             <div>
               <dt>Payment</dt>
               <dd>
-                {openRegistration.payment_method === "stripe_checkout" ? "Stripe checkout" : "Pay at event"}
+                {openRegistration.payment_method === "stripe_checkout"
+                  ? "Stripe checkout"
+                  : openRegistration.payment_status === "paid" ? "Paid in person" : "Pay at event"}
                 {" — "}
                 {paymentStatusLabels[openRegistration.payment_status] || openRegistration.payment_status}
                 {openRegistration.paid_at && ` (paid ${formatDate(openRegistration.paid_at)})`}
@@ -550,6 +585,29 @@ export default function AdminRegistrationsPage() {
               </dd>
             </div>
           </dl>
+          {openRegistration.payment_status !== "paid" && (
+            <div className="admin-payment-action">
+              <button
+                className="button"
+                disabled={paymentActionState === "saving"}
+                onClick={markPaidInPerson}
+                type="button"
+              >
+                {paymentActionState === "saving" ? "Recording payment..." : "Mark paid in person"}
+              </button>
+              <span className="admin-muted">
+                Use this after receiving cash, check, or another payment at the event.
+              </span>
+            </div>
+          )}
+          {paymentActionMessage && (
+            <p
+              className={paymentActionState === "error" ? "admin-error" : "admin-success"}
+              role="status"
+            >
+              {paymentActionMessage}
+            </p>
+          )}
         </aside>
       )}
     </section>

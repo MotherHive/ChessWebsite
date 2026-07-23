@@ -9,6 +9,10 @@ const blankOrDateTime = z.string().refine(
   (value) => !value || Number.isFinite(new Date(value).getTime()),
   "Use a valid date and time.",
 )
+const blankOrDate = z.string().refine(
+  (value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value),
+  "Use a valid date.",
+)
 
 const entryFeeSchema = z.object({
   section: shortText,
@@ -36,6 +40,7 @@ const scheduleSectionSchema = z.object({
 
 const scheduleDaySchema = z.object({
   date: shortText,
+  dateValue: blankOrDate.optional(),
   sections: z.array(scheduleSectionSchema).max(20),
 }).strict()
 
@@ -87,9 +92,9 @@ const addRequiredTextIssue = (data, context, field, label) => {
 export const publishedTournamentSchema = tournamentDraftSchema.superRefine((data, context) => {
   addRequiredTextIssue(data, context, "type", "Event type")
   addRequiredTextIssue(data, context, "rating", "Rating")
-  addRequiredTextIssue(data, context, "startsAt", "Start date")
-  addRequiredTextIssue(data, context, "endsAt", "End date")
-  addRequiredTextIssue(data, context, "dateRange", "Date range")
+  addRequiredTextIssue(data, context, "startsAt", "First schedule day date")
+  addRequiredTextIssue(data, context, "endsAt", "Last schedule day date")
+  addRequiredTextIssue(data, context, "dateRange", "Schedule date range")
   addRequiredTextIssue(data, context, "location", "Location")
   addRequiredTextIssue(data, context, "address", "Address")
 

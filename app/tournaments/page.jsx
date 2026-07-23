@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import TournamentsPage from '../../src/pages/tournaments/TournamentsPage'
+import TournamentsPage from '../../src/features/tournaments/TournamentsPage'
 
 export const metadata = {
   title: "Tournaments | Scranton Chess Club",

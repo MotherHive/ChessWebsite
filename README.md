@@ -1,6 +1,6 @@
 # Chess Website
 
-Vite React site for the chess website.
+Next.js App Router site for the Scranton Chess Club.
 
 ## Local Development
 
@@ -15,17 +15,18 @@ npm run dev
 npm run build
 ```
 
-The production build is written to `dist`.
-
 ## Vercel
 
-The app now lives at the repository root. Vercel can use the default root directory with:
+Vercel can use the repository root with:
 
 ```text
-Framework Preset: Vite
+Framework Preset: Next.js
 Build Command: npm run build
-Output Directory: dist
 ```
+
+Routes and layouts live in `app`. Reusable feature implementations live in
+`src/features`, shared UI in `src/components`, and server-only integrations in
+`server`.
 
 ## Tournament Payments
 
@@ -34,11 +35,15 @@ Stripe tournament checkout uses Vercel API functions and Supabase.
 Required environment variables:
 
 ```text
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+ADMIN_EMAILS=admin@example.com
 STRIPE_SECRET_KEY
 STRIPE_WEBHOOK_SECRET
-SUPABASE_SERVICE_ROLE_KEY
-VITE_SUPABASE_URL
-VITE_SUPABASE_PUBLISHABLE_KEY
+RESEND_KEY
+RESEND_FROM=Scranton Chess Club <noreply@scrantonchess.org>
 SITE_URL=https://scrantonchess.org
 ```
 

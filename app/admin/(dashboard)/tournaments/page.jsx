@@ -1,1 +1,1 @@
-export { default } from '../../../../src/pages/admin/tournaments/AdminTournamentsPage'
+export { default } from '../../../../src/features/admin/tournaments/AdminTournamentsPage'

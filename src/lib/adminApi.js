@@ -36,3 +36,29 @@ export const adminRequest = async (
 
   return result
 }
+
+export const uploadAdminTournamentImage = async (file, { signal } = {}) => {
+  const { data } = await supabase.auth.getSession()
+  const accessToken = data?.session?.access_token
+
+  if (!accessToken) {
+    throw new Error("Sign in to use the admin area.")
+  }
+
+  const formData = new FormData()
+  formData.set("image", file)
+
+  const response = await fetch("/api/admin?resource=tournament-image", {
+    method: "POST",
+    signal,
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: formData,
+  })
+  const result = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(result.error || "Could not upload the tournament image.")
+  }
+
+  return result
+}

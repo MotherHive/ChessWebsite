@@ -15,7 +15,9 @@ export default function TournamentCard({
   tournament,
   tournamentStatus,
 }) {
-  const earlyEntryIsExpired = countdown === "Expired"
+  const hasEarlyEntryDiscount = tournament.entryFees.some((fee) => Number.isFinite(fee.earlyPrice))
+    && Boolean(countdown)
+  const earlyEntryIsExpired = hasEarlyEntryDiscount && countdown === "Expired"
   const tournamentStatusLabel = tournamentStatus === "over"
     ? "TOURNAMENT OVER"
     : tournamentStatus === "in-progress"
@@ -23,7 +25,9 @@ export default function TournamentCard({
       : ""
   const canPurchaseEntry = tournamentStatus === "upcoming"
   const getDisplayedEntryPrice = (fee) => (
-    earlyEntryIsExpired || !Number.isFinite(fee.earlyPrice) ? fee.price : fee.earlyPrice
+    !hasEarlyEntryDiscount || earlyEntryIsExpired || !Number.isFinite(fee.earlyPrice)
+      ? fee.price
+      : fee.earlyPrice
   )
   return (
     <article
@@ -81,16 +85,18 @@ export default function TournamentCard({
                   </span>
                 ))}
               </span>
-              <span className="tournament-discount">
-                {earlyEntryIsExpired ? (
-                  <span>Early entry ended</span>
-                ) : (
-                  <>
-                    <span>Early entry discount ends in</span>
-                    <strong>{countdown}</strong>
-                  </>
-                )}
-              </span>
+              {hasEarlyEntryDiscount && (
+                <span className="tournament-discount">
+                  {earlyEntryIsExpired ? (
+                    <span>Early entry ended</span>
+                  ) : (
+                    <>
+                      <span>Early entry discount ends in</span>
+                      <strong>{countdown}</strong>
+                    </>
+                  )}
+                </span>
+              )}
             </span>
           </span>
         </span>
