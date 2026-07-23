@@ -55,6 +55,14 @@ export default function AdminRegistrationsPage() {
     tournamentFilter,
   ])
 
+  const resetListView = (page = 1) => {
+    detailRequestRef.current += 1
+    setIsLoading(true)
+    setPagination((current) => ({ ...current, page }))
+    setOpenRegistrationId("")
+    setOpenRegistration(null)
+  }
+
   useEffect(() => {
     const nextSearchQuery = searchText.trim()
 
@@ -63,12 +71,8 @@ export default function AdminRegistrationsPage() {
     }
 
     const timer = window.setTimeout(() => {
-      detailRequestRef.current += 1
-      setIsLoading(true)
       setSearchQuery(nextSearchQuery)
-      setPagination((current) => ({ ...current, page: 1 }))
-      setOpenRegistrationId("")
-      setOpenRegistration(null)
+      resetListView()
     }, 300)
 
     return () => window.clearTimeout(timer)
@@ -128,20 +132,12 @@ export default function AdminRegistrationsPage() {
   }, [])
 
   const updateFilter = (setter, value) => {
-    detailRequestRef.current += 1
-    setIsLoading(true)
     setter(value)
-    setPagination((current) => ({ ...current, page: 1 }))
-    setOpenRegistrationId("")
-    setOpenRegistration(null)
+    resetListView()
   }
 
   const changePage = (page) => {
-    detailRequestRef.current += 1
-    setIsLoading(true)
-    setPagination((current) => ({ ...current, page }))
-    setOpenRegistrationId("")
-    setOpenRegistration(null)
+    resetListView(page)
   }
 
   const paymentOptions = Object.keys(paymentStatusLabels)
