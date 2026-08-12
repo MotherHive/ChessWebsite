@@ -1,4 +1,6 @@
+import { allRows, firstRow } from "@/shared/server/database"
 import { jsonResponse } from "@/shared/server/http"
+import { fromRegistrationRow, fromTournamentRow } from "./databaseRows.js"
 
 const registrationSummaryColumns = [
   "id",
@@ -11,7 +13,7 @@ const registrationSummaryColumns = [
   "total_amount_cents",
   "payment_status",
   "entered_with_team",
-].join(",")
+].join(", ")
 
 const registrationDetailColumns = [
   registrationSummaryColumns,
@@ -31,7 +33,7 @@ const registrationDetailColumns = [
   "stripe_payment_intent_id",
   "stripe_checkout_session_id",
   "stripe_payment_status",
-].join(",")
+].join(", ")
 
 const registrationExportColumns = [
   "created_at",
@@ -51,7 +53,7 @@ const registrationExportColumns = [
   "payment_status",
   "total_amount_cents",
   "paid_at",
-].join(",")
+].join(", ")
 
 const getRegistrationFilters = (searchParams) => ({
   paymentStatus: searchParams.get("payment") || "",
@@ -61,41 +63,50 @@ const getRegistrationFilters = (searchParams) => ({
   tournamentId: searchParams.get("tournament") || "",
 })
 
-const applyRegistrationFilters = (query, filters) => {
-  let filteredQuery = query
+const buildRegistrationFilter = (filters) => {
+  const clauses = []
+  const bindings = []
 
   if (filters.tournamentId) {
-    filteredQuery = filteredQuery.eq("tournament_id", filters.tournamentId)
+    clauses.push("tournament_id = ?")
+    bindings.push(filters.tournamentId)
   }
 
   if (filters.section) {
-    filteredQuery = filteredQuery.eq("section", filters.section)
+    clauses.push("section = ?")
+    bindings.push(filters.section)
   }
 
   if (filters.paymentStatus) {
-    filteredQuery = filteredQuery.eq("payment_status", filters.paymentStatus)
+    clauses.push("payment_status = ?")
+    bindings.push(filters.paymentStatus)
   }
 
   if (filters.team === "team" || filters.team === "individual") {
-    filteredQuery = filteredQuery.eq("entered_with_team", filters.team === "team")
+    clauses.push("entered_with_team = ?")
+    bindings.push(filters.team === "team" ? 1 : 0)
   }
 
-  const searchTerm = filters.query.replace(/[,*%_()]/g, " ").replace(/\s+/g, " ").trim()
+  const searchTerm = filters.query.replace(/[\\%_]/g, "\\$&").replace(/\s+/g, " ").trim()
 
   if (searchTerm) {
-    const pattern = `*${searchTerm}*`
-    filteredQuery = filteredQuery.or([
-      `player_name.ilike.${pattern}`,
-      `email.ilike.${pattern}`,
-      `uscf_id.ilike.${pattern}`,
-      `school.ilike.${pattern}`,
-    ].join(","))
+    clauses.push(`(
+      player_name LIKE ? ESCAPE '\\' COLLATE NOCASE OR
+      email LIKE ? ESCAPE '\\' COLLATE NOCASE OR
+      uscf_id LIKE ? ESCAPE '\\' COLLATE NOCASE OR
+      school LIKE ? ESCAPE '\\' COLLATE NOCASE
+    )`)
+    const pattern = `%${searchTerm}%`
+    bindings.push(pattern, pattern, pattern, pattern)
   }
 
-  return filteredQuery
+  return {
+    bindings,
+    where: clauses.length ? ` WHERE ${clauses.join(" AND ")}` : "",
+  }
 }
 
-export const listRegistrations = async (supabase, searchParams) => {
+export const listRegistrations = async (db, searchParams) => {
   const requestedPage = Number.parseInt(searchParams.get("page") || "1", 10)
   const requestedPageSize = Number.parseInt(searchParams.get("pageSize") || "25", 10)
   const page = Number.isFinite(requestedPage) ? Math.max(1, requestedPage) : 1
@@ -103,131 +114,142 @@ export const listRegistrations = async (supabase, searchParams) => {
     ? Math.min(100, Math.max(10, requestedPageSize))
     : 25
   const offset = (page - 1) * pageSize
-  const filters = getRegistrationFilters(searchParams)
-  const query = supabase
-    .from("tournament_registrations")
-    .select(registrationSummaryColumns, { count: "exact" })
-  const { data, error, count } = await applyRegistrationFilters(query, filters)
-    .order("created_at", { ascending: false })
-    .range(offset, offset + pageSize - 1)
+  const filter = buildRegistrationFilter(getRegistrationFilters(searchParams))
 
-  if (error) {
+  try {
+    const [rows, countRow] = await Promise.all([
+      allRows(db.prepare(`
+        SELECT ${registrationSummaryColumns}
+        FROM tournament_registrations${filter.where}
+        ORDER BY created_at DESC
+        LIMIT ? OFFSET ?
+      `).bind(...filter.bindings, pageSize, offset)),
+      firstRow(db.prepare(`
+        SELECT COUNT(*) AS total
+        FROM tournament_registrations${filter.where}
+      `).bind(...filter.bindings)),
+    ])
+    const total = Number(countRow?.total || 0)
+
+    return jsonResponse(200, {
+      registrations: rows.map(fromRegistrationRow),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+    })
+  } catch {
     return jsonResponse(500, { error: "Could not load registrations." })
   }
-
-  const total = count || 0
-
-  return jsonResponse(200, {
-    registrations: data,
-    pagination: {
-      page,
-      pageSize,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / pageSize)),
-    },
-  })
 }
 
-export const loadRegistration = async (supabase, id) => {
+export const loadRegistration = async (db, id) => {
   if (!id) {
     return jsonResponse(400, { error: "Provide the registration id." })
   }
 
-  const { data, error } = await supabase
-    .from("tournament_registrations")
-    .select(registrationDetailColumns)
-    .eq("id", id)
-    .maybeSingle()
+  try {
+    const row = await firstRow(db.prepare(`
+      SELECT ${registrationDetailColumns}
+      FROM tournament_registrations
+      WHERE id = ?
+    `).bind(id))
 
-  if (error) {
+    return row
+      ? jsonResponse(200, { registration: fromRegistrationRow(row) })
+      : jsonResponse(404, { error: "Registration not found." })
+  } catch {
     return jsonResponse(500, { error: "Could not load the registration." })
   }
-
-  return data
-    ? jsonResponse(200, { registration: data })
-    : jsonResponse(404, { error: "Registration not found." })
 }
 
-export const markRegistrationPaidInPerson = async (supabase, id) => {
+export const markRegistrationPaidInPerson = async (db, id) => {
   if (!id) {
     return jsonResponse(400, { error: "Provide the registration id." })
   }
 
-  const { data, error } = await supabase
-    .from("tournament_registrations")
-    .update({
-      paid_at: new Date().toISOString(),
-      payment_method: "pay_at_event",
-      payment_status: "paid",
-      registration_status: "confirmed",
-    })
-    .eq("id", id)
-    .neq("payment_status", "paid")
-    .select(registrationDetailColumns)
-    .maybeSingle()
+  try {
+    const now = new Date().toISOString()
+    const updated = await firstRow(db.prepare(`
+      UPDATE tournament_registrations
+      SET
+        paid_at = ?,
+        payment_method = 'pay_at_event',
+        payment_status = 'paid',
+        registration_status = 'confirmed',
+        updated_at = ?
+      WHERE id = ? AND payment_status != 'paid'
+      RETURNING ${registrationDetailColumns}
+    `).bind(now, now, id))
 
-  if (error) {
+    if (updated) {
+      return jsonResponse(200, { registration: fromRegistrationRow(updated) })
+    }
+
+    const current = await firstRow(db.prepare(`
+      SELECT ${registrationDetailColumns}
+      FROM tournament_registrations
+      WHERE id = ?
+    `).bind(id))
+
+    if (!current) {
+      return jsonResponse(404, { error: "Registration not found." })
+    }
+
+    return jsonResponse(409, { error: "This registration is already marked paid." })
+  } catch {
     return jsonResponse(500, { error: "Could not record the in-person payment." })
   }
-
-  if (data) {
-    return jsonResponse(200, { registration: data })
-  }
-
-  const { data: current, error: loadError } = await supabase
-    .from("tournament_registrations")
-    .select(registrationDetailColumns)
-    .eq("id", id)
-    .maybeSingle()
-
-  if (loadError) {
-    return jsonResponse(500, { error: "Could not verify the registration payment." })
-  }
-
-  if (!current) {
-    return jsonResponse(404, { error: "Registration not found." })
-  }
-
-  return jsonResponse(409, { error: "This registration is already marked paid." })
 }
 
-export const listRegistrationOptions = async (supabase) => {
-  const { data, error } = await supabase
-    .from("tournaments")
-    .select("id, data")
-    .order("created_at", { ascending: false })
+export const listRegistrationOptions = async (db) => {
+  try {
+    const rows = await allRows(db.prepare(`
+      SELECT id, data
+      FROM tournaments
+      ORDER BY created_at DESC
+    `))
+    const parsedRows = rows.map(fromTournamentRow)
+    const tournaments = parsedRows.map((row) => ({
+      id: row.id,
+      title: row.data?.title || row.id,
+    }))
+    const sections = [...new Set(parsedRows.flatMap((row) => (
+      (row.data?.entryFees || []).map((fee) => fee.section).filter(Boolean)
+    )))].sort()
 
-  if (error) {
+    return jsonResponse(200, { sections, tournaments })
+  } catch {
     return jsonResponse(500, { error: "Could not load registration filters." })
   }
-
-  const tournaments = (data || []).map((row) => ({
-    id: row.id,
-    title: row.data?.title || row.id,
-  }))
-  const sections = [...new Set((data || []).flatMap((row) => (
-    (row.data?.entryFees || []).map((fee) => fee.section).filter(Boolean)
-  )))].sort()
-
-  return jsonResponse(200, { sections, tournaments })
 }
 
-export const exportRegistrations = async (supabase, searchParams) => {
-  const filters = getRegistrationFilters(searchParams)
-  const query = supabase
-    .from("tournament_registrations")
-    .select(registrationExportColumns, { count: "exact" })
-  const { data, error, count } = await applyRegistrationFilters(query, filters)
-    .order("created_at", { ascending: false })
-    .limit(5000)
+export const exportRegistrations = async (db, searchParams) => {
+  const filter = buildRegistrationFilter(getRegistrationFilters(searchParams))
 
-  if (error) {
+  try {
+    const [rows, countRow] = await Promise.all([
+      allRows(db.prepare(`
+        SELECT ${registrationExportColumns}
+        FROM tournament_registrations${filter.where}
+        ORDER BY created_at DESC
+        LIMIT 5000
+      `).bind(...filter.bindings)),
+      firstRow(db.prepare(`
+        SELECT COUNT(*) AS total
+        FROM tournament_registrations${filter.where}
+      `).bind(...filter.bindings)),
+    ])
+    const total = Number(countRow?.total || 0)
+
+    return jsonResponse(200, {
+      registrations: rows.map(fromRegistrationRow),
+      total,
+      truncated: total > rows.length,
+    })
+  } catch {
     return jsonResponse(500, { error: "Could not export registrations." })
   }
-
-  return jsonResponse(200, {
-    registrations: data,
-    total: count || 0,
-    truncated: (count || 0) > data.length,
-  })
 }

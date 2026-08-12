@@ -1,9 +1,13 @@
+import { allRows, firstRow, runStatement } from "@/shared/server/database"
 import { jsonResponse } from "@/shared/server/http"
 import {
   formatTournamentSchemaError,
   publishedTournamentSchema,
   tournamentDraftSchema,
 } from "@/tournaments/schema"
+import { fromTournamentRow } from "./databaseRows.js"
+
+const tournamentColumns = "id, status, data, created_at, updated_at"
 
 const slugify = (value) => (
   String(value || "")
@@ -12,20 +16,21 @@ const slugify = (value) => (
     .replace(/^-+|-+$/g, "")
 )
 
-export const listTournaments = async (supabase) => {
-  const { data, error } = await supabase
-    .from("tournaments")
-    .select("id, status, data, created_at, updated_at")
-    .order("created_at", { ascending: false })
+export const listTournaments = async (db) => {
+  try {
+    const rows = await allRows(db.prepare(`
+      SELECT ${tournamentColumns}
+      FROM tournaments
+      ORDER BY created_at DESC
+    `))
 
-  if (error) {
+    return jsonResponse(200, { tournaments: rows.map(fromTournamentRow) })
+  } catch {
     return jsonResponse(500, { error: "Could not load tournaments." })
   }
-
-  return jsonResponse(200, { tournaments: data })
 }
 
-export const saveTournament = async (supabase, body) => {
+export const saveTournament = async (db, body) => {
   const tournamentData = body?.data
 
   if (!tournamentData || typeof tournamentData !== "object" || Array.isArray(tournamentData)) {
@@ -46,47 +51,43 @@ export const saveTournament = async (supabase, body) => {
 
   let status = body.status
 
-  if (!status) {
-    const { data: existing, error: existingError } = await supabase
-      .from("tournaments")
-      .select("status")
-      .eq("id", id)
-      .maybeSingle()
-
-    if (existingError) {
-      return jsonResponse(500, { error: "Could not determine the tournament status." })
+  try {
+    if (!status) {
+      const existing = await firstRow(
+        db.prepare("SELECT status FROM tournaments WHERE id = ?").bind(id),
+      )
+      status = existing?.status || "draft"
     }
 
-    status = existing?.status || "draft"
-  }
+    const schema = status === "published" ? publishedTournamentSchema : tournamentDraftSchema
+    const parsedTournament = schema.safeParse({ ...tournamentData, id })
 
-  const schema = status === "published" ? publishedTournamentSchema : tournamentDraftSchema
-  const parsedTournament = schema.safeParse({ ...tournamentData, id })
+    if (!parsedTournament.success) {
+      return jsonResponse(400, { error: formatTournamentSchemaError(parsedTournament.error) })
+    }
 
-  if (!parsedTournament.success) {
-    return jsonResponse(400, { error: formatTournamentSchemaError(parsedTournament.error) })
-  }
+    const now = new Date().toISOString()
+    const row = await firstRow(db.prepare(`
+      INSERT INTO tournaments (id, status, data, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        status = excluded.status,
+        data = excluded.data,
+        updated_at = excluded.updated_at
+      RETURNING ${tournamentColumns}
+    `).bind(id, status, JSON.stringify(parsedTournament.data), now, now))
 
-  const { data, error } = await supabase
-    .from("tournaments")
-    .upsert({ id, data: parsedTournament.data, status }, { onConflict: "id" })
-    .select("id, status, data, created_at, updated_at")
-    .single()
-
-  if (error) {
+    return jsonResponse(200, { tournament: fromTournamentRow(row) })
+  } catch {
     return jsonResponse(500, { error: "Could not save the tournament." })
   }
-
-  return jsonResponse(200, { tournament: data })
 }
 
-const findAvailableCopyId = async (supabase, baseId) => {
-  const { data } = await supabase
-    .from("tournaments")
-    .select("id")
-    .like("id", `${baseId}-copy%`)
-
-  const takenIds = new Set((data || []).map((row) => row.id))
+const findAvailableCopyId = async (db, baseId) => {
+  const rows = await allRows(
+    db.prepare("SELECT id FROM tournaments WHERE id LIKE ?").bind(`${baseId}-copy%`),
+  )
+  const takenIds = new Set(rows.map((row) => row.id))
   let candidate = `${baseId}-copy`
   let suffix = 2
 
@@ -98,77 +99,74 @@ const findAvailableCopyId = async (supabase, baseId) => {
   return candidate
 }
 
-export const runTournamentAction = async (supabase, id, action) => {
+export const runTournamentAction = async (db, id, action) => {
   if (!id) {
     return jsonResponse(400, { error: "Provide the tournament id." })
   }
 
-  if (action === "delete") {
-    const { error } = await supabase.from("tournaments").delete().eq("id", id)
-
-    return error
-      ? jsonResponse(500, { error: "Could not delete the tournament." })
-      : jsonResponse(200, { deleted: id })
-  }
-
-  const { data: existing, error: loadError } = await supabase
-    .from("tournaments")
-    .select("id, status, data")
-    .eq("id", id)
-    .single()
-
-  if (loadError || !existing) {
-    return jsonResponse(404, { error: "Tournament not found." })
-  }
-
-  if (action === "duplicate") {
-    const copyId = await findAvailableCopyId(supabase, existing.id)
-    const copyData = {
-      ...existing.data,
-      id: copyId,
-      title: `${existing.data.title || existing.id} (Copy)`,
+  try {
+    if (action === "delete") {
+      await runStatement(db.prepare("DELETE FROM tournaments WHERE id = ?").bind(id))
+      return jsonResponse(200, { deleted: id })
     }
-    const { data, error } = await supabase
-      .from("tournaments")
-      .insert({ id: copyId, status: "draft", data: copyData })
-      .select("id, status, data, created_at, updated_at")
-      .single()
 
-    return error
-      ? jsonResponse(500, { error: "Could not duplicate the tournament." })
-      : jsonResponse(200, { tournament: data })
-  }
+    const loaded = await firstRow(
+      db.prepare("SELECT id, status, data FROM tournaments WHERE id = ?").bind(id),
+    )
+    const existing = fromTournamentRow(loaded)
 
-  if (action === "publish") {
-    const parsedTournament = publishedTournamentSchema.safeParse({
-      ...existing.data,
-      id: existing.id,
-    })
-
-    if (!parsedTournament.success) {
-      return jsonResponse(400, { error: formatTournamentSchemaError(parsedTournament.error) })
+    if (!existing) {
+      return jsonResponse(404, { error: "Tournament not found." })
     }
+
+    if (action === "duplicate") {
+      const copyId = await findAvailableCopyId(db, existing.id)
+      const copyData = {
+        ...existing.data,
+        id: copyId,
+        title: `${existing.data.title || existing.id} (Copy)`,
+      }
+      const now = new Date().toISOString()
+      const row = await firstRow(db.prepare(`
+        INSERT INTO tournaments (id, status, data, created_at, updated_at)
+        VALUES (?, 'draft', ?, ?, ?)
+        RETURNING ${tournamentColumns}
+      `).bind(copyId, JSON.stringify(copyData), now, now))
+
+      return jsonResponse(200, { tournament: fromTournamentRow(row) })
+    }
+
+    if (action === "publish") {
+      const parsedTournament = publishedTournamentSchema.safeParse({
+        ...existing.data,
+        id: existing.id,
+      })
+
+      if (!parsedTournament.success) {
+        return jsonResponse(400, { error: formatTournamentSchemaError(parsedTournament.error) })
+      }
+    }
+
+    const nextStatus = {
+      publish: "published",
+      unpublish: "draft",
+      archive: "archived",
+      restore: "draft",
+    }[action]
+
+    if (!nextStatus) {
+      return jsonResponse(400, { error: "Unknown tournament action." })
+    }
+
+    const row = await firstRow(db.prepare(`
+      UPDATE tournaments
+      SET status = ?, updated_at = ?
+      WHERE id = ?
+      RETURNING ${tournamentColumns}
+    `).bind(nextStatus, new Date().toISOString(), id))
+
+    return jsonResponse(200, { tournament: fromTournamentRow(row) })
+  } catch {
+    return jsonResponse(500, { error: "Could not update the tournament." })
   }
-
-  const nextStatus = {
-    publish: "published",
-    unpublish: "draft",
-    archive: "archived",
-    restore: "draft",
-  }[action]
-
-  if (!nextStatus) {
-    return jsonResponse(400, { error: "Unknown tournament action." })
-  }
-
-  const { data, error } = await supabase
-    .from("tournaments")
-    .update({ status: nextStatus })
-    .eq("id", id)
-    .select("id, status, data, created_at, updated_at")
-    .single()
-
-  return error
-    ? jsonResponse(500, { error: "Could not update the tournament status." })
-    : jsonResponse(200, { tournament: data })
 }

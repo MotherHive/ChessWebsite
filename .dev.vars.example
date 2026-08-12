@@ -1,0 +1,17 @@
+# Local Worker bindings and secrets. Copy this file to .dev.vars.
+ADMIN_AUTH_BYPASS=true
+LOCAL_ADMIN_EMAIL=admin@example.com
+ADMIN_EMAILS=admin@example.com
+
+CLOUDFLARE_ACCESS_TEAM_DOMAIN=https://your-team.cloudflareaccess.com
+CLOUDFLARE_ACCESS_AUD=your-access-audience-tag
+
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
+
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_ALLOW_LIVE=false
+RESEND_API_KEY=
+RESEND_FROM=Scranton Chess Club <noreply@scrantonchess.org>
+SITE_URL=http://localhost:3000

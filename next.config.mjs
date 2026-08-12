@@ -8,6 +8,11 @@ const nextConfig = {
         destination: "/admin/tournaments",
         permanent: false,
       },
+      {
+        source: "/admin/login",
+        destination: "/admin/tournaments",
+        permanent: false,
+      },
     ]
   },
 }

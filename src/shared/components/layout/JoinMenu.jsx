@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { supabase } from "../../supabaseClient"
+import TurnstileWidget from "../ui/TurnstileWidget"
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
@@ -11,6 +11,9 @@ export default function JoinMenu({ isOpen, onToggle }) {
     })
     const [joinStatus, setJoinStatus] = useState("idle")
     const [joinMessage, setJoinMessage] = useState("")
+    const [turnstileToken, setTurnstileToken] = useState("")
+    const [turnstileKey, setTurnstileKey] = useState(0)
+    const turnstileEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY)
 
     const updateJoinField = (field, value) => {
         setJoinForm((currentForm) => ({
@@ -48,27 +51,39 @@ export default function JoinMenu({ isOpen, onToggle }) {
         setJoinStatus("loading")
         setJoinMessage("")
 
-        const { error } = await supabase.from("club_signups").insert({
-            first_name: trimmedForm.firstName,
-            last_name: trimmedForm.lastName,
-            email: trimmedForm.email.toLowerCase(),
-            source: "join_menu",
-        })
+        let response
+        let result
 
-        if (error && error.code !== "23505") {
+        try {
+            response = await fetch("/api/club-signups", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ...trimmedForm, turnstileToken }),
+            })
+            result = await response.json().catch(() => ({}))
+        } catch {
             setJoinStatus("error")
             setJoinMessage("Could not save your information. Try again later.")
+            return
+        } finally {
+            setTurnstileToken("")
+            setTurnstileKey((currentKey) => currentKey + 1)
+        }
+
+        if (!response.ok) {
+            setJoinStatus("error")
+            setJoinMessage(result.error || "Could not save your information. Try again later.")
             return
         }
 
         try {
             window.localStorage.setItem("scranton-chess-club-join", JSON.stringify(trimmedForm))
         } catch {
-            // The Supabase insert succeeded, so a blocked local cache should not fail the signup.
+            // The server insert succeeded, so a blocked local cache should not fail the signup.
         }
 
         setJoinStatus("success")
-        setJoinMessage(error?.code === "23505" ? "You are already on the club list." : "Thanks. Your information is saved.")
+        setJoinMessage(result.duplicate ? "You are already on the club list." : "Thanks. Your information is saved.")
         setJoinForm({
             firstName: "",
             lastName: "",
@@ -110,6 +125,12 @@ export default function JoinMenu({ isOpen, onToggle }) {
                     />
                 </div>
 
+                <TurnstileWidget
+                    action="club_signup"
+                    key={turnstileKey}
+                    onVerify={setTurnstileToken}
+                />
+
                 <div className="join-dropdown-field">
                     <label htmlFor="join-last-name">Last name</label>
                     <input
@@ -149,7 +170,10 @@ export default function JoinMenu({ isOpen, onToggle }) {
                     </p>
                 )}
 
-                <button type="submit" disabled={joinStatus === "loading"}>
+                <button
+                    type="submit"
+                    disabled={joinStatus === "loading" || (turnstileEnabled && !turnstileToken)}
+                >
                     {joinStatus === "loading" ? "Joining..." : "Submit"}
                 </button>
             </form>

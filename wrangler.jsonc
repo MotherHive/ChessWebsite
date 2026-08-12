@@ -4,6 +4,7 @@
   "name": "chess-website",
   "compatibility_date": "2026-08-12",
   "compatibility_flags": [
+    "nodejs_compat",
     "global_fetch_strictly_public"
   ],
   "assets": {
@@ -19,6 +20,30 @@
   "images": {
     "binding": "IMAGES"
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "chess-website-db",
+      "database_id": "f7fb2f33-a80a-4dd8-956e-be044d2f2d9d",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "TOURNAMENT_IMAGES",
+      "bucket_name": "chess-website-tournament-images"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "PUBLIC_FORM_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 5,
+        "period": 10
+      }
+    }
+  ],
   "observability": {
     "enabled": true
   }

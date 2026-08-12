@@ -7,9 +7,9 @@ import {
 
 export const dynamic = "force-dynamic"
 
-export const GET = withAdmin(({ supabase }) => listTournaments(supabase))
+export const GET = withAdmin(({ db }) => listTournaments(db))
 
-export const POST = withAdmin(async ({ request, supabase }) => {
+export const POST = withAdmin(async ({ request, db }) => {
   let body
 
   try {
@@ -18,5 +18,5 @@ export const POST = withAdmin(async ({ request, supabase }) => {
     return jsonResponse(400, { error: "Invalid JSON body." })
   }
 
-  return saveTournament(supabase, body)
+  return saveTournament(db, body)
 })

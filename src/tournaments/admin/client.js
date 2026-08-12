@@ -1,16 +1,7 @@
-import { supabase } from "../../shared/supabaseClient"
-
 export const adminRequest = async (
   path,
   { method = "GET", body, query, signal } = {},
 ) => {
-  const { data } = await supabase.auth.getSession()
-  const accessToken = data?.session?.access_token
-
-  if (!accessToken) {
-    throw new Error("Sign in to use the admin area.")
-  }
-
   const searchParams = new URLSearchParams()
 
   Object.entries(query || {}).forEach(([key, value]) => {
@@ -23,8 +14,8 @@ export const adminRequest = async (
   const response = await fetch(`/api/admin/${path}${queryString ? `?${queryString}` : ""}`, {
     method,
     signal,
+    credentials: "same-origin",
     headers: {
-      Authorization: `Bearer ${accessToken}`,
       ...(body ? { "Content-Type": "application/json" } : {}),
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
@@ -39,20 +30,13 @@ export const adminRequest = async (
 }
 
 export const uploadAdminTournamentImage = async (file, { signal } = {}) => {
-  const { data } = await supabase.auth.getSession()
-  const accessToken = data?.session?.access_token
-
-  if (!accessToken) {
-    throw new Error("Sign in to use the admin area.")
-  }
-
   const formData = new FormData()
   formData.set("image", file)
 
   const response = await fetch("/api/admin/tournament-images", {
     method: "POST",
     signal,
-    headers: { Authorization: `Bearer ${accessToken}` },
+    credentials: "same-origin",
     body: formData,
   })
   const result = await response.json().catch(() => ({}))

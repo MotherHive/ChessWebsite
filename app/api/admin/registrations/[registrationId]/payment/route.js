@@ -3,8 +3,8 @@ import { markRegistrationPaidInPerson } from "@/tournaments/server/adminRegistra
 
 export const dynamic = "force-dynamic"
 
-export const POST = withAdmin(async ({ context, supabase }) => {
+export const POST = withAdmin(async ({ context, db }) => {
   const { registrationId } = await context.params
 
-  return markRegistrationPaidInPerson(supabase, registrationId)
+  return markRegistrationPaidInPerson(db, registrationId)
 })

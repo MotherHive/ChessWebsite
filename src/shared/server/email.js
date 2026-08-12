@@ -5,10 +5,12 @@ import { Resend } from "resend";
 // ============================================================================
 
 export const getResend = () => {
-  if (!process.env.RESEND_KEY) {
+  const apiKey = process.env.RESEND_API_KEY || process.env.RESEND_KEY
+
+  if (!apiKey) {
     throw new Error("Resend API key is not configured.");
   }
-  return new Resend(process.env.RESEND_KEY);
+  return new Resend(apiKey);
 };
 
 const fromAddress = () => (
@@ -104,20 +106,20 @@ const buildText = (details) => {
 // 4. Template Builders: Club Welcome
 // ============================================================================
 
-const buildWelcomeHtml = (firstName) => `
+export const buildWelcomeHtml = (firstName) => `
   <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#111827;">
     <h1 style="font-size:20px;">Welcome to the Scranton Chess Club, ${escapeHtml(firstName)}!</h1>
     <p style="color:#374151;">You're signed up. We'll email you meeting updates, events, and tournament news.</p>
-    <p style="color:#6b7280;font-size:13px;">Questions? Reply to this email and we'll help out.</p>
+    <p style="color:#6b7280;font-size:13px;">Questions? Email <a href="mailto:scrantonchess@gmail.com" style="color:#6b7280;">scrantonchess@gmail.com</a> and we'll help out.</p>
     <p style="color:#6b7280;font-size:13px;">— Scranton Chess Club</p>
   </div>`;
 
-const buildWelcomeText = (firstName) => [
+export const buildWelcomeText = (firstName) => [
   `Welcome to the Scranton Chess Club, ${firstName}!`,
   "",
   "You're signed up. We'll email you meeting updates, events, and tournament news.",
   "",
-  "Questions? Reply to this email and we'll help out.",
+  "Questions? Email scrantonchess@gmail.com and we'll help out.",
   "— Scranton Chess Club",
 ].join("\n");
 

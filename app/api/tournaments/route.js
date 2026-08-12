@@ -1,20 +1,20 @@
 import { jsonResponse } from "@/shared/server/http"
-import { getSupabaseAdmin } from "@/shared/server/supabaseAdmin"
+import { getDatabase } from "@/shared/server/cloudflare"
 import { listPublishedTournaments } from "@/tournaments/server/repository"
 
 export const dynamic = "force-dynamic"
 
 export async function GET() {
-  let supabase
+  let db
 
   try {
-    supabase = getSupabaseAdmin()
+    db = getDatabase()
   } catch {
-    return jsonResponse(500, { error: "Supabase admin is not configured." })
+    return jsonResponse(500, { error: "The tournament database is not configured." })
   }
 
   try {
-    const tournaments = await listPublishedTournaments(supabase)
+    const tournaments = await listPublishedTournaments(db)
 
     return jsonResponse(
       200,

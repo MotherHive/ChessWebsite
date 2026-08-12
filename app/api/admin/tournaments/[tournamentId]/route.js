@@ -4,7 +4,7 @@ import { runTournamentAction } from "@/tournaments/server/adminTournaments"
 
 export const dynamic = "force-dynamic"
 
-export const PATCH = withAdmin(async ({ context, request, supabase }) => {
+export const PATCH = withAdmin(async ({ context, request, db }) => {
   let body
 
   try {
@@ -15,11 +15,11 @@ export const PATCH = withAdmin(async ({ context, request, supabase }) => {
 
   const { tournamentId } = await context.params
 
-  return runTournamentAction(supabase, tournamentId, String(body?.action || ""))
+  return runTournamentAction(db, tournamentId, String(body?.action || ""))
 })
 
-export const DELETE = withAdmin(async ({ context, supabase }) => {
+export const DELETE = withAdmin(async ({ context, db }) => {
   const { tournamentId } = await context.params
 
-  return runTournamentAction(supabase, tournamentId, "delete")
+  return runTournamentAction(db, tournamentId, "delete")
 })

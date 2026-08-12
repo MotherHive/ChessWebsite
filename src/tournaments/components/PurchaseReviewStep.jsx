@@ -1,5 +1,6 @@
 import { byePrice, paymentOptions } from "../registration/constants"
 import { formatPrice } from "../registration/pricing"
+import TurnstileWidget from "@/shared/components/ui/TurnstileWidget"
 import {
   PurchaseMessage,
   PurchaseSelectField,
@@ -19,7 +20,11 @@ export default function PurchaseReviewStep({ purchase }) {
     purchaseMessage,
     purchaseStatus,
     purchaseTotal,
+    setTurnstileToken,
+    turnstileKey,
+    turnstileToken,
   } = purchase
+  const turnstileEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY)
 
   return (
     <form className="purchase-panel" onSubmit={handlePurchaseSubmit} noValidate>
@@ -103,11 +108,17 @@ export default function PurchaseReviewStep({ purchase }) {
 
       <PurchaseMessage message={purchaseMessage} status={purchaseStatus} />
 
+      <TurnstileWidget
+        action="tournament_registration"
+        key={turnstileKey}
+        onVerify={setTurnstileToken}
+      />
+
       <PurchaseStepFooter>
         <button
           className="button button-large purchase-submit"
           type="submit"
-          disabled={purchaseStatus === "loading"}
+          disabled={purchaseStatus === "loading" || (turnstileEnabled && !turnstileToken)}
         >
           {purchaseStatus === "loading" ? "Submitting..." : "Pay & Register"}
         </button>

@@ -13,12 +13,21 @@ import {
   isValidIdempotencyKey,
 } from "@/shared/server/idempotency"
 import { getStripe } from "@/shared/server/stripe"
-import { getSupabaseAdmin } from "@/shared/server/supabaseAdmin"
+import { enforcePublicFormRateLimit } from "@/shared/server/rateLimit"
+import { verifyTurnstile } from "@/shared/server/turnstile"
+import { getDatabase } from "@/shared/server/cloudflare"
+import {
+  executeInsert,
+  executeUpdate,
+  firstRow,
+  isUniqueConstraintError,
+} from "@/shared/server/database"
 import { getPublishedTournament } from "@/tournaments/server/repository"
 import {
   buildTournamentRegistration,
   isStripePaymentMethod,
 } from "@/tournaments/registration/buildRegistration"
+import { fromRegistrationRow, toRegistrationRow } from "./databaseRows.js"
 
 const toDatabaseRegistration = (registration, status, idempotency) => ({
   tournament_id: registration.tournament.id,
@@ -73,22 +82,29 @@ const createStripeLineItems = (registration) => (
   }))
 )
 
-const loadRegistrationByIdempotencyKey = async (supabase, idempotencyKey) => (
-  supabase
-    .from("tournament_registrations")
-    .select("*")
-    .eq("idempotency_key", idempotencyKey)
-    .maybeSingle()
+const loadRegistrationByIdempotencyKey = async (db, idempotencyKey) => fromRegistrationRow(
+  await firstRow(db.prepare(`
+    SELECT *
+    FROM tournament_registrations
+    WHERE idempotency_key = ?
+  `).bind(idempotencyKey)),
 )
 
-const trySendFirstRegistrationWelcomeEmail = async (supabase, registrationRow) => {
-  const { count, error } = await supabase
-    .from("tournament_registrations")
-    .select("id", { count: "exact", head: true })
-    .eq("email", registrationRow.email)
-    .neq("id", registrationRow.id)
+const trySendFirstRegistrationWelcomeEmail = async (db, registrationRow) => {
+  let existing
 
-  if (error || count > 0) {
+  try {
+    existing = await firstRow(db.prepare(`
+      SELECT id
+      FROM tournament_registrations
+      WHERE email = ? AND id != ?
+      LIMIT 1
+    `).bind(registrationRow.email, registrationRow.id))
+  } catch {
+    return
+  }
+
+  if (existing) {
     return
   }
 
@@ -109,10 +125,10 @@ const registrationResponse = (registration) => jsonResponse(200, {
 })
 
 const continueStripeCheckout = async ({
+  db,
   idempotencyKey,
   registration,
   stripe,
-  supabase,
 }) => {
   if (registration.payment_status === "paid" || registration.stripe_checkout_url) {
     return registrationResponse(registration)
@@ -137,57 +153,74 @@ const continueStripeCheckout = async ({
       },
     }, { idempotencyKey: `registration-${idempotencyKey}` })
   } catch {
-    await supabase
-      .from("tournament_registrations")
-      .update({
-        payment_status: "checkout_failed",
-        registration_status: "pending_payment",
-      })
-      .eq("id", registration.id)
-      .neq("payment_status", "paid")
+    try {
+      await executeUpdate(
+        db,
+        "tournament_registrations",
+        registration.id,
+        {
+          payment_status: "checkout_failed",
+          registration_status: "pending_payment",
+        },
+        " AND payment_status != 'paid'",
+      )
+    } catch {
+      // The checkout failure is still the actionable error for the client.
+    }
 
     return jsonResponse(500, { error: "Could not create Stripe checkout." })
   }
 
-  const { data, error } = await supabase
-    .from("tournament_registrations")
-    .update({
-      stripe_checkout_session_id: session.id,
-      stripe_checkout_url: session.url,
-      payment_status: "checkout_pending",
-      registration_status: "pending_payment",
-    })
-    .eq("id", registration.id)
-    .neq("payment_status", "paid")
-    .select("*")
-    .maybeSingle()
+  let updated
 
-  if (error) {
+  try {
+    updated = await executeUpdate(
+      db,
+      "tournament_registrations",
+      registration.id,
+      {
+        stripe_checkout_session_id: session.id,
+        stripe_checkout_url: session.url,
+        payment_status: "checkout_pending",
+        registration_status: "pending_payment",
+      },
+      " AND payment_status != 'paid'",
+    )
+  } catch {
     return jsonResponse(500, { error: "Could not attach Stripe checkout to the registration." })
   }
 
-  if (!data) {
-    const { data: current, error: loadError } = await supabase
-      .from("tournament_registrations")
-      .select("*")
-      .eq("id", registration.id)
-      .single()
+  if (!updated) {
+    try {
+      const current = fromRegistrationRow(await firstRow(
+        db.prepare("SELECT * FROM tournament_registrations WHERE id = ?").bind(registration.id),
+      ))
 
-    return loadError
-      ? jsonResponse(500, { error: "Could not load the completed registration." })
-      : registrationResponse(current)
+      return registrationResponse(current)
+    } catch {
+      return jsonResponse(500, { error: "Could not load the completed registration." })
+    }
   }
 
-  return registrationResponse(data)
+  return registrationResponse(fromRegistrationRow(updated))
 }
 
 export async function registerTournament(request) {
-  let supabase
+  const rateLimitResponse = await enforcePublicFormRateLimit(
+    request,
+    "tournament-registration",
+  )
+
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
+  let db
 
   try {
-    supabase = getSupabaseAdmin()
+    db = getDatabase()
   } catch {
-    return jsonResponse(500, { error: "Supabase admin is not configured." })
+    return jsonResponse(500, { error: "The tournament database is not configured." })
   }
 
   let body
@@ -206,13 +239,13 @@ export async function registerTournament(request) {
 
   const registrationPayload = { ...body }
   delete registrationPayload.idempotencyKey
+  delete registrationPayload.turnstileToken
   const requestFingerprint = fingerprintPayload(registrationPayload)
-  const { data: existing, error: existingError } = await loadRegistrationByIdempotencyKey(
-    supabase,
-    idempotencyKey,
-  )
+  let existing
 
-  if (existingError) {
+  try {
+    existing = await loadRegistrationByIdempotencyKey(db, idempotencyKey)
+  } catch {
     return jsonResponse(500, { error: "Could not check the registration request." })
   }
 
@@ -240,11 +273,15 @@ export async function registerTournament(request) {
     }
 
     return continueStripeCheckout({
+      db,
       idempotencyKey,
       registration: existing,
       stripe,
-      supabase,
     })
+  }
+
+  if (!await verifyTurnstile(request, body?.turnstileToken, "tournament_registration")) {
+    return jsonResponse(400, { error: "Please complete the anti-spam check and try again." })
   }
 
   const requestedTournamentId = String(
@@ -253,7 +290,7 @@ export async function registerTournament(request) {
   let publishedTournament
 
   try {
-    publishedTournament = await getPublishedTournament(supabase, requestedTournamentId)
+    publishedTournament = await getPublishedTournament(db, requestedTournamentId)
   } catch {
     return jsonResponse(500, {
       error: "Could not validate the published tournament configuration.",
@@ -290,34 +327,47 @@ export async function registerTournament(request) {
     }
   }
 
-  const { data, error } = await supabase
-    .from("tournament_registrations")
-    .insert(toDatabaseRegistration(registration, initialStatus, {
-      key: idempotencyKey,
-      fingerprint: requestFingerprint,
-    }))
-    .select("*")
-    .single()
+  let data
 
-  if (error) {
-    if (error.code === "23505") {
-      const { data: racedRegistration, error: racedError } = await loadRegistrationByIdempotencyKey(
-        supabase,
-        idempotencyKey,
-      )
+  try {
+    const now = new Date().toISOString()
+    const databaseRegistration = toRegistrationRow(toDatabaseRegistration(
+      registration,
+      initialStatus,
+      {
+        key: idempotencyKey,
+        fingerprint: requestFingerprint,
+      },
+    ))
+    const inserted = await executeInsert(db, "tournament_registrations", {
+      id: crypto.randomUUID(),
+      created_at: now,
+      updated_at: now,
+      ...databaseRegistration,
+    })
+    data = fromRegistrationRow(inserted)
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      let racedRegistration
 
-      if (!racedError && racedRegistration?.request_fingerprint === requestFingerprint) {
+      try {
+        racedRegistration = await loadRegistrationByIdempotencyKey(db, idempotencyKey)
+      } catch {
+        racedRegistration = null
+      }
+
+      if (racedRegistration?.request_fingerprint === requestFingerprint) {
         return usesStripe
           ? continueStripeCheckout({
+            db,
             idempotencyKey,
             registration: racedRegistration,
             stripe,
-            supabase,
           })
           : registrationResponse(racedRegistration)
       }
 
-      if (!racedError && racedRegistration) {
+      if (racedRegistration) {
         return jsonResponse(409, {
           error: "This registration attempt was already used with different details.",
         })
@@ -327,7 +377,7 @@ export async function registerTournament(request) {
     return jsonResponse(500, { error: "Could not save the registration." })
   }
 
-  await trySendFirstRegistrationWelcomeEmail(supabase, data)
+  await trySendFirstRegistrationWelcomeEmail(db, data)
 
   if (!usesStripe) {
     await trySendRegistrationEmail(detailsFromRegistration(registration, { paid: false }), {
@@ -338,9 +388,9 @@ export async function registerTournament(request) {
   }
 
   return continueStripeCheckout({
+    db,
     idempotencyKey,
     registration: data,
     stripe,
-    supabase,
   })
 }

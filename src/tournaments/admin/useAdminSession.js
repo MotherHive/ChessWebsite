@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import { supabase } from "../../shared/supabaseClient"
 
 export default function useAdminSession() {
   const [session, setSession] = useState(null)
@@ -8,21 +7,25 @@ export default function useAdminSession() {
   useEffect(() => {
     let isActive = true
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (isActive) {
-        setSession(data.session)
-        setIsLoading(false)
-      }
-    })
+    fetch("/api/admin/session", { credentials: "same-origin" })
+      .then(async (response) => {
+        if (!response.ok) {
+          return null
+        }
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession)
-      setIsLoading(false)
-    })
+        const data = await response.json()
+        return data.user || null
+      })
+      .catch(() => null)
+      .then((user) => {
+        if (isActive) {
+          setSession(user ? { user } : null)
+          setIsLoading(false)
+        }
+      })
 
     return () => {
       isActive = false
-      subscription.subscription.unsubscribe()
     }
   }, [])
 

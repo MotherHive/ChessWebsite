@@ -2,6 +2,8 @@ import {
   formatTournamentSchemaError,
   parsePublishedTournamentRow,
 } from "../schema.js"
+import { allRows, firstRow } from "@/shared/server/database"
+import { fromTournamentRow } from "./databaseRows.js"
 
 const parsePublishedRow = (row) => {
   const result = parsePublishedTournamentRow(row)
@@ -15,30 +17,23 @@ const parsePublishedRow = (row) => {
   return result.data
 }
 
-export const listPublishedTournaments = async (supabase) => {
-  const { data, error } = await supabase
-    .from("tournaments")
-    .select("id, data")
-    .eq("status", "published")
+export const listPublishedTournaments = async (db) => {
+  const rows = await allRows(db.prepare(`
+    SELECT id, data
+    FROM tournaments
+    WHERE status = 'published'
+    ORDER BY created_at DESC
+  `))
 
-  if (error) {
-    throw new Error("Could not load published tournaments.")
-  }
-
-  return (data || []).map(parsePublishedRow)
+  return rows.map((row) => parsePublishedRow(fromTournamentRow(row)))
 }
 
-export const getPublishedTournament = async (supabase, tournamentId) => {
-  const { data, error } = await supabase
-    .from("tournaments")
-    .select("id, data")
-    .eq("id", tournamentId)
-    .eq("status", "published")
-    .maybeSingle()
+export const getPublishedTournament = async (db, tournamentId) => {
+  const row = await firstRow(db.prepare(`
+    SELECT id, data
+    FROM tournaments
+    WHERE id = ? AND status = 'published'
+  `).bind(tournamentId))
 
-  if (error) {
-    throw new Error("Could not load the published tournament.")
-  }
-
-  return data ? parsePublishedRow(data) : null
+  return row ? parsePublishedRow(fromTournamentRow(row)) : null
 }

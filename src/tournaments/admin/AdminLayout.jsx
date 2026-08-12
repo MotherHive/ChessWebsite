@@ -1,9 +1,7 @@
 "use client"
 
-import { useEffect } from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import { supabase } from "../../shared/supabaseClient"
+import { usePathname } from "next/navigation"
 import useAdminSession from "./useAdminSession"
 
 function AdminNavLink({ href, children }) {
@@ -18,22 +16,24 @@ function AdminNavLink({ href, children }) {
 }
 
 export default function AdminLayout({ children }) {
-  const router = useRouter()
   const { session, isLoading } = useAdminSession()
 
-  useEffect(() => {
-    if (!isLoading && !session) {
-      router.replace("/admin/login")
-    }
-  }, [isLoading, session, router])
-
-  if (isLoading || !session) {
+  if (isLoading) {
     return <div className="admin-shell"><p className="admin-muted">Checking session...</p></div>
   }
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.replace("/admin/login")
+  if (!session) {
+    return (
+      <div className="admin-shell">
+        <p className="admin-error">
+          Cloudflare Access could not verify this admin session. Check the Access application and Worker variables.
+        </p>
+      </div>
+    )
+  }
+
+  const handleSignOut = () => {
+    window.location.assign("/cdn-cgi/access/logout")
   }
 
   return (

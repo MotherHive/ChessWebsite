@@ -3,6 +3,6 @@ import { exportRegistrations } from "@/tournaments/server/adminRegistrations"
 
 export const dynamic = "force-dynamic"
 
-export const GET = withAdmin(({ request, supabase }) => (
-  exportRegistrations(supabase, new URL(request.url).searchParams)
+export const GET = withAdmin(({ request, db }) => (
+  exportRegistrations(db, new URL(request.url).searchParams)
 ))

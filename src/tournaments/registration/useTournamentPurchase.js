@@ -1,4 +1,4 @@
-import { useCallback, useReducer, useRef } from "react"
+import { useCallback, useReducer, useRef, useState } from "react"
 import { byePrice } from "./constants"
 import {
   createRegistrationAttemptKey,
@@ -18,6 +18,8 @@ export default function useTournamentPurchase(tournaments, currentTime) {
   const purchaseButtonRef = useRef(null)
   const purchaseCloseButtonRef = useRef(null)
   const purchaseAttemptKeyRef = useRef("")
+  const [turnstileToken, setTurnstileToken] = useState("")
+  const [turnstileKey, setTurnstileKey] = useState(0)
   const featuredTournament = tournaments[0] || emptyTournament
   const [state, dispatch] = useReducer(
     purchaseReducer,
@@ -70,6 +72,8 @@ export default function useTournamentPurchase(tournaments, currentTime) {
     }
 
     invalidatePurchaseAttempt()
+    setTurnstileToken("")
+    setTurnstileKey((currentKey) => currentKey + 1)
     dispatch({ type: "open", tournament, savedInfo: readSavedJoinInfo() })
   }
 
@@ -168,6 +172,7 @@ export default function useTournamentPurchase(tournaments, currentTime) {
         idempotencyKey,
         tournamentId: selectedTournament.id,
         form: purchaseForm,
+        turnstileToken,
       })
 
       savePurchaseReceipt({
@@ -193,6 +198,9 @@ export default function useTournamentPurchase(tournaments, currentTime) {
       dispatch({ type: "submit-succeeded", result })
     } catch (error) {
       showPurchaseError(error.message || "Could not submit the registration. Try again later.")
+    } finally {
+      setTurnstileToken("")
+      setTurnstileKey((currentKey) => currentKey + 1)
     }
   }
 
@@ -216,6 +224,9 @@ export default function useTournamentPurchase(tournaments, currentTime) {
     removeBye,
     selectedTournament,
     setPurchaseCloseButton,
+    setTurnstileToken,
+    turnstileKey,
+    turnstileToken,
     updateBye,
     updatePurchaseField,
   }
