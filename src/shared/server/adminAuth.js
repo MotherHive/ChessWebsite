@@ -1,10 +1,10 @@
 import { createRemoteJWKSet, jwtVerify } from "jose"
-import { getCloudflareVariable, getDatabase } from "./cloudflare.js"
-import { jsonResponse } from "./http.js"
+import { getDatabase, getServerConfig } from "./cloudflare.js"
+import { isCrossSiteRequest, jsonResponse, withNoStore } from "./http.js"
 
 const remoteKeySets = new Map()
 
-const getConfig = (name) => getCloudflareVariable(name) || process.env[name] || ""
+const getConfig = getServerConfig
 
 const getAdminEmails = () => (
   getConfig("ADMIN_EMAILS")
@@ -35,6 +35,12 @@ const getRemoteKeySet = (teamDomain) => {
 }
 
 const getLocalAdmin = (request, adminEmails) => {
+  // The bypass is compiled out of any production build. A deployed Worker must
+  // never be one stray environment variable away from unauthenticated admin.
+  if (process.env.NODE_ENV === "production") {
+    return null
+  }
+
   const hostname = new URL(request.url).hostname
   const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1"
 
@@ -46,6 +52,15 @@ const getLocalAdmin = (request, adminEmails) => {
 }
 
 const authenticateAdmin = async (request) => {
+  // Cloudflare Access injects the assertion header on every request that
+  // carries its cookie, including one a hostile page triggered. Ambient
+  // authority like that has to be paired with a request forgery check.
+  if (isCrossSiteRequest(request)) {
+    return {
+      response: jsonResponse(403, { error: "Cross-site admin requests are rejected." }),
+    }
+  }
+
   const adminEmails = getAdminEmails()
 
   if (!adminEmails.length) {
@@ -107,7 +122,7 @@ export const withAdmin = (handler) => async (request, context) => {
   const authentication = await authenticateAdmin(request)
 
   if (authentication.response) {
-    return authentication.response
+    return withNoStore(authentication.response)
   }
 
   let db
@@ -115,13 +130,15 @@ export const withAdmin = (handler) => async (request, context) => {
   try {
     db = getDatabase()
   } catch {
-    return jsonResponse(500, { error: "The tournament database is not configured." })
+    return withNoStore(jsonResponse(500, { error: "The tournament database is not configured." }))
   }
 
-  return handler({
+  // Admin payloads carry registrant personal data, so no shared cache anywhere
+  // between the Worker and the browser may keep a copy.
+  return withNoStore(await handler({
     context,
     db,
     request,
     user: authentication.user,
-  })
+  }))
 }

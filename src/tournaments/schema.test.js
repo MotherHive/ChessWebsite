@@ -57,3 +57,14 @@ test("unknown fields and malformed URLs are rejected", () => {
   assert.equal(unknownField.success, false)
   assert.equal(invalidUrl.success, false)
 })
+
+test("only http and https links are accepted for rendered URLs", () => {
+  const parseUrl = (field, value) => tournamentDraftSchema.safeParse({ title: "Open", [field]: value })
+
+  assert.equal(parseUrl("rulesUrl", "javascript:alert(1)").success, false)
+  assert.equal(parseUrl("mapUrl", "JaVaScRiPt:alert(1)").success, false)
+  assert.equal(parseUrl("flyerUrl", "data:text/html,<script>alert(1)</script>").success, false)
+  assert.equal(parseUrl("uscfUrl", "vbscript:msgbox(1)").success, false)
+  assert.equal(parseUrl("imageUrl", "https://example.com/flyer.png").success, true)
+  assert.equal(parseUrl("imageUrl", "").success, true)
+})

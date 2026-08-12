@@ -30,6 +30,9 @@ npm run deploy
 - `TOURNAMENT_IMAGES`: the `chess-website-tournament-images` R2 bucket
 - `PUBLIC_FORM_RATE_LIMITER`: five submissions per form, per IP, per 10 seconds
 
+`wrangler.staging.jsonc` deploys `chess-website-staging` with a separate D1
+database, R2 bucket, and rate-limit namespace for end-to-end sandbox tests.
+
 Create or update the database schema with:
 
 ```bash
@@ -81,9 +84,24 @@ SITE_URL=https://scrantonchess.org
 ```
 
 Configure the Stripe webhook endpoint at `/api/stripe-webhook` and enable the
-`checkout.session.completed` and `checkout.session.expired` events.
+`checkout.session.completed`, `checkout.session.expired`,
+`checkout.session.async_payment_succeeded`, and
+`checkout.session.async_payment_failed` events. A completed session only
+confirms a registration when its `payment_status` is `paid` and its
+`amount_total` covers the order, so delayed-notification methods stay pending
+until the money clears.
 Stripe sandbox keys (`sk_test_` or `rk_test_`) are accepted by default. Live
 keys are rejected unless `STRIPE_ALLOW_LIVE=true` is deliberately configured.
+To validate Checkout against Stripe's API and store the sandbox key directly as
+an encrypted Worker secret, put the key in the ignored `.dev.vars` file and run:
+
+```bash
+npm run stripe:sandbox:configure
+```
+
+The check creates and immediately expires a $1 sandbox Checkout Session; it
+does not create a real payment. Configure the sandbox webhook after a public
+preview URL is available, because its signing secret is unique to that endpoint.
 
 `TURNSTILE_SECRET_KEY` may be omitted only during development on `localhost`.
 Deployed club signup and tournament registration endpoints fail closed when the
@@ -105,6 +123,13 @@ Create one Cloudflare Access self-hosted application covering `/admin` and
 team domain and audience tag in the variables above. The API verifies Access's
 signed JWT in addition to the edge policy.
 
+Set the Access application's cookie **SameSite attribute to `Strict`**. Access
+injects its signed assertion header onto any request that carries its cookie,
+including one a hostile page triggered, so the cookie must not travel
+cross-site. The API rejects cross-site writes on its own as well: `withAdmin`
+refuses any non-`GET` request whose `Sec-Fetch-Site` is not `same-origin`, and
+JSON endpoints reject bodies sent with a form-submittable content type.
+
 For local development only, `.dev.vars` can contain:
 
 ```text
@@ -112,7 +137,10 @@ ADMIN_AUTH_BYPASS=true
 LOCAL_ADMIN_EMAIL=admin@example.com
 ```
 
-The bypass is accepted only on `localhost` or `127.0.0.1`.
+The bypass requires a development build *and* a `localhost` or `127.0.0.1`
+host. It is compiled out when `NODE_ENV=production`, so it works under
+`npm run dev` but not under `npm run preview` or a deployed Worker. Exercise the
+admin area against a real Access session when testing a production build.
 
 ## Supabase Data Import
 

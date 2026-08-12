@@ -1,11 +1,12 @@
 import { Resend } from "resend";
+import { getServerConfig } from "./cloudflare.js";
 
 // ============================================================================
 // 1. Initialization & Configuration Helpers
 // ============================================================================
 
 export const getResend = () => {
-  const apiKey = process.env.RESEND_API_KEY || process.env.RESEND_KEY
+  const apiKey = getServerConfig("RESEND_API_KEY") || getServerConfig("RESEND_KEY")
 
   if (!apiKey) {
     throw new Error("Resend API key is not configured.");
@@ -14,7 +15,7 @@ export const getResend = () => {
 };
 
 const fromAddress = () => (
-  process.env.RESEND_FROM || "Scranton Chess Club <noreply@scrantonchess.org>"
+  getServerConfig("RESEND_FROM") || "Scranton Chess Club <noreply@scrantonchess.org>"
 );
 
 // ============================================================================

@@ -1,10 +1,6 @@
-import { getCloudflareVariable } from "./cloudflare.js"
+import { getServerConfig } from "./cloudflare.js"
 
-const getSecret = () => (
-  getCloudflareVariable("TURNSTILE_SECRET_KEY")
-  || process.env.TURNSTILE_SECRET_KEY
-  || ""
-)
+const getSecret = () => getServerConfig("TURNSTILE_SECRET_KEY")
 
 const isLocalRequest = (request) => {
   try {

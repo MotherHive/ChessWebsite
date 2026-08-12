@@ -68,6 +68,19 @@ const loadRegistrationFromSession = async (db, session) => {
   return fromRegistrationRow(row)
 }
 
+export const isSettledSession = (session) => session?.payment_status === "paid"
+
+export const isFullyPaidSession = (session, registration) => {
+  const expected = Number(registration?.total_amount_cents)
+  const paid = Number(session?.amount_total)
+
+  if (!Number.isFinite(expected) || !Number.isFinite(paid)) {
+    return false
+  }
+
+  return paid >= expected
+}
+
 const hasProcessedEvent = async (db, eventId) => firstRow(
   db.prepare("SELECT id FROM stripe_webhook_events WHERE id = ?").bind(eventId),
 )
@@ -126,11 +139,43 @@ export async function handleStripeWebhook(request) {
     return jsonResponse(200, { received: true, duplicate: true })
   }
 
-  if (event.type === "checkout.session.completed") {
+  const settledEventTypes = [
+    "checkout.session.completed",
+    "checkout.session.async_payment_succeeded",
+  ]
+
+  if (settledEventTypes.includes(event.type)) {
     const session = event.data.object
+
+    // Stripe completes a Checkout Session for delayed-notification methods
+    // while the money is still in flight, so only `payment_status: paid`
+    // confirms a registration. Anything else stays pending until the money
+    // actually clears through `checkout.session.async_payment_succeeded`.
+    if (!isSettledSession(session)) {
+      try {
+        await updateRegistrationFromSession(db, session, event.id, {
+          paymentStatus: "checkout_pending",
+          registrationStatus: "pending_payment",
+        })
+        await recordProcessedEvent(db, event)
+      } catch {
+        return jsonResponse(500, { error: "Could not record the pending Stripe payment." })
+      }
+
+      return jsonResponse(200, { received: true, pending: true })
+    }
+
     let registration
 
     try {
+      const pending = await loadRegistrationFromSession(db, session)
+
+      // The amount is checked before anything is marked paid, so a session that
+      // settled for less than the order total never confirms a registration.
+      if (pending && !isFullyPaidSession(session, pending)) {
+        return jsonResponse(400, { error: "The Stripe session underpaid the registration." })
+      }
+
       registration = await updateRegistrationFromSession(db, session, event.id, {
         paymentStatus: "paid",
         registrationStatus: "confirmed",
@@ -138,7 +183,7 @@ export async function handleStripeWebhook(request) {
       })
 
       if (!registration) {
-        registration = await loadRegistrationFromSession(db, session)
+        registration = pending
       }
     } catch {
       return jsonResponse(500, { error: "Could not confirm the registration." })
@@ -156,10 +201,17 @@ export async function handleStripeWebhook(request) {
     }
   }
 
-  if (event.type === "checkout.session.expired") {
+  const failedEventTypes = [
+    "checkout.session.expired",
+    "checkout.session.async_payment_failed",
+  ]
+
+  if (failedEventTypes.includes(event.type)) {
     try {
       await updateRegistrationFromSession(db, event.data.object, event.id, {
-        paymentStatus: "checkout_expired",
+        paymentStatus: event.type === "checkout.session.expired"
+          ? "checkout_expired"
+          : "checkout_failed",
         registrationStatus: "pending_payment",
       })
     } catch {

@@ -1,0 +1,50 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
+  "name": "chess-website-staging",
+  "compatibility_date": "2026-08-12",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "chess-website-staging"
+    }
+  ],
+  "images": {
+    "binding": "IMAGES"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "chess-website-staging-db",
+      "database_id": "69f5dd73-be10-4fe3-ac8f-d8642120a2d7",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "TOURNAMENT_IMAGES",
+      "bucket_name": "chess-website-staging-images"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "PUBLIC_FORM_RATE_LIMITER",
+      "namespace_id": "1002",
+      "simple": {
+        "limit": 20,
+        "period": 10
+      }
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

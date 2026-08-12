@@ -1,7 +1,7 @@
 import Stripe from "stripe"
-import { getCloudflareVariable } from "./cloudflare.js"
+import { getServerConfig } from "./cloudflare.js"
 
-const getConfig = (name) => getCloudflareVariable(name) || process.env[name] || ""
+const getConfig = getServerConfig
 
 export const isStripeSandboxKey = (key) => (
   key.startsWith("sk_test_") || key.startsWith("rk_test_")

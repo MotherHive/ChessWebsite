@@ -34,3 +34,10 @@ export const getCloudflareVariable = (name) => {
     return undefined
   }
 }
+
+// Worker secrets arrive as bindings, while `next dev` and the Node scripts only
+// populate `process.env`. Every server module must read configuration the same
+// way so a secret is never silently missing on one runtime.
+export const getServerConfig = (name) => (
+  getCloudflareVariable(name) || process.env[name] || ""
+)

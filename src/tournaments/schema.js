@@ -3,7 +3,20 @@ import { z } from "zod"
 const shortText = z.string().max(200)
 const longText = z.string().max(500)
 const money = z.number().finite().nonnegative().max(100000)
-const blankOrUrl = z.union([z.literal(""), z.string().url()])
+// Zod's URL check accepts any parsable scheme, including `javascript:` and
+// `data:`. These values are rendered into anchor hrefs, so the scheme is pinned.
+const isHttpUrl = (value) => {
+  try {
+    return /^https?:$/.test(new URL(value).protocol)
+  } catch {
+    return false
+  }
+}
+
+const blankOrUrl = z.union([
+  z.literal(""),
+  z.string().url().refine(isHttpUrl, "Use an http:// or https:// address."),
+])
 const blankOrEmail = z.union([z.literal(""), z.string().email()])
 const blankOrDateTime = z.string().refine(
   (value) => !value || Number.isFinite(new Date(value).getTime()),

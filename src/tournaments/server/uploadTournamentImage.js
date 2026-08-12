@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { getSiteUrl, jsonResponse } from "@/shared/server/http"
 import {
+  sniffTournamentImageType,
   tournamentImageTypes,
   validateTournamentImage,
 } from "./imageUpload.js"
@@ -21,15 +22,21 @@ export const uploadTournamentImage = async (bucket, request) => {
     return jsonResponse(400, { error: validationError })
   }
 
-  const extension = tournamentImageTypes.get(file.type)
-  const objectPath = `${new Date().getUTCFullYear()}/${randomUUID()}.${extension}`
   const fileBytes = new Uint8Array(await file.arrayBuffer())
+  const sniffedType = sniffTournamentImageType(fileBytes)
+
+  if (sniffedType !== file.type) {
+    return jsonResponse(400, { error: "Use a JPG, PNG, or WebP image." })
+  }
+
+  const extension = tournamentImageTypes.get(sniffedType)
+  const objectPath = `${new Date().getUTCFullYear()}/${randomUUID()}.${extension}`
 
   try {
     await bucket.put(objectPath, fileBytes, {
       httpMetadata: {
         cacheControl: "public, max-age=31536000, immutable",
-        contentType: file.type,
+        contentType: sniffedType,
       },
     })
   } catch {
