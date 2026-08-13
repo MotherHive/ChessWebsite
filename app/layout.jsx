@@ -1,4 +1,3 @@
-import { Analytics } from '@vercel/analytics/next'
 import AppShell from '@/shared/components/layout/AppShell'
 import '../src/shared/shared.css'
 import '../src/home/home.css'
@@ -33,7 +32,6 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <AppShell>{children}</AppShell>
-        <Analytics />
       </body>
     </html>
   )
