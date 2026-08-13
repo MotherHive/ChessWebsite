@@ -1,5 +1,27 @@
 const joinStorageKey = "scranton-chess-club-join"
 const purchaseStorageKey = "scranton-chess-tournament-purchase"
+const purchaseEntryStorageKey = "scranton-chess-tournament-entry"
+
+const sanitizePurchaseEntry = (entry) => {
+  if (!entry || typeof entry !== "object") {
+    return null
+  }
+
+  return {
+    activeMembershipStatus: ["yes", "no"].includes(entry.activeMembershipStatus)
+      ? entry.activeMembershipStatus
+      : "",
+    section: typeof entry.section === "string" ? entry.section : "",
+    byes: Array.isArray(entry.byes)
+      ? entry.byes
+        .filter((bye) => bye && typeof bye.round === "string")
+        .map((bye, index) => ({
+          id: typeof bye.id === "string" && bye.id ? bye.id : `saved-bye-${index}`,
+          round: bye.round,
+        }))
+      : [],
+  }
+}
 
 export const readSavedJoinInfo = (storage = globalThis.window?.localStorage) => {
   try {
@@ -17,6 +39,50 @@ export const readSavedJoinInfo = (storage = globalThis.window?.localStorage) => 
     }
   } catch {
     return { name: "", email: "" }
+  }
+}
+
+export const readSavedPurchaseEntry = (
+  tournamentId,
+  storage = globalThis.window?.localStorage,
+) => {
+  if (!tournamentId) {
+    return {}
+  }
+
+  try {
+    const savedEntries = JSON.parse(storage.getItem(purchaseEntryStorageKey) || "{}")
+
+    return sanitizePurchaseEntry(savedEntries[tournamentId]) || {}
+  } catch {
+    return {}
+  }
+}
+
+export const savePurchaseEntry = (
+  tournamentId,
+  entry,
+  storage = globalThis.window?.localStorage,
+) => {
+  if (!tournamentId) {
+    return
+  }
+
+  try {
+    const savedEntries = JSON.parse(storage.getItem(purchaseEntryStorageKey) || "{}")
+    const sanitizedEntry = sanitizePurchaseEntry(entry)
+
+    if (!savedEntries || typeof savedEntries !== "object" || Array.isArray(savedEntries)) {
+      storage.setItem(purchaseEntryStorageKey, JSON.stringify({ [tournamentId]: sanitizedEntry }))
+      return
+    }
+
+    storage.setItem(purchaseEntryStorageKey, JSON.stringify({
+      ...savedEntries,
+      [tournamentId]: sanitizedEntry,
+    }))
+  } catch {
+    // Storage may be unavailable; in-memory form state still keeps the current entry intact.
   }
 }
 

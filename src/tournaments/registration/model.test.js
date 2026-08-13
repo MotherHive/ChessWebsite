@@ -115,6 +115,30 @@ test("opening another tournament atomically resets workflow and reconciles its f
   assert.deepEqual(nextState.purchaseForm.byes, [{ id: "bye-1", round: "Round 1" }])
 })
 
+test("opening restores saved entry choices before reconciling tournament limits", () => {
+  const initialState = createPurchaseState(tournament, {})
+  const nextState = purchaseReducer(initialState, {
+    type: "open",
+    tournament,
+    savedEntry: {
+      activeMembershipStatus: "yes",
+      section: "U1600",
+      byes: [
+        { id: "bye-1", round: "Round 1" },
+        { id: "bye-2", round: "Round 2" },
+        { id: "bye-3", round: "Round 3" },
+      ],
+    },
+  })
+
+  assert.equal(nextState.purchaseForm.activeMembershipStatus, "yes")
+  assert.equal(nextState.purchaseForm.section, "U1600")
+  assert.deepEqual(nextState.purchaseForm.byes, [
+    { id: "bye-1", round: "Round 1" },
+    { id: "bye-2", round: "Round 2" },
+  ])
+})
+
 test("form reducer actions clear stale submission feedback", () => {
   const initialState = {
     ...createPurchaseState(tournament, {}),

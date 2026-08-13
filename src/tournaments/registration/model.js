@@ -195,6 +195,7 @@ export const purchaseReducer = (state, action) => {
         purchaseStep: "entry",
         purchaseForm: reconcilePurchaseForm({
           ...state.purchaseForm,
+          ...action.savedEntry,
           name: state.purchaseForm.name || action.savedInfo?.name || "",
           email: state.purchaseForm.email || action.savedInfo?.email || "",
         }, action.tournament),

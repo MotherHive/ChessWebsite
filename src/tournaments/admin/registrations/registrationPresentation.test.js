@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 import {
-  buildCsvTotalRows,
+  buildCsvTotalRow,
   csvColumns,
   getClubNetCents,
   getSettlementCents,
@@ -78,7 +78,7 @@ test("unpaid registrations report no club net", () => {
   assert.equal(getClubNetCents({ ...paidByCard, payment_status: "checkout_pending" }), null)
 })
 
-test("the totals rows tally the money columns", () => {
+test("the totals row tallies paid registrations only", () => {
   const cashWithMembership = {
     membership_amount_cents: 2400,
     payment_method: "pay_at_event",
@@ -86,17 +86,13 @@ test("the totals rows tally the money columns", () => {
     total_amount_cents: 4000,
   }
   const unpaid = { ...paidByCard, payment_status: "checkout_pending", total_amount_cents: 5000 }
-  const [allRows, paidRows] = buildCsvTotalRows([paidByCard, cashWithMembership, unpaid])
+  const totals = buildCsvTotalRow([paidByCard, cashWithMembership, unpaid])
 
-  assert.equal(cellAt(allRows, "Registered"), "Totals — 3 registrations")
-  assert.equal(cellAt(allRows, "Total"), "$100.00")
-  assert.equal(cellAt(allRows, "Processor fee"), "$0.59")
-  assert.equal(cellAt(allRows, "Net received"), "$49.41")
-  assert.equal(cellAt(allRows, "USCF membership dues"), "$24.00")
-  assert.equal(cellAt(allRows, "Club net"), "$25.41")
-  assert.equal(cellAt(allRows, "Paid at"), "")
-
-  assert.equal(cellAt(paidRows, "Registered"), "Totals (paid only) — 2 registrations")
-  assert.equal(cellAt(paidRows, "Total"), "$50.00")
-  assert.equal(cellAt(paidRows, "Club net"), "$25.41")
+  assert.equal(cellAt(totals, "Registered"), "Totals (paid) — 2 registrations")
+  assert.equal(cellAt(totals, "Total"), "$50.00")
+  assert.equal(cellAt(totals, "Processor fee"), "$0.59")
+  assert.equal(cellAt(totals, "Net received"), "$49.41")
+  assert.equal(cellAt(totals, "USCF membership dues"), "$24.00")
+  assert.equal(cellAt(totals, "Club net"), "$25.41")
+  assert.equal(cellAt(totals, "Paid at"), "")
 })

@@ -3,6 +3,8 @@ import { byePrice } from "./constants"
 import {
   createRegistrationAttemptKey,
   readSavedJoinInfo,
+  readSavedPurchaseEntry,
+  savePurchaseEntry,
   savePurchaseReceipt,
   submitTournamentRegistration,
 } from "./client"
@@ -13,6 +15,8 @@ import {
   purchaseReducer,
 } from "./model"
 import { buildTournamentRegistration } from "./buildRegistration"
+
+const savedEntryFields = new Set(["activeMembershipStatus", "section"])
 
 export default function useTournamentPurchase(tournaments, currentTime) {
   const purchaseButtonRef = useRef(null)
@@ -68,6 +72,10 @@ export default function useTournamentPurchase(tournaments, currentTime) {
   const updatePurchaseField = (field, value) => {
     invalidatePurchaseAttempt()
     dispatch({ type: "update-field", field, value })
+
+    if (savedEntryFields.has(field)) {
+      savePurchaseEntry(selectedTournament.id, { ...purchaseForm, [field]: value })
+    }
   }
 
   const openPurchaseDrawer = (tournamentId = featuredTournament.id) => {
@@ -81,7 +89,12 @@ export default function useTournamentPurchase(tournaments, currentTime) {
     invalidatePurchaseAttempt()
     setTurnstileToken("")
     setTurnstileKey((currentKey) => currentKey + 1)
-    dispatch({ type: "open", tournament, savedInfo: readSavedJoinInfo() })
+    dispatch({
+      type: "open",
+      tournament,
+      savedInfo: readSavedJoinInfo(),
+      savedEntry: readSavedPurchaseEntry(tournament.id),
+    })
   }
 
   const closePurchaseDrawer = useCallback(() => {
@@ -111,21 +124,36 @@ export default function useTournamentPurchase(tournaments, currentTime) {
 
   const addBye = () => {
     invalidatePurchaseAttempt()
+    const id = window.crypto?.randomUUID?.() || `${Date.now()}-${purchaseForm.byes.length}`
+    const byes = [...purchaseForm.byes, { id, round: "" }]
+
     dispatch({
       type: "add-bye",
-      id: window.crypto?.randomUUID?.() || `${Date.now()}-${purchaseForm.byes.length}`,
+      id,
       maxByeCount,
     })
+
+    if (purchaseForm.byes.length < maxByeCount) {
+      savePurchaseEntry(selectedTournament.id, { ...purchaseForm, byes })
+    }
   }
 
   const updateBye = (id, round) => {
     invalidatePurchaseAttempt()
     dispatch({ type: "update-bye", id, round })
+    savePurchaseEntry(selectedTournament.id, {
+      ...purchaseForm,
+      byes: purchaseForm.byes.map((bye) => (bye.id === id ? { ...bye, round } : bye)),
+    })
   }
 
   const removeBye = (id) => {
     invalidatePurchaseAttempt()
     dispatch({ type: "remove-bye", id })
+    savePurchaseEntry(selectedTournament.id, {
+      ...purchaseForm,
+      byes: purchaseForm.byes.filter((bye) => bye.id !== id),
+    })
   }
 
   const handleEntryContinue = () => {

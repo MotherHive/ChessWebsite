@@ -70,6 +70,18 @@ export default function TournamentCard({
                   <span aria-hidden="true">+</span>
                   Purchase Entry
                 </button>
+                {hasEarlyEntryDiscount && (
+                  <span className="tournament-discount">
+                    {earlyEntryIsExpired ? (
+                      <span>Early entry ended</span>
+                    ) : (
+                      <>
+                        <span>Discount ends in</span>
+                        <strong>{countdown}</strong>
+                      </>
+                    )}
+                  </span>
+                )}
               </span>
             )}
           </span>
@@ -84,18 +96,6 @@ export default function TournamentCard({
                   </span>
                 ))}
               </span>
-              {hasEarlyEntryDiscount && (
-                <span className="tournament-discount">
-                  {earlyEntryIsExpired ? (
-                    <span>Early entry ended</span>
-                  ) : (
-                    <>
-                      <span>Early entry discount ends in</span>
-                      <strong>{countdown}</strong>
-                    </>
-                  )}
-                </span>
-              )}
             </span>
           </span>
         </span>

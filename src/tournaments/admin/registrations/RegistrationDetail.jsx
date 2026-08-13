@@ -82,7 +82,7 @@ export default function RegistrationDetail({
           <dd>
             {registration.payment_method === "stripe_checkout"
               ? "Stripe checkout"
-              : registration.payment_status === "paid" ? "Paid in person" : "Pay at event"}
+              : registration.payment_status === "paid" ? "Paid in person" : "Pay at event with cash"}
             {" — "}
             {paymentStatusLabels[registration.payment_status] || registration.payment_status}
             {registration.paid_at && ` (paid ${formatDate(registration.paid_at)})`}

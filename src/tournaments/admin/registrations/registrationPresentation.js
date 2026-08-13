@@ -3,7 +3,7 @@ export const paymentStatusLabels = {
   checkout_pending: "Checkout pending",
   checkout_expired: "Checkout expired",
   checkout_failed: "Checkout failed",
-  manual_pending: "Pay at event",
+  manual_pending: "Pay at event with cash",
 }
 
 export const formatCents = (cents) => `$${((cents || 0) / 100).toFixed(2)}`
@@ -110,16 +110,17 @@ const sumCents = (rows, getTotalCents) => rows.reduce((running, row) => {
   return Number.isFinite(cents) ? running + cents : running
 }, 0)
 
-// Two rows because the Total column counts unpaid orders too: the first row is
-// the literal sum of the column above it, the second is the money actually
-// collected.
-export const buildCsvTotalRows = (rows) => ([
-  ["Totals", rows],
-  ["Totals (paid only)", rows.filter(isPaid)],
-].map(([label, subset]) => csvColumns.map(([, , getTotalCents], index) => {
-  if (index === 0) {
-    return `${label} — ${subset.length} registration${subset.length === 1 ? "" : "s"}`
-  }
+// Paid rows only, so every tallied number is money that actually changed hands.
+// That makes the Total column's tally smaller than the literal sum of the cells
+// above it whenever the export includes unpaid orders.
+export const buildCsvTotalRow = (rows) => {
+  const paidRows = rows.filter(isPaid)
 
-  return getTotalCents ? formatCents(sumCents(subset, getTotalCents)) : ""
-})))
+  return csvColumns.map(([, , getTotalCents], index) => {
+    if (index === 0) {
+      return `Totals (paid) — ${paidRows.length} registration${paidRows.length === 1 ? "" : "s"}`
+    }
+
+    return getTotalCents ? formatCents(sumCents(paidRows, getTotalCents)) : ""
+  })
+}

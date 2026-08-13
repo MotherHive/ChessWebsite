@@ -3,6 +3,8 @@ import test from "node:test"
 import {
   createRegistrationAttemptKey,
   readSavedJoinInfo,
+  readSavedPurchaseEntry,
+  savePurchaseEntry,
   savePurchaseReceipt,
   submitTournamentRegistration,
 } from "./client.js"
@@ -33,6 +35,57 @@ test("treats unavailable or invalid browser storage as empty", () => {
 
   assert.deepEqual(readSavedJoinInfo(unavailableStorage), { name: "", email: "" })
   assert.deepEqual(readSavedJoinInfo(invalidStorage), { name: "", email: "" })
+})
+
+test("saves and restores first-step entry choices per tournament", () => {
+  const values = new Map()
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+  }
+
+  savePurchaseEntry("summer-open", {
+    activeMembershipStatus: "yes",
+    section: "Open",
+    byes: [{ id: "bye-1", round: "Round 2" }],
+    name: "not cached",
+    email: "not-cached@example.com",
+  }, storage)
+  savePurchaseEntry("fall-open", {
+    activeMembershipStatus: "no",
+    section: "U1600",
+    byes: [],
+  }, storage)
+
+  assert.deepEqual(readSavedPurchaseEntry("summer-open", storage), {
+    activeMembershipStatus: "yes",
+    section: "Open",
+    byes: [{ id: "bye-1", round: "Round 2" }],
+  })
+  assert.deepEqual(readSavedPurchaseEntry("fall-open", storage), {
+    activeMembershipStatus: "no",
+    section: "U1600",
+    byes: [],
+  })
+  assert.deepEqual(readSavedPurchaseEntry("unknown", storage), {})
+})
+
+test("ignores invalid saved first-step entry data", () => {
+  const storage = {
+    getItem: () => JSON.stringify({
+      "summer-open": {
+        activeMembershipStatus: "maybe",
+        section: 123,
+        byes: [{ round: "Round 1" }, null, { round: 2 }],
+      },
+    }),
+  }
+
+  assert.deepEqual(readSavedPurchaseEntry("summer-open", storage), {
+    activeMembershipStatus: "",
+    section: "",
+    byes: [{ id: "saved-bye-0", round: "Round 1" }],
+  })
 })
 
 test("prefers browser UUIDs for registration attempt keys", () => {

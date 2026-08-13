@@ -76,7 +76,7 @@ export default function PurchaseEntryStep({ purchase }) {
           <div className="purchase-tournament-title">
             <strong>Tournament entry</strong>
           </div>
-          <strong>{formatPrice(entryPrice)}</strong>
+          <strong>{formatPrice(entryPrice + byeTotal)}</strong>
           <div className="purchase-tournament-options">
             <PurchaseSelectField
               className="purchase-section-select"
@@ -96,7 +96,6 @@ export default function PurchaseEntryStep({ purchase }) {
               disabled={purchaseForm.byes.length >= maxByeCount}
             >
               <span className="purchase-add-bye-label">+ Add Bye</span>
-              <span className="purchase-add-bye-price">+{formatPrice(byePrice)}</span>
             </button>
           </div>
         </div>

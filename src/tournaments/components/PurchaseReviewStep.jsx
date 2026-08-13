@@ -85,7 +85,7 @@ export default function PurchaseReviewStep({ purchase }) {
                 <small>
                   {option.id === paymentMethods.stripeCheckout
                     ? "Continue to Stripe for secure card payment."
-                    : "Reserve your place now and pay when you arrive."}
+                    : "Reserve your place now and pay with cash when you arrive."}
                 </small>
               </span>
             </label>

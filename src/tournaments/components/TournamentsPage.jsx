@@ -39,8 +39,7 @@ export default function TournamentsPage({ initialTime }) {
     >
       <TournamentHero featuredTournament={featuredTournament} />
       <div className="tournaments-list-header">
-        <span>Current events</span>
-        <h2>Upcoming Tournaments</h2>
+        <h2>Upcoming Events</h2>
       </div>
       {!isLoading && tournaments.length === 0 && (
         <div className="tournaments-empty-state" role="status">

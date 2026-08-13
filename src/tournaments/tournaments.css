@@ -366,7 +366,6 @@ justify-self: start;
   gap: var(--space-2);
   width: 220px;
   height: 50px;
-  box-shadow: 0 12px 26px rgb(6 170 19 / 0.22);
   font-size: 0.96rem;
   font-weight: 900;
 }
@@ -407,30 +406,31 @@ display: flex;
 .tournament-offer-row {
 display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: var(--space-3);
-  margin-left: auto;
+  margin-right: auto;
   min-width: 0;
 }
 
 .tournament-price {
-display: inline-flex;
+display: inline-grid;
+  grid-template-columns: max-content max-content;
   align-items: baseline;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  white-space: normal;
+  justify-content: start;
+  column-gap: var(--space-4);
+  row-gap: var(--space-2);
+  white-space: nowrap;
 }
 
 .tournament-price-section {
-display: inline-flex;
-  align-items: baseline;
-  gap: var(--space-1);
+display: contents;
 }
 
 .tournament-price-section span {
-color: rgb(0 0 0 / 0.62);
-  font-size: 0.76rem;
+color: rgb(0 0 0 / 0.78);
+  font-size: 0.82rem;
   font-weight: 900;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
@@ -441,7 +441,8 @@ color: rgb(0 0 0 / 0.5);
 
 .tournament-price strong {
 color: var(--color-club-green);
-  font-size: 1.35rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
 }
 
 .tournament-discount {

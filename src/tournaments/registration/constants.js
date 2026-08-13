@@ -23,5 +23,5 @@ export const paymentMethods = {
 
 export const paymentOptions = [
   { id: paymentMethods.stripeCheckout, label: "Pay online by card" },
-  { id: paymentMethods.payAtEvent, label: "Pay at event" },
+  { id: paymentMethods.payAtEvent, label: "Pay at event with cash" },
 ]

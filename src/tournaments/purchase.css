@@ -23,11 +23,6 @@ opacity: 1;
   pointer-events: auto;
 }
 
-.purchase-drawer-backdrop[hidden],
-.purchase-drawer[hidden] {
-display: none;
-}
-
 .purchase-drawer {
 position: fixed;
   top: 0;
@@ -202,12 +197,6 @@ margin: 0 0 0.9rem;
 text-decoration: underline;
   text-decoration-thickness: 1.5px;
   text-underline-offset: 3px;
-}
-
-.purchase-add-bye-price {
-color: rgb(0 0 0 / 0.62);
-  font-weight: 800;
-  white-space: nowrap;
 }
 
 .purchase-add-bye-link:disabled {
