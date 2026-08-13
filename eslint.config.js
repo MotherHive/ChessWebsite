@@ -17,7 +17,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/shared/server/**/*.js', 'src/tournaments/server/**/*.js', 'scripts/**/*.js', 'scripts/**/*.mjs', 'next.config.mjs'],
+    files: ['src/shared/server/**/*.js', 'src/tournaments/server/**/*.js', 'src/club/server/**/*.js', 'scripts/**/*.js', 'scripts/**/*.mjs', 'next.config.mjs'],
     languageOptions: {
       globals: globals.node,
     },

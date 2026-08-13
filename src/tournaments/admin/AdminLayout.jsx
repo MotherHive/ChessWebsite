@@ -46,6 +46,7 @@ export default function AdminLayout({ children }) {
         <nav className="admin-nav" aria-label="Admin sections">
           <AdminNavLink href="/admin/tournaments">Tournaments</AdminNavLink>
           <AdminNavLink href="/admin/registrations">Registrations</AdminNavLink>
+          <AdminNavLink href="/admin/mailing-list">Mailing list</AdminNavLink>
         </nav>
         <div className="admin-header-actions">
           <a href="/tournaments" target="_blank" rel="noreferrer">View site</a>

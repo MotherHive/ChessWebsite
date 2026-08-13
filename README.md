@@ -47,6 +47,7 @@ The project uses a feature-first structure with a thin Next.js routing layer:
 ```text
 app/                  URL routes and API entry points
 src/tournaments/      tournament UI, registration rules, admin tools, and server workflows
+src/club/             club mailing list admin tools and server workflows
 src/home/             home page implementation
 src/contact/          contact page implementation
 src/shared/           site-wide components and external-service infrastructure
