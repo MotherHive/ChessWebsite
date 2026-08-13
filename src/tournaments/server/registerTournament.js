@@ -144,8 +144,8 @@ const continueStripeCheckout = async ({
       customer_email: registration.email,
       client_reference_id: registration.id,
       line_items: createStripeLineItems(registration),
-      success_url: `${siteUrl}/tournaments?checkout=success&registration_id=${registration.id}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${siteUrl}/tournaments?checkout=cancelled&registration_id=${registration.id}`,
+      success_url: `${siteUrl}/tournaments`,
+      cancel_url: `${siteUrl}/tournaments`,
       metadata: {
         registration_id: registration.id,
         tournament_id: registration.tournament_id,

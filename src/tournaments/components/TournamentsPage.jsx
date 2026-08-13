@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useSearchParams } from "next/navigation"
 import useScrollVisibility from "@/shared/hooks/useScrollVisibility"
 import usePublishedTournaments from "../usePublishedTournaments"
 import PurchaseDrawer from "./PurchaseDrawer"
@@ -11,18 +10,11 @@ import useTournamentPurchase from "../registration/useTournamentPurchase"
 
 export default function TournamentsPage({ initialTime }) {
   const [sectionRef, isVisible] = useScrollVisibility({ threshold: 0.08 })
-  const searchParams = useSearchParams()
   const { tournaments, isLoading } = usePublishedTournaments()
   const featuredTournament = tournaments[0]
   const [openTournamentId, setOpenTournamentId] = useState("")
   const [currentTime, setCurrentTime] = useState(() => new Date(initialTime).getTime())
   const purchase = useTournamentPurchase(tournaments, currentTime)
-  const checkoutStatus = searchParams.get("checkout")
-  const checkoutMessage = checkoutStatus === "success"
-    ? "Stripe checkout complete. Your payment will be confirmed shortly."
-    : checkoutStatus === "cancelled"
-      ? "Stripe checkout was cancelled. Your registration was saved as pending payment."
-      : ""
 
   useEffect(() => {
     const initialUpdate = window.setTimeout(() => {
@@ -50,14 +42,6 @@ export default function TournamentsPage({ initialTime }) {
         <span>Current events</span>
         <h2>Upcoming Tournaments</h2>
       </div>
-      {checkoutMessage && (
-        <p
-          className={`purchase-message purchase-message-${checkoutStatus === "success" ? "success" : "error"}`}
-          role="status"
-        >
-          {checkoutMessage}
-        </p>
-      )}
       {!isLoading && tournaments.length === 0 && (
         <div className="tournaments-empty-state" role="status">
           <span>Schedule update</span>
