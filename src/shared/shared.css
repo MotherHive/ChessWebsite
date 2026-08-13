@@ -297,6 +297,16 @@ color: #b42318;
 color: var(--color-club-green);
 }
 
+.join-dropdown-retry {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 @media (max-width: 900px) {
   header {
   position: relative;
@@ -1061,6 +1071,19 @@ display: flex;
   background-color: var(--color-chess-black);
   color: var(--color-chess-white);
   font-family: var(--font-body);
+}
+
+.site-footer-privacy {
+  margin-left: 1rem;
+  color: inherit;
+  font-weight: 400;
+  text-decoration: underline;
+  opacity: 0.78;
+}
+
+.site-footer-privacy:hover,
+.site-footer-privacy:focus-visible {
+  opacity: 1;
 }
 
 .site-footer-copy {

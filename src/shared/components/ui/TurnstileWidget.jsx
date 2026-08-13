@@ -2,6 +2,11 @@
 
 import { useEffect, useRef } from "react"
 
+// Invisible widgets draw nothing, so a stalled challenge is only visible through
+// this timeout. Without it a form whose submit waits on the token stays dead
+// with nothing on screen explaining why.
+const challengeTimeout = 20000
+
 let turnstileScriptPromise
 
 const loadTurnstile = () => {
@@ -32,7 +37,7 @@ const loadTurnstile = () => {
   return turnstileScriptPromise
 }
 
-export default function TurnstileWidget({ action, onVerify }) {
+export default function TurnstileWidget({ action, onStatusChange, onVerify }) {
   const containerRef = useRef(null)
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
@@ -43,6 +48,28 @@ export default function TurnstileWidget({ action, onVerify }) {
 
     let widgetId
     let isActive = true
+    let timeoutId
+
+    const report = (status, token) => {
+      if (!isActive) {
+        return
+      }
+
+      if (status !== "pending") {
+        window.clearTimeout(timeoutId)
+      }
+
+      onVerify(token)
+      onStatusChange?.(status)
+    }
+
+    const startTimeout = () => {
+      window.clearTimeout(timeoutId)
+      timeoutId = window.setTimeout(() => report("error", ""), challengeTimeout)
+    }
+
+    onStatusChange?.("pending")
+    startTimeout()
 
     loadTurnstile()
       .then((turnstile) => {
@@ -52,23 +79,30 @@ export default function TurnstileWidget({ action, onVerify }) {
 
         widgetId = turnstile.render(containerRef.current, {
           action,
-          callback: onVerify,
-          "error-callback": () => onVerify(""),
-          "expired-callback": () => onVerify(""),
+          callback: (token) => report("ready", token),
+          "error-callback": () => report("error", ""),
+          "expired-callback": () => {
+            // Turnstile refreshes an expired token on its own, so this is a
+            // return to waiting rather than a failure.
+            report("pending", "")
+            startTimeout()
+          },
           sitekey: siteKey,
           theme: "auto",
+          "timeout-callback": () => report("error", ""),
         })
       })
-      .catch(() => onVerify(""))
+      .catch(() => report("error", ""))
 
     return () => {
       isActive = false
+      window.clearTimeout(timeoutId)
 
       if (widgetId !== undefined && window.turnstile) {
         window.turnstile.remove(widgetId)
       }
     }
-  }, [action, onVerify, siteKey])
+  }, [action, onStatusChange, onVerify, siteKey])
 
   return siteKey ? <div ref={containerRef}></div> : null
 }

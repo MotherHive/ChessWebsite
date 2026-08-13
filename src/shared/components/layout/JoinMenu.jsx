@@ -12,8 +12,16 @@ export default function JoinMenu({ isOpen, onToggle }) {
     const [joinStatus, setJoinStatus] = useState("idle")
     const [joinMessage, setJoinMessage] = useState("")
     const [turnstileToken, setTurnstileToken] = useState("")
+    const [turnstileStatus, setTurnstileStatus] = useState("pending")
     const [turnstileKey, setTurnstileKey] = useState(0)
     const turnstileEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY)
+    const isVerifying = turnstileEnabled && !turnstileToken && turnstileStatus !== "error"
+    const turnstileFailed = turnstileEnabled && turnstileStatus === "error"
+
+    const retryTurnstile = () => {
+        setTurnstileToken("")
+        setTurnstileKey((currentKey) => currentKey + 1)
+    }
 
     const updateJoinField = (field, value) => {
         setJoinForm((currentForm) => ({
@@ -128,6 +136,7 @@ export default function JoinMenu({ isOpen, onToggle }) {
                 <TurnstileWidget
                     action="club_signup"
                     key={turnstileKey}
+                    onStatusChange={setTurnstileStatus}
                     onVerify={setTurnstileToken}
                 />
 
@@ -170,11 +179,20 @@ export default function JoinMenu({ isOpen, onToggle }) {
                     </p>
                 )}
 
+                {turnstileFailed && (
+                    <p className="join-dropdown-message join-dropdown-message-error" role="alert">
+                        The security check could not finish.{" "}
+                        <button className="join-dropdown-retry" type="button" onClick={retryTurnstile}>
+                            Try again
+                        </button>
+                    </p>
+                )}
+
                 <button
                     type="submit"
                     disabled={joinStatus === "loading" || (turnstileEnabled && !turnstileToken)}
                 >
-                    {joinStatus === "loading" ? "Joining..." : "Submit"}
+                    {joinStatus === "loading" ? "Joining..." : isVerifying ? "Verifying..." : "Submit"}
                 </button>
             </form>
         </div>

@@ -20,11 +20,16 @@ export default function PurchaseReviewStep({ purchase }) {
     purchaseMessage,
     purchaseStatus,
     purchaseTotal,
+    retryTurnstile,
+    setTurnstileStatus,
     setTurnstileToken,
     turnstileKey,
+    turnstileStatus,
     turnstileToken,
   } = purchase
   const turnstileEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY)
+  const isVerifying = turnstileEnabled && !turnstileToken && turnstileStatus !== "error"
+  const turnstileFailed = turnstileEnabled && turnstileStatus === "error"
 
   return (
     <form className="purchase-panel" onSubmit={handlePurchaseSubmit} noValidate>
@@ -111,8 +116,18 @@ export default function PurchaseReviewStep({ purchase }) {
       <TurnstileWidget
         action="tournament_registration"
         key={turnstileKey}
+        onStatusChange={setTurnstileStatus}
         onVerify={setTurnstileToken}
       />
+
+      {turnstileFailed && (
+        <p className="purchase-message purchase-message-error" role="alert">
+          The security check could not finish.{" "}
+          <button className="purchase-retry" type="button" onClick={retryTurnstile}>
+            Try again
+          </button>
+        </p>
+      )}
 
       <PurchaseStepFooter>
         <button
@@ -120,7 +135,11 @@ export default function PurchaseReviewStep({ purchase }) {
           type="submit"
           disabled={purchaseStatus === "loading" || (turnstileEnabled && !turnstileToken)}
         >
-          {purchaseStatus === "loading" ? "Submitting..." : "Pay & Register"}
+          {purchaseStatus === "loading"
+            ? "Submitting..."
+            : isVerifying
+              ? "Verifying..."
+              : "Pay & Register"}
         </button>
       </PurchaseStepFooter>
     </form>

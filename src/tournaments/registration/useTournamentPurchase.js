@@ -19,6 +19,7 @@ export default function useTournamentPurchase(tournaments, currentTime) {
   const purchaseCloseButtonRef = useRef(null)
   const purchaseAttemptKeyRef = useRef("")
   const [turnstileToken, setTurnstileToken] = useState("")
+  const [turnstileStatus, setTurnstileStatus] = useState("pending")
   const [turnstileKey, setTurnstileKey] = useState(0)
   const featuredTournament = tournaments[0] || emptyTournament
   const [state, dispatch] = useReducer(
@@ -52,6 +53,12 @@ export default function useTournamentPurchase(tournaments, currentTime) {
 
   const invalidatePurchaseAttempt = () => {
     purchaseAttemptKeyRef.current = ""
+  }
+
+  // Remounting the widget restarts the challenge; it reports "pending" itself.
+  const retryTurnstile = () => {
+    setTurnstileToken("")
+    setTurnstileKey((currentKey) => currentKey + 1)
   }
 
   const showPurchaseError = (message) => {
@@ -222,10 +229,13 @@ export default function useTournamentPurchase(tournaments, currentTime) {
     purchaseStatus,
     purchaseStep,
     removeBye,
+    retryTurnstile,
     selectedTournament,
     setPurchaseCloseButton,
+    setTurnstileStatus,
     setTurnstileToken,
     turnstileKey,
+    turnstileStatus,
     turnstileToken,
     updateBye,
     updatePurchaseField,

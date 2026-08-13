@@ -5,6 +5,7 @@ import '../src/home/home.css'
 import '../src/tournaments/tournaments.css'
 import '../src/tournaments/purchase.css'
 import '../src/contact/contact.css'
+import '../src/legal/legal.css'
 import '../src/tournaments/admin/admin.css'
 
 export const metadata = {

@@ -103,6 +103,14 @@ The check creates and immediately expires a $1 sandbox Checkout Session; it
 does not create a real payment. Configure the sandbox webhook after a public
 preview URL is available, because its signing secret is unique to that endpoint.
 
+The Turnstile widget runs in **invisible** mode, which Cloudflare permits only
+while the site's own privacy policy references its Turnstile Privacy Addendum.
+`/privacy` carries that reference, so the page must stay published for as long as
+the widget mode is invisible. Because an invisible widget draws nothing, both
+forms show a `Verifying...` submit state while the token is outstanding and a
+retry link if the challenge fails or stalls past 20 seconds; without that a
+failed challenge would leave a permanently disabled button and no explanation.
+
 `TURNSTILE_SECRET_KEY` may be omitted only during development on `localhost`.
 Deployed club signup and tournament registration endpoints fail closed when the
 secret is absent. Configure `NEXT_PUBLIC_TURNSTILE_SITE_KEY` in the build

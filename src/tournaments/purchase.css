@@ -356,6 +356,16 @@ color: #b42318;
 color: var(--color-club-green);
 }
 
+.purchase-retry {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .purchase-submit {
 width: 100%;
 }

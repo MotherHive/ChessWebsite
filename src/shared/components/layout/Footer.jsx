@@ -13,7 +13,10 @@ function DiscordIcon() {
 export default function Footer() {
   return (
     <footer className="site-footer" aria-label="Copyright and community links">
-      <p className="site-footer-copy">&copy; 2026 Scranton Chess Club</p>
+      <p className="site-footer-copy">
+        &copy; 2026 Scranton Chess Club
+        <a className="site-footer-privacy" href="/privacy">Privacy</a>
+      </p>
 
       <div className="site-footer-join" aria-label="Join Scranton Chess Club online">
         <span>Join Us @</span>
