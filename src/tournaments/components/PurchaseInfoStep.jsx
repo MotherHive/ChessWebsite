@@ -1,6 +1,12 @@
 import { expiredMembershipDiscount } from "../registration/constants"
 import { formatPrice } from "../registration/pricing"
-import { isValidEmail } from "../registration/validation"
+import {
+  formatPhoneNumber,
+  formatUscfId,
+  isValidEmail,
+  isValidPhoneNumber,
+  isValidUscfId,
+} from "../registration/validation"
 import {
   PurchaseCheckboxCard,
   PurchaseField,
@@ -22,10 +28,15 @@ export default function PurchaseInfoStep({ purchase }) {
     purchaseTotal,
   } = purchase
   const purchaseMessageId = purchaseMessage ? "purchase-drawer-message" : undefined
-  const findIdLink = (
-    <a href={playerSearchUrl} target="_blank" rel="noreferrer">
+  const hasPlayerName = Boolean(purchaseForm.name.trim())
+  const findIdLink = hasPlayerName ? (
+    <a className="purchase-find-id-link" href={playerSearchUrl} target="_blank" rel="noreferrer">
       Find ID
     </a>
+  ) : (
+    <span className="purchase-find-id-link purchase-find-id-link-inactive" aria-disabled="true">
+      Find ID
+    </span>
   )
 
   return (
@@ -60,9 +71,13 @@ export default function PurchaseInfoStep({ purchase }) {
           id="purchase-uscf-id"
           label="USCF ID"
           inputMode="numeric"
+          pattern="[0-9]{8}"
+          placeholder="12345678"
+          formatValue={formatUscfId}
+          hint="Enter the 8-digit ID issued by US Chess."
           purchase={purchase}
           labelAction={findIdLink}
-          invalid={purchaseStatus === "error" && !purchaseForm.uscfId.trim()}
+          invalid={purchaseStatus === "error" && !isValidUscfId(purchaseForm.uscfId)}
         />
       ) : (
         <>
@@ -79,8 +94,17 @@ export default function PurchaseInfoStep({ purchase }) {
               id="purchase-expired-uscf-id"
               label="Expired USCF ID"
               inputMode="numeric"
+              pattern="[0-9]{8}"
+              placeholder="12345678"
+              formatValue={formatUscfId}
+              hint="Optional, but must be the 8-digit US Chess ID if entered."
               purchase={purchase}
               labelAction={findIdLink}
+              invalid={
+                purchaseStatus === "error"
+                && Boolean(purchaseForm.uscfId.trim())
+                && !isValidUscfId(purchaseForm.uscfId)
+              }
             />
           )}
 
@@ -108,8 +132,12 @@ export default function PurchaseInfoStep({ purchase }) {
             label="Phone"
             type="tel"
             autoComplete="tel"
+            inputMode="tel"
+            placeholder="(570) 555-0123"
+            formatValue={formatPhoneNumber}
+            hint="Enter a 10-digit US phone number."
             purchase={purchase}
-            invalid={purchaseStatus === "error" && !purchaseForm.phone.trim()}
+            invalid={purchaseStatus === "error" && !isValidPhoneNumber(purchaseForm.phone)}
           />
 
           <PurchaseCheckboxCard

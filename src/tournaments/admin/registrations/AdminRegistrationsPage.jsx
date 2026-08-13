@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { adminRequest } from "../client"
 import RegistrationDetail from "./RegistrationDetail"
 import {
+  buildCsvTotalRows,
   csvColumns,
   csvEscape,
   formatCents,
@@ -251,7 +252,10 @@ export default function AdminRegistrationsPage() {
     const lines = exportRows.map((row) => (
       csvColumns.map(([, getValue]) => csvEscape(getValue(row))).join(",")
     ))
-    const csvContent = [header, ...lines].join("\n")
+    const totalLines = buildCsvTotalRows(exportRows).map((cells) => (
+      cells.map(csvEscape).join(",")
+    ))
+    const csvContent = [header, ...lines, ...totalLines].join("\n")
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" })
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")

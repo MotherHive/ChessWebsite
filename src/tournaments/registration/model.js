@@ -14,6 +14,8 @@ import {
 import {
   getPlayerSearchUrl,
   isValidEmail,
+  isValidPhoneNumber,
+  isValidUscfId,
   registrationMessages,
 } from "./validation.js"
 
@@ -75,7 +77,15 @@ export const getInfoStepError = (form, { hasActiveMembership, membershipTier, ne
   }
 
   if (hasActiveMembership) {
-    return form.uscfId.trim() ? "" : registrationMessages.activeUscfId
+    if (!form.uscfId.trim()) {
+      return registrationMessages.activeUscfId
+    }
+
+    if (!isValidUscfId(form.uscfId)) {
+      return registrationMessages.invalidUscfId
+    }
+
+    return ""
   }
 
   if (!needsMembership) {
@@ -84,6 +94,14 @@ export const getInfoStepError = (form, { hasActiveMembership, membershipTier, ne
 
   if (!form.address.trim() || !form.phone.trim() || !form.birthDate) {
     return registrationMessages.membershipContact
+  }
+
+  if (!isValidPhoneNumber(form.phone)) {
+    return registrationMessages.invalidPhone
+  }
+
+  if (form.isExpiredMember && form.uscfId.trim() && !isValidUscfId(form.uscfId)) {
+    return registrationMessages.invalidUscfId
   }
 
   if (!membershipTier) {

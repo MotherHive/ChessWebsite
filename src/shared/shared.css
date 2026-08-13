@@ -1146,35 +1146,6 @@ display: block;
   object-fit: contain;
 }
 
-.site-footer-discord {
-display: block;
-  width: 35px;
-  height: 35px;
-  padding: 5px;
-  overflow: visible;
-  fill: var(--color-chess-black);
-  background-color: var(--color-chess-white);
-  border-radius: 50%;
-}
-
-.site-footer-placeholder {
-display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  width: 34px;
-  height: 34px;
-  border: 2px solid rgb(255 255 255 / 0.42);
-  border-radius: 50%;
-}
-
-.site-footer-placeholder span {
-width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background-color: rgb(255 255 255 / 0.42);
-}
-
 @media (max-width: 760px) {
   .site-footer {
   gap: var(--space-4);
@@ -1191,8 +1162,7 @@ width: 9px;
   gap: 14px;
   }
 
-  .site-footer-lichess,
-  .site-footer-discord {
+  .site-footer-lichess {
   width: 30px;
       height: 30px;
   }

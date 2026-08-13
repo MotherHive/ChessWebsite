@@ -28,6 +28,12 @@ export const formatCountdown = (endsAt, now) => {
     return "Expired"
   }
 
+  const dayMs = 24 * 60 * 60 * 1000
+
+  if (remainingMs > 2 * dayMs) {
+    return `${Math.ceil(remainingMs / dayMs)} days`
+  }
+
   const totalSeconds = Math.floor(remainingMs / 1000)
   const hours = Math.floor(totalSeconds / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)

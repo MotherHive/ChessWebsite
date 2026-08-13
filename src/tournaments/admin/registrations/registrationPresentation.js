@@ -43,8 +43,24 @@ export const getSettlementCents = (row) => {
   return { feeCents: row.stripe_fee_cents ?? null, netCents: row.stripe_net_cents }
 }
 
+// USCF membership dues are collected on the club's behalf and passed straight
+// through to USCF, so they are not club earnings. Stripe still charges its fee
+// on the full charge, which is why the club net is the settled net minus dues
+// rather than the entry fees on their own.
+export const getMembershipDuesCents = (row) => (
+  isPaid(row) ? row.membership_amount_cents || 0 : null
+)
+
+export const getClubNetCents = (row) => {
+  const { netCents } = getSettlementCents(row)
+
+  return Number.isFinite(netCents) ? netCents - (row.membership_amount_cents || 0) : null
+}
+
 const formatSettlement = (cents) => (Number.isFinite(cents) ? formatCents(cents) : "")
 
+// The third entry of a column is its total accessor. Columns without one are
+// left blank in the totals rows.
 export const csvColumns = [
   ["Registered", (row) => formatDate(row.created_at)],
   ["Player", (row) => row.player_name],
@@ -60,8 +76,50 @@ export const csvColumns = [
   ["Byes", (row) => (row.byes || []).map((bye) => bye.round).join("; ")],
   ["Payment method", (row) => row.payment_method],
   ["Payment status", (row) => paymentStatusLabels[row.payment_status] || row.payment_status],
-  ["Total", (row) => formatCents(row.total_amount_cents)],
-  ["Processor fee", (row) => formatSettlement(getSettlementCents(row).feeCents)],
-  ["Net received", (row) => formatSettlement(getSettlementCents(row).netCents)],
+  [
+    "Total",
+    (row) => formatCents(row.total_amount_cents),
+    (row) => row.total_amount_cents || 0,
+  ],
+  [
+    "Processor fee",
+    (row) => formatSettlement(getSettlementCents(row).feeCents),
+    (row) => getSettlementCents(row).feeCents,
+  ],
+  [
+    "Net received",
+    (row) => formatSettlement(getSettlementCents(row).netCents),
+    (row) => getSettlementCents(row).netCents,
+  ],
+  [
+    "USCF membership dues",
+    (row) => formatSettlement(getMembershipDuesCents(row)),
+    getMembershipDuesCents,
+  ],
+  [
+    "Club net",
+    (row) => formatSettlement(getClubNetCents(row)),
+    getClubNetCents,
+  ],
   ["Paid at", (row) => formatDate(row.paid_at)],
 ]
+
+const sumCents = (rows, getTotalCents) => rows.reduce((running, row) => {
+  const cents = getTotalCents(row)
+
+  return Number.isFinite(cents) ? running + cents : running
+}, 0)
+
+// Two rows because the Total column counts unpaid orders too: the first row is
+// the literal sum of the column above it, the second is the money actually
+// collected.
+export const buildCsvTotalRows = (rows) => ([
+  ["Totals", rows],
+  ["Totals (paid only)", rows.filter(isPaid)],
+].map(([label, subset]) => csvColumns.map(([, , getTotalCents], index) => {
+  if (index === 0) {
+    return `${label} — ${subset.length} registration${subset.length === 1 ? "" : "s"}`
+  }
+
+  return getTotalCents ? formatCents(sumCents(subset, getTotalCents)) : ""
+})))

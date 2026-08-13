@@ -23,14 +23,21 @@ export function PurchaseField({
   autoComplete,
   describedBy,
   field,
+  formatValue,
+  hint,
   id,
   inputMode,
   invalid,
   label,
   labelAction,
+  pattern,
+  placeholder,
   purchase,
   type = "text",
 }) {
+  const hintId = hint ? `${id}-hint` : undefined
+  const descriptionIds = [describedBy, hintId].filter(Boolean).join(" ") || undefined
+
   return (
     <div className="purchase-field">
       {labelAction ? (
@@ -46,11 +53,17 @@ export function PurchaseField({
         type={type}
         autoComplete={autoComplete}
         inputMode={inputMode}
+        pattern={pattern}
+        placeholder={placeholder}
         value={purchase.purchaseForm[field]}
-        aria-describedby={describedBy}
+        aria-describedby={descriptionIds}
         aria-invalid={invalid}
-        onChange={(event) => purchase.updatePurchaseField(field, event.target.value)}
+        onChange={(event) => purchase.updatePurchaseField(
+          field,
+          formatValue ? formatValue(event.target.value) : event.target.value,
+        )}
       />
+      {hint && <small className="purchase-field-hint" id={hintId}>{hint}</small>}
     </div>
   )
 }

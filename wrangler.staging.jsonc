@@ -24,7 +24,7 @@
     "E2E_TESTING": "true",
     "SITE_URL": "https://staging.scrantonchess.org",
     "RESEND_FROM": "Scranton Chess Club <noreply@scrantonchess.org>",
-    "ADMIN_EMAILS": "cianwknight@gmail.com,scrantonchess@gmail.com",
+    "ADMIN_EMAILS": "cianwknight@gmail.com,scrantonchess@gmail.com,bwisenburn@maryu.marywood.edu,basp0529@gmail.com",
     "CLOUDFLARE_ACCESS_TEAM_DOMAIN": "https://gentle-union-defe.cloudflareaccess.com",
     "CLOUDFLARE_ACCESS_AUD": "53c45149e7a7a309d6a625e01ef1818c496963a2d980db68b0f0e9aa3acffc29"
   },

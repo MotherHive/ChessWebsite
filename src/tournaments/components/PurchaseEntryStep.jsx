@@ -2,7 +2,6 @@ import {
   byePrice,
   expiredMembershipDiscount,
   membershipAgeTiers,
-  membershipPriceRange,
   tournamentRounds,
 } from "../registration/constants"
 import { formatPrice } from "../registration/pricing"
@@ -55,32 +54,16 @@ export default function PurchaseEntryStep({ purchase }) {
       {needsMembership && (
         <div className="purchase-cart-card">
           <div className="purchase-cart-card-header">
-            <span>Added to cart</span>
-            <div className="purchase-membership-title-row">
-              <strong>USCF membership</strong>
-              <div className="purchase-membership-price">
-                <strong className="purchase-range">
-                  {formatPrice(membershipPriceRange.min)}-{formatPrice(membershipPriceRange.max)}
-                </strong>
-                <details className="purchase-info-menu">
-                  <summary aria-label="Show USCF membership prices by age">
-                    <span aria-hidden="true">i</span>
-                  </summary>
-                  <div className="purchase-info-popover">
-                    <strong>Prices by age</strong>
-                    <ul>
-                      {membershipAgeTiers.map((tier) => (
-                        <li key={tier.label}>
-                          <span>{tier.ageRange}</span>
-                          <strong>{formatPrice(tier.price)}</strong>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </details>
-              </div>
-            </div>
+            <strong>USCF membership</strong>
           </div>
+          <ul className="purchase-age-table">
+            {membershipAgeTiers.map((tier) => (
+              <li key={tier.label}>
+                <span>{tier.ageRange}</span>
+                <strong>{formatPrice(tier.price)}</strong>
+              </li>
+            ))}
+          </ul>
           <p>
             Price is calculated from birth date on the information step.
             Expired memberships receive a {formatPrice(expiredMembershipDiscount)} discount.
@@ -91,29 +74,31 @@ export default function PurchaseEntryStep({ purchase }) {
       <div className="purchase-drawer-summary">
         <div className="purchase-tournament-row">
           <div className="purchase-tournament-title">
-            <span>Entry</span>
             <strong>Tournament entry</strong>
+          </div>
+          <strong>{formatPrice(entryPrice)}</strong>
+          <div className="purchase-tournament-options">
+            <PurchaseSelectField
+              className="purchase-section-select"
+              field="section"
+              id="purchase-section"
+              label="Section"
+              purchase={purchase}
+            >
+              {tournamentSections.map((section) => (
+                <option key={section}>{section}</option>
+              ))}
+            </PurchaseSelectField>
             <button
               className="purchase-add-bye-link"
               type="button"
               onClick={addBye}
               disabled={purchaseForm.byes.length >= maxByeCount}
             >
-              + Add Bye
+              <span className="purchase-add-bye-label">+ Add Bye</span>
+              <span className="purchase-add-bye-price">+{formatPrice(byePrice)}</span>
             </button>
           </div>
-          <PurchaseSelectField
-            className="purchase-section-select"
-            field="section"
-            id="purchase-section"
-            label="Section"
-            purchase={purchase}
-          >
-            {tournamentSections.map((section) => (
-              <option key={section}>{section}</option>
-            ))}
-          </PurchaseSelectField>
-          <strong>{formatPrice(entryPrice)}</strong>
         </div>
 
         {purchaseForm.byes.length > 0 && (

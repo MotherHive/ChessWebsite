@@ -21,7 +21,7 @@
 	// `wrangler secret put` and must never appear here.
 	"vars": {
 		"SITE_URL": "https://scrantonchess.org",
-		"ADMIN_EMAILS": "cianwknight@gmail.com,scrantonchess@gmail.com",
+		"ADMIN_EMAILS": "cianwknight@gmail.com,scrantonchess@gmail.com,bwisenburn@maryu.marywood.edu,basp0529@gmail.com",
 		"CLOUDFLARE_ACCESS_TEAM_DOMAIN": "https://gentle-union-defe.cloudflareaccess.com",
 		"CLOUDFLARE_ACCESS_AUD": "036fc36ff624529c9f6998cf085b9a94a3db98030ff2773773d72300dd837c1d"
 	},

@@ -56,8 +56,20 @@ export const verifyTurnstile = async (request, token, expectedAction) => {
       || secret === alwaysPassTestSecret
     )
 
+    if (result.success !== true || !actionMatches) {
+      // Without this the endpoint only ever reports "complete the anti-spam
+      // check", which hides key/secret mismatches and expired tokens.
+      console.warn("Turnstile verification rejected", {
+        action: result.action,
+        errorCodes: result["error-codes"],
+        expectedAction,
+        success: result.success,
+      })
+    }
+
     return result.success === true && actionMatches
-  } catch {
+  } catch (error) {
+    console.warn("Turnstile verification failed", error)
     return false
   }
 }

@@ -1,13 +1,25 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { csvColumns, getSettlementCents } from "./registrationPresentation.js"
+import {
+  buildCsvTotalRows,
+  csvColumns,
+  getClubNetCents,
+  getSettlementCents,
+} from "./registrationPresentation.js"
 
 const paidByCard = {
+  membership_amount_cents: 0,
   payment_method: "stripe_checkout",
   payment_status: "paid",
   stripe_fee_cents: 59,
   stripe_net_cents: 941,
   total_amount_cents: 1000,
+}
+
+const cellAt = (row, label) => {
+  const index = csvColumns.findIndex(([name]) => name === label)
+
+  return row[index]
 }
 
 test("card payments report Stripe's own fee and net", () => {
@@ -48,4 +60,43 @@ test("the CSV renders settlement columns as currency and blanks", () => {
   assert.equal(render("Net received", paidByCard), "$9.41")
   assert.equal(render("Processor fee", paidByCard), "$0.59")
   assert.equal(render("Processor fee", { ...paidByCard, payment_status: "manual_pending" }), "")
+})
+
+test("USCF membership dues come out of the club's net, Stripe's fee does not", () => {
+  const withMembership = {
+    ...paidByCard,
+    membership_amount_cents: 2400,
+    stripe_fee_cents: 130,
+    stripe_net_cents: 3870,
+    total_amount_cents: 4000,
+  }
+
+  assert.equal(getClubNetCents(withMembership), 1470)
+})
+
+test("unpaid registrations report no club net", () => {
+  assert.equal(getClubNetCents({ ...paidByCard, payment_status: "checkout_pending" }), null)
+})
+
+test("the totals rows tally the money columns", () => {
+  const cashWithMembership = {
+    membership_amount_cents: 2400,
+    payment_method: "pay_at_event",
+    payment_status: "paid",
+    total_amount_cents: 4000,
+  }
+  const unpaid = { ...paidByCard, payment_status: "checkout_pending", total_amount_cents: 5000 }
+  const [allRows, paidRows] = buildCsvTotalRows([paidByCard, cashWithMembership, unpaid])
+
+  assert.equal(cellAt(allRows, "Registered"), "Totals — 3 registrations")
+  assert.equal(cellAt(allRows, "Total"), "$100.00")
+  assert.equal(cellAt(allRows, "Processor fee"), "$0.59")
+  assert.equal(cellAt(allRows, "Net received"), "$49.41")
+  assert.equal(cellAt(allRows, "USCF membership dues"), "$24.00")
+  assert.equal(cellAt(allRows, "Club net"), "$25.41")
+  assert.equal(cellAt(allRows, "Paid at"), "")
+
+  assert.equal(cellAt(paidRows, "Registered"), "Totals (paid only) — 2 registrations")
+  assert.equal(cellAt(paidRows, "Total"), "$50.00")
+  assert.equal(cellAt(paidRows, "Club net"), "$25.41")
 })

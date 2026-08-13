@@ -8,7 +8,12 @@ import {
   getMembershipPrice,
   getMembershipTier,
 } from "./pricing.js"
-import { isValidEmail, registrationMessages } from "./validation.js"
+import {
+  isValidEmail,
+  isValidPhoneNumber,
+  isValidUscfId,
+  registrationMessages,
+} from "./validation.js"
 
 const dollarsToCents = (amount) => Math.round(amount * 100)
 
@@ -79,10 +84,15 @@ export const buildTournamentRegistration = (payload, now = Date.now(), tournamen
 
   const hasActiveMembership = activeMembershipStatus === "yes"
   const needsMembership = activeMembershipStatus === "no"
+  const isExpiredMember = Boolean(form.isExpiredMember)
   const uscfId = trimString(form.uscfId)
 
   if (hasActiveMembership && !uscfId) {
     throw new Error(registrationMessages.activeUscfId)
+  }
+
+  if ((hasActiveMembership || isExpiredMember) && uscfId && !isValidUscfId(uscfId)) {
+    throw new Error(registrationMessages.invalidUscfId)
   }
 
   const byes = Array.isArray(form.byes)
@@ -104,7 +114,6 @@ export const buildTournamentRegistration = (payload, now = Date.now(), tournamen
     throw new Error(registrationMessages.duplicateByes)
   }
 
-  const isExpiredMember = Boolean(form.isExpiredMember)
   const enteredWithTeam = Boolean(form.enteredWithTeam)
   const birthDate = trimString(form.birthDate)
   const address = trimString(form.address)
@@ -114,6 +123,10 @@ export const buildTournamentRegistration = (payload, now = Date.now(), tournamen
 
   if (needsMembership && (!address || !phone || !birthDate)) {
     throw new Error(registrationMessages.membershipContact)
+  }
+
+  if (needsMembership && !isValidPhoneNumber(phone)) {
+    throw new Error(registrationMessages.invalidPhone)
   }
 
   if (needsMembership && !membershipTier) {

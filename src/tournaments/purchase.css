@@ -64,8 +64,7 @@ display: flex;
   gap: var(--space-4);
 }
 
-.purchase-drawer-header span,
-.purchase-tournament-title > span {
+.purchase-drawer-header span {
 display: block;
   color: var(--color-club-green);
   font-family: var(--font-body);
@@ -134,9 +133,18 @@ font-family: var(--font-heading);
 
 .purchase-tournament-row {
 display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(130px, 0.62fr) auto;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
   gap: var(--space-3);
+}
+
+.purchase-tournament-options {
+display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3) var(--space-4);
+  grid-column: 1 / -1;
+  margin-top: var(--space-2);
 }
 
 .purchase-tournament-title {
@@ -153,7 +161,9 @@ font-family: var(--font-body);
 
 .purchase-section-select {
 display: grid;
+  flex: 0 1 220px;
   gap: var(--space-1);
+  min-width: 150px;
 }
 
 .purchase-section-select label {
@@ -167,7 +177,10 @@ color: rgb(0 0 0 / 0.58);
 }
 
 .purchase-add-bye-link {
-justify-self: start;
+display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  justify-self: start;
   min-height: 0;
   margin-top: var(--space-1);
   padding: 0;
@@ -179,9 +192,22 @@ justify-self: start;
   font-size: 0.88rem;
   font-weight: 900;
   line-height: 1.3;
-  text-decoration: underline;
+}
+
+.purchase-tournament-options .purchase-add-bye-link {
+margin: 0 0 0.9rem;
+}
+
+.purchase-add-bye-label {
+text-decoration: underline;
   text-decoration-thickness: 1.5px;
   text-underline-offset: 3px;
+}
+
+.purchase-add-bye-price {
+color: rgb(0 0 0 / 0.62);
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .purchase-add-bye-link:disabled {
@@ -279,15 +305,29 @@ display: flex;
   gap: var(--space-3);
 }
 
-.purchase-label-row a,
+.purchase-find-id-link,
 .purchase-member-id-link {
-color: var(--color-chess-black);
   font-family: var(--font-body);
   font-size: 0.82rem;
   font-weight: 800;
+}
+
+.purchase-label-row a.purchase-find-id-link {
+color: var(--color-club-green);
   text-decoration: underline;
   text-decoration-thickness: 1.5px;
   text-underline-offset: 3px;
+}
+
+.purchase-find-id-link-inactive {
+color: rgb(0 0 0 / 0.38);
+}
+
+.purchase-member-id-link {
+color: var(--color-chess-black);
+text-decoration: underline;
+text-decoration-thickness: 1.5px;
+text-underline-offset: 3px;
 }
 
 .purchase-field input,
@@ -316,6 +356,14 @@ border-color: var(--color-club-green);
 
 .purchase-field input[aria-invalid="true"] {
 border-color: #d92d20;
+}
+
+.purchase-field-hint {
+margin-top: calc(var(--space-1) * -1);
+color: rgb(0 0 0 / 0.58);
+font-family: var(--font-body);
+font-size: 0.78rem;
+line-height: 1.4;
 }
 
 .purchase-field input:disabled,
@@ -454,36 +502,8 @@ display: grid;
   min-width: 0;
 }
 
-.purchase-membership-title-row {
-display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  min-width: 0;
-}
-
-.purchase-membership-price {
-display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.purchase-range {
-display: block;
-  margin-top: 0;
-  font-family: var(--font-heading);
-  font-size: clamp(1.55rem, 4vw, 2.1rem);
-  line-height: 1;
-  white-space: nowrap;
-}
-
 .purchase-entry-panel .purchase-tournament-row > strong {
 font-size: 1.28rem;
-}
-
-.purchase-entry-panel .purchase-range {
-font-size: clamp(1.12rem, 3vw, 1.45rem);
 }
 
 .purchase-entry-panel .purchase-bye-row span {
@@ -494,77 +514,42 @@ font-size: 0.78rem;
 font-size: 1.08rem;
 }
 
-.purchase-info-menu {
-position: relative;
-}
-
-.purchase-info-menu summary {
-display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  color: var(--color-club-green);
-  background-color: var(--color-chess-white);
-  border: 1px solid rgb(6 170 19 / 0.28);
-  border-radius: 999px;
-  cursor: pointer;
-  font-family: var(--font-body);
-  font-size: 0.82rem;
-  font-weight: 900;
-  line-height: 1;
-  list-style: none;
-}
-
-.purchase-info-menu summary::-webkit-details-marker {
-display: none;
-}
-
-.purchase-info-menu summary:focus-visible {
-outline: 3px solid rgb(6 170 19 / 0.18);
-  outline-offset: 2px;
-}
-
-.purchase-info-popover {
-position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 3;
-  width: min(220px, calc(100vw - 48px));
-  padding: var(--space-3);
-  background-color: var(--color-chess-white);
-  border: 1px solid rgb(0 0 0 / 0.14);
-  border-radius: var(--radius-md);
-  box-shadow: 0 18px 45px rgb(0 0 0 / 0.14);
-}
-
-.purchase-info-popover > strong {
-display: block;
-  font-family: var(--font-body);
-  font-size: 0.82rem;
-  line-height: 1.2;
-}
-
-.purchase-info-popover ul {
+.purchase-age-table {
 display: grid;
-  gap: var(--space-2);
-  margin: var(--space-2) 0 0;
+  gap: 2px;
+  margin: var(--space-3) 0 0;
   padding: 0;
   list-style: none;
 }
 
-.purchase-info-popover li {
+.purchase-age-table li {
 display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: var(--space-3);
+  padding: 6px var(--space-3);
+  background-color: rgb(255 255 255 / 0.55);
   color: rgb(0 0 0 / 0.72);
   font-family: var(--font-body);
   font-size: 0.84rem;
   line-height: 1.3;
 }
 
-.purchase-info-popover li strong {
+.purchase-age-table li:first-child {
+border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-sm);
+}
+
+.purchase-age-table li:last-child {
+border-bottom-left-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.purchase-cart-card .purchase-age-table + p {
+margin-top: var(--space-3);
+}
+
+.purchase-cart-card .purchase-age-table li strong {
 color: var(--color-chess-black);
   font-family: var(--font-heading);
   font-size: 0.98rem;
@@ -725,8 +710,139 @@ grid-column: 1 / -1;
 margin-top: var(--space-3);
 }
 
+.purchase-review-panel {
+gap: var(--space-5);
+}
+
+.purchase-registration-details {
+gap: 0;
+padding: 0;
+overflow: hidden;
+background-color: var(--color-chess-white);
+}
+
+.purchase-review-section {
+display: grid;
+gap: var(--space-1);
+padding: var(--space-4);
+}
+
+.purchase-review-section + .purchase-review-section {
+border-top: 1px solid rgb(0 0 0 / 0.1);
+}
+
+.purchase-review-section h4,
+.purchase-review-card-heading > span {
+margin: 0 0 var(--space-2);
+color: var(--color-club-green);
+font-family: var(--font-body);
+font-size: 0.72rem;
+font-weight: 800;
+letter-spacing: 0.1em;
+line-height: 1.2;
+text-transform: uppercase;
+}
+
+.purchase-review-section > strong,
+.purchase-review-card-heading > strong {
+font-family: var(--font-body);
+font-size: 1rem;
+line-height: 1.3;
+}
+
+.purchase-review-card-heading {
+display: grid;
+gap: var(--space-1);
+}
+
+.purchase-review-card-heading > span {
+margin-bottom: 0;
+}
+
 .purchase-payment-card {
+gap: var(--space-4);
+background-color: rgb(6 170 19 / 0.055);
+border-color: rgb(6 170 19 / 0.2);
+}
+
+.purchase-payment-options {
+display: grid;
+gap: var(--space-2);
+min-width: 0;
+margin: 0;
+padding: 0;
+border: 0;
+}
+
+.purchase-payment-option {
+display: flex;
+align-items: flex-start;
 gap: var(--space-3);
+padding: var(--space-3);
+background-color: var(--color-chess-white);
+border: 1px solid rgb(0 0 0 / 0.14);
+border-radius: var(--radius-md);
+cursor: pointer;
+transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.purchase-payment-option:has(input:checked) {
+border-color: var(--color-club-green);
+box-shadow: 0 0 0 2px rgb(6 170 19 / 0.12);
+}
+
+.purchase-payment-option:focus-within {
+outline: 3px solid rgb(6 170 19 / 0.18);
+outline-offset: 1px;
+}
+
+.purchase-payment-option input {
+flex: 0 0 18px;
+width: 18px;
+height: 18px;
+margin: 2px 0 0;
+accent-color: var(--color-club-green);
+}
+
+.purchase-payment-option > span {
+display: grid;
+gap: 3px;
+min-width: 0;
+}
+
+.purchase-payment-option strong {
+font-family: var(--font-body);
+font-size: 0.92rem;
+line-height: 1.3;
+}
+
+.purchase-payment-option small,
+.purchase-payment-note {
+color: rgb(0 0 0 / 0.62);
+font-family: var(--font-body);
+font-size: 0.8rem;
+line-height: 1.4;
+}
+
+.purchase-order-summary {
+gap: 0;
+padding-bottom: var(--space-3);
+}
+
+.purchase-order-summary .purchase-review-card-heading {
+margin-bottom: var(--space-2);
+}
+
+.purchase-line-items {
+display: grid;
+}
+
+.purchase-line-items .purchase-line-item:last-child {
+border-bottom: 0;
+}
+
+.purchase-order-summary .purchase-total {
+margin-top: var(--space-2);
 }
 
 /* Completion state */
@@ -797,14 +913,17 @@ margin: 0;
       height: 22px;
   }
 
-  .purchase-tournament-row,
   .purchase-bye-row,
   .purchase-drawer-footer {
   grid-template-columns: 1fr;
   }
 
-  .purchase-tournament-row > strong {
-  justify-self: start;
+  .purchase-tournament-options .purchase-add-bye-link {
+  margin-bottom: 0;
+  }
+
+  .purchase-section-select {
+  flex: 1 1 100%;
   }
 
   .purchase-bye-row {
@@ -813,20 +932,6 @@ margin: 0;
 
   .purchase-bye-row span {
   justify-self: start;
-  }
-
-  .purchase-membership-title-row {
-  align-items: flex-start;
-      flex-direction: column;
-  }
-
-  .purchase-membership-price {
-  width: 100%;
-      justify-content: space-between;
-  }
-
-  .purchase-info-popover {
-  right: 0;
   }
 
   .purchase-bye-row button {

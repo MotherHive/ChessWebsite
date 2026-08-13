@@ -75,13 +75,12 @@ export default function TournamentCard({
           </span>
 
           <span className="tournament-meta-line">
-            <span className="tournament-price-label">Entry fees</span>
             <span className="tournament-offer-row">
               <span className="tournament-price">
                 {tournament.entryFees.map((fee) => (
                   <span className="tournament-price-section" key={fee.section}>
-                    <strong>{formatPrice(getDisplayedEntryPrice(fee))}</strong>
                     <span>{fee.section}</span>
+                    <strong>{formatPrice(getDisplayedEntryPrice(fee))}</strong>
                   </span>
                 ))}
               </span>
