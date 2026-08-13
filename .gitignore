@@ -38,3 +38,6 @@ out
 !.dev.vars.example
 
 !.env.example
+
+# Seed run output, regenerated on demand
+.seed-staging-report.json

@@ -11,7 +11,12 @@ const env = Object.fromEntries(
     .map((match) => [match[1], match[2].replace(/^["']|["']$/g, "")]),
 )
 const secretKey = env.STRIPE_SECRET_KEY || ""
-const endpointUrl = "https://chess-website-staging.scrantonchess.workers.dev/api/stripe-webhook"
+const endpointUrl = "https://staging.scrantonchess.org/api/stripe-webhook"
+// Staging moved off workers.dev once Access needed a hostname in our own zone.
+// Any endpoint left on the old host would keep receiving duplicate events.
+const retiredEndpointUrls = [
+  "https://chess-website-staging.scrantonchess.workers.dev/api/stripe-webhook",
+]
 
 if (!secretKey.startsWith("sk_test_") && !secretKey.startsWith("rk_test_")) {
   throw new Error("Add a Stripe sandbox key to STRIPE_SECRET_KEY in .dev.vars first.")
@@ -20,13 +25,22 @@ if (!secretKey.startsWith("sk_test_") && !secretKey.startsWith("rk_test_")) {
 const stripe = new Stripe(secretKey)
 const existingEndpoints = await stripe.webhookEndpoints.list({ limit: 100 })
 
-for (const endpoint of existingEndpoints.data.filter(({ url }) => url === endpointUrl)) {
+const staleUrls = new Set([endpointUrl, ...retiredEndpointUrls])
+
+for (const endpoint of existingEndpoints.data.filter(({ url }) => staleUrls.has(url))) {
   await stripe.webhookEndpoints.del(endpoint.id)
 }
 
 const endpoint = await stripe.webhookEndpoints.create({
   description: "Scranton Chess isolated staging",
-  enabled_events: ["checkout.session.completed", "checkout.session.expired"],
+  // Delayed payment methods only settle through the async events, so a
+  // registration paid that way never confirms if they are not subscribed.
+  enabled_events: [
+    "checkout.session.async_payment_failed",
+    "checkout.session.async_payment_succeeded",
+    "checkout.session.completed",
+    "checkout.session.expired",
+  ],
   url: endpointUrl,
 })
 
