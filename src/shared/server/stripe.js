@@ -20,5 +20,7 @@ export const getStripe = () => {
     throw new Error("A live Stripe key is blocked unless STRIPE_ALLOW_LIVE=true.")
   }
 
-  return new Stripe(secretKey)
+  return new Stripe(secretKey, {
+    httpClient: Stripe.createFetchHttpClient(),
+  })
 }

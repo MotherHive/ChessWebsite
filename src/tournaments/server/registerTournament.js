@@ -152,7 +152,9 @@ const continueStripeCheckout = async ({
         player_email: registration.email,
       },
     }, { idempotencyKey: `registration-${idempotencyKey}` })
-  } catch {
+  } catch (error) {
+    console.error("Stripe Checkout session creation failed:", error)
+
     try {
       await executeUpdate(
         db,

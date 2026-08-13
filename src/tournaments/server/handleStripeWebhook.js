@@ -196,7 +196,9 @@ export async function handleStripeWebhook(request) {
       )
 
       if (!emailSent) {
-        return jsonResponse(500, { error: "Could not send the registration confirmation." })
+        // Payment state is authoritative and must not be rolled back or retried
+        // merely because the optional confirmation email provider is unavailable.
+        console.error("Payment was recorded, but the registration confirmation email failed.")
       }
     }
   }

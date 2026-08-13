@@ -20,6 +20,11 @@
   "images": {
     "binding": "IMAGES"
   },
+  "vars": {
+    "E2E_TESTING": "true",
+    "SITE_URL": "https://chess-website-staging.scrantonchess.workers.dev",
+    "RESEND_FROM": "Scranton Chess Club <noreply@scrantonchess.org>"
+  },
   "d1_databases": [
     {
       "binding": "DB",

@@ -1,5 +1,7 @@
 import { getServerConfig } from "./cloudflare.js"
 
+const alwaysPassTestSecret = "1x0000000000000000000000000000000AA"
+
 const getSecret = () => getServerConfig("TURNSTILE_SECRET_KEY")
 
 const isLocalRequest = (request) => {
@@ -13,6 +15,14 @@ const isLocalRequest = (request) => {
 
 export const verifyTurnstile = async (request, token, expectedAction) => {
   const secret = getSecret()
+
+  if (
+    getServerConfig("E2E_TESTING") === "true"
+    && secret === alwaysPassTestSecret
+    && token === "XXXX.DUMMY.TOKEN.XXXX"
+  ) {
+    return true
+  }
 
   if (!secret) {
     // Missing credentials are convenient locally, but must never silently
@@ -40,8 +50,13 @@ export const verifyTurnstile = async (request, token, expectedAction) => {
       { body: formData, method: "POST" },
     )
     const result = await response.json()
+    const actionMatches = (
+      !expectedAction
+      || result.action === expectedAction
+      || secret === alwaysPassTestSecret
+    )
 
-    return result.success === true && (!expectedAction || result.action === expectedAction)
+    return result.success === true && actionMatches
   } catch {
     return false
   }
