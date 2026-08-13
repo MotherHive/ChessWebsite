@@ -1,7 +1,6 @@
 "use client"
 
 const Hermes = "/assets/hermes.webp"
-const Splash = "/assets/splash.webp"
 import ProgressiveImage from "@/shared/components/ui/ProgressiveImage"
 import useScrollVisibility from "@/shared/hooks/useScrollVisibility"
 
@@ -48,7 +47,7 @@ export default function ContactPage() {
     >
       <div className="tournaments-hero contact-hero">
         <div className="tournaments-copy">
-          <h2 id="contact-heading">SCRANTON CHESS CLUB CONTACT</h2>
+          <h2 id="contact-heading">CONTACT US</h2>
           <p>
             Get club information, ask about meetings or tournaments, and see the staff roles that keep the club running.
           </p>
@@ -63,15 +62,6 @@ export default function ContactPage() {
 
         <div className="tournaments-board contact-board" aria-label="Contact page club preview">
           <ProgressiveImage
-            className="contact-splash"
-            src={Splash}
-            alt=""
-            aria-hidden="true"
-            decoding="async"
-            width="2000"
-            height="1500"
-          />
-          <ProgressiveImage
             className="contact-hermes"
             src={Hermes}
             alt="Hermes carrying club correspondence"
@@ -81,6 +71,7 @@ export default function ContactPage() {
             height="887"
           />
         </div>
+
       </div>
 
       <section className="contact-staff" aria-labelledby="staff-heading">

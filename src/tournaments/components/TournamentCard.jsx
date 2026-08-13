@@ -39,7 +39,9 @@ export default function TournamentCard({
           <span className="tournament-title-stack">
             <span className="tournament-title-row">
               <span>
-                <span className="tournament-eyebrow">Tournament</span>
+                <span className="tournament-eyebrow">
+                  {tournament.type}
+                </span>
                 <strong>{tournament.title}</strong>
               </span>
               <span className={`tournament-rating tournament-rating-${tournament.rating.toLowerCase()}`}>
@@ -56,7 +58,6 @@ export default function TournamentCard({
                   {tournamentStatusLabel}
                 </span>
               )}
-              <span>{tournament.type}</span>
             </span>
             {canPurchaseEntry && (
               <span className="tournament-title-actions">

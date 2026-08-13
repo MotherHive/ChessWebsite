@@ -1,7 +1,4 @@
 import Link from "next/link"
-const KnightIcon = "/assets/icons/knight.png"
-const PawnIcon = "/assets/icons/pawn.png"
-const RookIcon = "/assets/icons/rook.png"
 const CasualImage = "/assets/photos/casual.webp"
 const MatchImage = "/assets/photos/match.webp"
 const TournamentImage = "/assets/photos/tournament.webp"
@@ -10,7 +7,6 @@ import useScrollVisibility from "@/shared/hooks/useScrollVisibility"
 
 const introCards = [
   {
-    icon: PawnIcon,
     image: CasualImage,
     title: "CASUAL PLAY",
     description: "Drop in for friendly games and improve at your own pace.",
@@ -19,7 +15,6 @@ const introCards = [
     linkHref: "#join",
   },
   {
-    icon: RookIcon,
     image: TournamentImage,
     title: "TOURNAMENTS",
     description: "Compete in local events throughout the year.",
@@ -28,7 +23,6 @@ const introCards = [
     linkHref: "/tournaments",
   },
   {
-    icon: KnightIcon,
     image: MatchImage,
     title: "ALL AGES & LEVELS",
     description: "Beginners, advanced players, students, and adults are all welcome.",
@@ -68,9 +62,6 @@ export default function Intro() {
             key={card.title}
             style={{ "--intro-card-index": index }}
           >
-            <div className="intro-card-icon" aria-hidden="true">
-              <img src={card.icon} alt="" />
-            </div>
             <div className="intro-card-shell">
               <div className="intro-card-media" aria-hidden="true">
                 {card.image && (

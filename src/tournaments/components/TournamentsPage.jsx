@@ -38,9 +38,6 @@ export default function TournamentsPage({ initialTime }) {
       aria-labelledby="tournaments-heading"
     >
       <TournamentHero featuredTournament={featuredTournament} />
-      <div className="tournaments-list-header">
-        <h2>Upcoming Events</h2>
-      </div>
       {!isLoading && tournaments.length === 0 && (
         <div className="tournaments-empty-state" role="status">
           <span>Schedule update</span>

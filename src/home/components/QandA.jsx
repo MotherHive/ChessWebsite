@@ -25,7 +25,7 @@ const questionColumns = [
     },
     {
       question: "What is the rating range of your players?",
-      answer: "We have players anywhere from 1000 to 2200 USCF.",
+      answer: "We have players anywhere from 400 to 2200 USCF.",
     },
   ],
   [
@@ -71,12 +71,12 @@ const getQuestionSearchText = (item) => [
   item.searchText ?? "",
 ].join(" ").toLowerCase()
 
-function QuestionRow({ answer, isExtra, isOpen, onToggle, question }) {
+function QuestionRow({ answer, isOpen, onToggle, question }) {
   const id = question.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
   const answerId = `qa-answer-${id}`
 
   return (
-    <div className={`qa-item${isOpen ? " qa-item-open" : ""}${isExtra ? " qa-item-extra" : ""}`}>
+    <div className={`qa-item${isOpen ? " qa-item-open" : ""}`}>
       <button
         className="qa-row"
         type="button"
@@ -100,7 +100,6 @@ function QuestionRow({ answer, isExtra, isOpen, onToggle, question }) {
 export default function QandA() {
   const [sectionRef, isVisible] = useScrollVisibility({ threshold: 0.24 })
   const [openQuestion, setOpenQuestion] = useState(null)
-  const [showAllQuestions, setShowAllQuestions] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const normalizedSearchQuery = searchQuery.trim().toLowerCase()
   const allQuestions = questionColumns.flat()
@@ -113,11 +112,16 @@ export default function QandA() {
         matchingQuestions.slice(0, splitIndex),
         matchingQuestions.slice(splitIndex),
       ]
-    : questionColumns.map((column) => (
-        showAllQuestions ? column : column.slice(0, 3)
-      ))
-  const hasHiddenQuestions = !normalizedSearchQuery && !showAllQuestions
+    : questionColumns
   const hasMatchingQuestions = visibleQuestionColumns.some((column) => column.length > 0)
+  const desktopRowCount = Math.max(
+    0,
+    ...visibleQuestionColumns.map((column) => column.length),
+  )
+  const mobileRowCount = visibleQuestionColumns.reduce(
+    (total, column) => total + column.length,
+    0,
+  )
 
   const toggleQuestion = (question) => {
     setOpenQuestion((currentQuestion) => (
@@ -150,7 +154,13 @@ export default function QandA() {
             />
           </div>
 
-          <div className="qa-grid">
+          <div
+            className="qa-grid"
+            style={{
+              "--qa-desktop-row-height": `${desktopRowCount * 66}px`,
+              "--qa-mobile-row-height": `${mobileRowCount * 62}px`,
+            }}
+          >
             {hasMatchingQuestions ? (
               visibleQuestionColumns.map((column, columnIndex) => (
                 <div
@@ -158,10 +168,9 @@ export default function QandA() {
                   key={columnIndex}
                   style={{ "--qa-column-index": columnIndex }}
                 >
-                  {column.map((item, questionIndex) => (
+                  {column.map((item) => (
                     <QuestionRow
                       answer={item.answer}
-                      isExtra={!normalizedSearchQuery && showAllQuestions && questionIndex >= 3}
                       isOpen={openQuestion === item.question}
                       question={item.question}
                       key={item.question}
@@ -179,18 +188,6 @@ export default function QandA() {
             <div className="qa-help">
               <p>Still confused?</p>
               <a href="mailto:scrantonchess@gmail.com">Email us</a>
-            </div>
-
-            <div className="qa-actions">
-              {hasHiddenQuestions && (
-                <button
-                  className="qa-show-all"
-                  type="button"
-                  onClick={() => setShowAllQuestions(true)}
-                >
-                  Show More Questions
-                </button>
-              )}
             </div>
           </div>
         </div>

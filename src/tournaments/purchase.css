@@ -12,7 +12,7 @@ overflow: hidden;
 position: fixed;
   inset: 0;
   z-index: 80;
-  background-color: rgb(0 0 0 / 0.58);
+  background-color: rgb(0 0 0 / 0.68);
   opacity: 0;
   pointer-events: none;
   transition: opacity 220ms ease;
@@ -24,6 +24,9 @@ opacity: 1;
 }
 
 .purchase-drawer {
+--purchase-drawer-gutter-block: clamp(var(--space-5), 4vw, var(--space-7));
+--purchase-drawer-gutter-inline: clamp(var(--space-5), 4vw, var(--space-7));
+
 position: fixed;
   top: 0;
   right: 0;
@@ -33,11 +36,12 @@ position: fixed;
   gap: var(--space-5);
   width: min(500px, 100vw);
   height: 100dvh;
-  padding: clamp(var(--space-5), 4vw, var(--space-7));
+  padding: var(--purchase-drawer-gutter-block) var(--purchase-drawer-gutter-inline);
   overflow-y: auto;
   color: var(--color-chess-black);
-  background-color: var(--color-chess-white);
-  box-shadow: -24px 0 60px rgb(0 0 0 / 0.28);
+  background-color: var(--color-paper);
+  border-left: 5px solid var(--color-chess-black);
+  box-shadow: -10px 0 0 rgb(255 255 255 / 0.16);
   pointer-events: none;
   transform: translateX(100%);
   visibility: hidden;
@@ -57,11 +61,14 @@ display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
+  padding: var(--space-3) 0 var(--space-4);
+  border-top: 6px solid var(--color-chess-black);
+  border-bottom: 1px solid rgb(0 0 0 / 0.46);
 }
 
 .purchase-drawer-header span {
 display: block;
-  color: var(--color-club-green);
+  color: rgb(0 0 0 / 0.58);
   font-family: var(--font-body);
   font-size: 0.76rem;
   font-weight: 800;
@@ -85,7 +92,9 @@ position: relative;
   height: 44px;
   padding: 0;
   background-color: var(--color-charcoal);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--color-chess-black);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 rgb(0 0 0 / 0.18);
 }
 
 .purchase-drawer-close span {
@@ -107,9 +116,10 @@ transform: rotate(-45deg);
 
 .purchase-drawer-summary {
 padding: var(--space-5);
-  background-color: rgb(6 170 19 / 0.08);
-  border: 1px solid rgb(6 170 19 / 0.2);
-  border-radius: var(--radius-md);
+  background-color: var(--color-chess-white);
+  border: 1px solid rgb(0 0 0 / 0.22);
+  border-top: 5px solid var(--color-chess-black);
+  border-radius: 0;
 }
 
 .purchase-total {
@@ -164,7 +174,7 @@ display: grid;
 .purchase-section-select label {
 color: rgb(0 0 0 / 0.58);
   font-family: var(--font-body);
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   line-height: 1.2;
@@ -218,7 +228,7 @@ display: block;
 margin: var(--space-4) 0 0;
   color: rgb(0 0 0 / 0.72);
   font-family: var(--font-body);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   line-height: 1.5;
 }
 
@@ -237,7 +247,7 @@ display: grid;
 .purchase-steps {
 display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-2);
+  gap: 0;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -248,11 +258,20 @@ display: flex;
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
+  padding: 0 var(--space-2);
   color: rgb(0 0 0 / 0.46);
   font-family: var(--font-body);
   font-size: 0.78rem;
   font-weight: 800;
   line-height: 1.2;
+}
+
+.purchase-step:first-child {
+padding-left: 0;
+}
+
+.purchase-step + .purchase-step {
+border-left: 1px solid rgb(0 0 0 / 0.18);
 }
 
 .purchase-step span {
@@ -264,7 +283,7 @@ display: inline-flex;
   height: 24px;
   color: var(--color-chess-white);
   background-color: rgb(0 0 0 / 0.22);
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 0.76rem;
 }
 
@@ -273,18 +292,19 @@ color: var(--color-chess-black);
 }
 
 .purchase-step-active span {
-background-color: var(--color-club-green);
+background-color: var(--color-charcoal);
 }
 
 .purchase-field {
 display: grid;
-  gap: var(--space-2);
+  gap: 0.4rem;
 }
 
 .purchase-field label {
 font-family: var(--font-body);
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   font-weight: 800;
+  line-height: 1.25;
 }
 
 .purchase-label-row {
@@ -297,7 +317,7 @@ display: flex;
 .purchase-find-id-link,
 .purchase-member-id-link {
   font-family: var(--font-body);
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   font-weight: 800;
 }
 
@@ -324,14 +344,15 @@ text-underline-offset: 3px;
 .purchase-section-select select,
 .purchase-bye-row select {
 width: 100%;
-  min-height: 48px;
+  min-height: 44px;
   padding: 0 var(--space-3);
   color: var(--color-chess-black);
   background-color: var(--color-chess-white);
   border: 1px solid rgb(0 0 0 / 0.18);
-  border-radius: var(--radius-md);
+  border-radius: 0;
   font-family: var(--font-body);
-  font-size: var(--font-size-16);
+  font-size: 0.94rem;
+  line-height: 1.25;
 }
 
 .purchase-field input:focus,
@@ -351,7 +372,7 @@ border-color: #d92d20;
 margin-top: calc(var(--space-1) * -1);
 color: rgb(0 0 0 / 0.58);
 font-family: var(--font-body);
-font-size: 0.78rem;
+font-size: 0.8rem;
 line-height: 1.4;
 }
 
@@ -366,7 +387,7 @@ cursor: wait;
 min-height: 64px;
   padding: 0 var(--space-4);
   background-color: var(--color-charcoal);
-  border-radius: var(--radius-md);
+  border-radius: 0;
   color: var(--color-chess-white);
 }
 
@@ -415,9 +436,10 @@ width: 100%;
 .purchase-review-card {
 min-width: 0;
   padding: var(--space-4);
-  background-color: rgb(0 0 0 / 0.035);
-  border: 1px solid rgb(0 0 0 / 0.1);
-  border-radius: var(--radius-md);
+  background-color: var(--color-chess-white);
+  border: 1px solid rgb(0 0 0 / 0.2);
+  border-top: 4px solid var(--color-chess-black);
+  border-radius: 0;
 }
 
 .purchase-check-card {
@@ -459,7 +481,7 @@ display: grid;
 .purchase-bye-heading strong,
 .purchase-cart-card strong {
 font-family: var(--font-body);
-  font-size: 0.98rem;
+  font-size: 0.94rem;
   line-height: 1.25;
 }
 
@@ -471,7 +493,7 @@ font-family: var(--font-body);
 margin: 0;
   color: rgb(0 0 0 / 0.68);
   font-family: var(--font-body);
-  font-size: 0.88rem;
+  font-size: 0.84rem;
   line-height: 1.45;
 }
 
@@ -481,8 +503,9 @@ padding: var(--space-3);
 
 .purchase-cart-card {
 position: relative;
-  background-color: rgb(6 170 19 / 0.08);
-  border-color: rgb(6 170 19 / 0.22);
+  background-color: var(--color-chess-white);
+  border-color: rgb(0 0 0 / 0.2);
+  border-top-color: var(--color-chess-black);
 }
 
 .purchase-cart-card-header {
@@ -525,13 +548,13 @@ display: flex;
 }
 
 .purchase-age-table li:first-child {
-border-top-left-radius: var(--radius-sm);
-  border-top-right-radius: var(--radius-sm);
+border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
 .purchase-age-table li:last-child {
-border-bottom-left-radius: var(--radius-sm);
-  border-bottom-right-radius: var(--radius-sm);
+border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .purchase-cart-card .purchase-age-table + p {
@@ -548,7 +571,7 @@ color: var(--color-chess-black);
 .purchase-cart-card > div > span,
 .purchase-bye-heading span,
 .purchase-review-card > span {
-color: var(--color-club-green);
+color: rgb(0 0 0 / 0.58);
   font-family: var(--font-body);
   font-size: 0.72rem;
   font-weight: 800;
@@ -559,7 +582,7 @@ color: var(--color-club-green);
 
 .purchase-bye-row label {
 font-family: var(--font-body);
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   font-weight: 800;
 }
 
@@ -574,7 +597,7 @@ min-height: 40px;
   color: var(--color-chess-black);
   background-color: var(--color-chess-white);
   border: 1px solid rgb(0 0 0 / 0.16);
-  border-radius: var(--radius-md);
+  border-radius: 0;
   font-family: var(--font-body);
   font-size: 0.86rem;
   font-weight: 800;
@@ -664,10 +687,14 @@ position: sticky;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: var(--space-3);
-  margin-top: var(--space-2);
-  padding: var(--space-4) 0 0;
-  background-color: var(--color-chess-white);
-  border-top: 1px solid rgb(0 0 0 / 0.1);
+  margin: var(--space-2) calc(var(--purchase-drawer-gutter-inline) * -1) 0;
+  padding: var(--space-4) var(--purchase-drawer-gutter-inline)
+    var(--purchase-drawer-gutter-block);
+  background-color: var(--color-paper);
+  border-top: 4px double rgb(0 0 0 / 0.42);
+  box-shadow:
+    0 -12px 18px var(--color-paper),
+    0 50vh 0 50vh var(--color-paper);
 }
 
 .purchase-drawer-footer > div {
@@ -723,7 +750,7 @@ border-top: 1px solid rgb(0 0 0 / 0.1);
 .purchase-review-section h4,
 .purchase-review-card-heading > span {
 margin: 0 0 var(--space-2);
-color: var(--color-club-green);
+color: rgb(0 0 0 / 0.58);
 font-family: var(--font-body);
 font-size: 0.72rem;
 font-weight: 800;
@@ -750,8 +777,9 @@ margin-bottom: 0;
 
 .purchase-payment-card {
 gap: var(--space-4);
-background-color: rgb(6 170 19 / 0.055);
-border-color: rgb(6 170 19 / 0.2);
+background-color: var(--color-chess-white);
+border-color: rgb(0 0 0 / 0.2);
+border-top-color: var(--color-chess-black);
 }
 
 .purchase-payment-options {
@@ -770,7 +798,7 @@ gap: var(--space-3);
 padding: var(--space-3);
 background-color: var(--color-chess-white);
 border: 1px solid rgb(0 0 0 / 0.14);
-border-radius: var(--radius-md);
+border-radius: 0;
 cursor: pointer;
 transition: border-color 160ms ease, box-shadow 160ms ease;
 }
@@ -845,7 +873,7 @@ align-content: start;
 width: 54px;
   height: 54px;
   background-color: var(--color-club-green);
-  border-radius: 999px;
+  border-radius: 0;
 }
 
 .purchase-thanks-mark::after {
@@ -884,7 +912,15 @@ margin: 0;
 
 @media (max-width: 700px) {
   .purchase-drawer {
-  padding: var(--space-5) var(--space-4);
+  --purchase-drawer-gutter-block: var(--space-5);
+      --purchase-drawer-gutter-inline: var(--space-4);
+  }
+
+  .purchase-field input,
+  .purchase-field select,
+  .purchase-section-select select,
+  .purchase-bye-row select {
+  font-size: 1rem;
   }
 
   .purchase-steps {

@@ -41,7 +41,7 @@ display: flex;
 
 .admin-nav a {
 padding: 0.5rem 1rem;
-  border-radius: 999px;
+  border-radius: 0;
   text-decoration: none;
   color: var(--color-text);
   border: 1px solid transparent;
@@ -111,7 +111,7 @@ font-family: var(--font-heading);
 .admin-table-wrap {
 overflow-x: auto;
   border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
+  border-radius: 0;
   background: var(--color-surface);
 }
 
@@ -224,7 +224,7 @@ min-height: 100vh;
 width: min(24rem, 100%);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 1rem;
+  border-radius: 0;
   padding: 2rem;
   display: flex;
   flex-direction: column;
@@ -258,7 +258,7 @@ font-size: 1rem;
 display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
+  gap: 1rem 1.75rem;
 }
 
 .admin-mailing-actions button:disabled {
@@ -271,7 +271,7 @@ width: 100%;
   margin-bottom: 1rem;
   padding: 0.75rem;
   border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
+  border-radius: 0;
   font-family: monospace;
   font-size: 0.9rem;
 }
@@ -295,7 +295,7 @@ font: inherit;
   font-weight: 400;
   padding: 0.55rem 0.7rem;
   border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
+  border-radius: 0;
   background: var(--color-surface);
   color: var(--color-text);
 }
@@ -310,7 +310,7 @@ display: flex;
 
 .admin-fieldset {
 border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
+  border-radius: 0;
   padding: 1.25rem;
   background: var(--color-surface);
   display: flex;
@@ -371,7 +371,7 @@ display: grid;
   overflow: hidden;
   background: #f7faf7;
   border: 2px dashed var(--color-border);
-  border-radius: 0.75rem;
+  border-radius: 0;
   color: var(--color-text);
   text-align: center;
   cursor: pointer;
@@ -453,7 +453,7 @@ display: flex;
   padding: 0.85rem 1rem;
   background: #f2f6f2;
   border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
+  border-radius: 0;
 }
 
 .admin-preset-summary span {
@@ -584,7 +584,7 @@ color: #4d574d;
 
 .admin-nested-card {
 border: 1px dashed var(--color-border);
-  border-radius: 0.6rem;
+  border-radius: 0;
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -633,7 +633,7 @@ display: grid;
 .admin-stat {
 background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
+  border-radius: 0;
   padding: 1rem 1.25rem;
   display: flex;
   flex-direction: column;
@@ -688,7 +688,7 @@ margin-top: 1.5rem;
 margin-top: 1.5rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
+  border-radius: 0;
   padding: 1.5rem;
 }
 

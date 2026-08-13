@@ -64,7 +64,9 @@ export default function End() {
           </figure>
 
           <aside className="end-partnership-panel" style={{ "--end-item-index": 1 }} aria-label="Marywood University partnership">
-            <span>In partnership with</span>
+            <div className="end-partnership-copy">
+              <p>In partnership with</p>
+            </div>
             <a className="end-marywood-link" href="https://www.marywood.edu/" target="_blank" rel="noreferrer">
               <img src={MarywoodLogo} alt="Marywood University" />
             </a>

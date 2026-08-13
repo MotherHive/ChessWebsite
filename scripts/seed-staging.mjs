@@ -54,7 +54,49 @@ const tournamentData = {
     { section: "Reserve", price: 25, earlyPrice: 18 },
     { section: "Scholastic", price: 15, earlyPrice: 10 },
   ],
-  days: [],
+  days: [
+    {
+      date: "Sat, May 30",
+      sections: [
+        {
+          name: "Championship",
+          control: "G/75 d5",
+          times: [
+            { label: "8:30 AM", detail: "Registration start" },
+            { label: "9:30 AM", detail: "Registration end" },
+            { label: "10:00", detail: "Round 1" },
+            { label: "1:00", detail: "Round 2" },
+            { label: "3:30", detail: "Round 3" },
+          ],
+        },
+        {
+          name: "Scholastic",
+          control: "G/40 d5",
+          times: [
+            { label: "8:30 AM", detail: "Registration start" },
+            { label: "9:30 AM", detail: "Registration end" },
+            { label: "10:00", detail: "Round 1" },
+            { label: "11:30", detail: "Round 2" },
+            { label: "1:00", detail: "Round 3" },
+            { label: "2:30", detail: "Round 4" },
+          ],
+        },
+      ],
+    },
+    {
+      date: "Sun, May 31",
+      sections: [
+        {
+          name: "Championship",
+          control: "G/90 d5",
+          times: [
+            { label: "9:30", detail: "Round 4" },
+            { label: "1:00", detail: "Round 5" },
+          ],
+        },
+      ],
+    },
+  ],
   prizes: [],
 }
 
