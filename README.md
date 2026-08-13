@@ -123,12 +123,16 @@ Create one Cloudflare Access self-hosted application covering `/admin` and
 team domain and audience tag in the variables above. The API verifies Access's
 signed JWT in addition to the edge policy.
 
-Set the Access application's cookie **SameSite attribute to `Strict`**. Access
+Set the Access application's cookie **SameSite attribute to `Lax`**. Access
 injects its signed assertion header onto any request that carries its cookie,
 including one a hostile page triggered, so the cookie must not travel
-cross-site. The API rejects cross-site writes on its own as well: `withAdmin`
-refuses any non-`GET` request whose `Sec-Fetch-Site` is not `same-origin`, and
-JSON endpoints reject bodies sent with a form-submittable content type.
+cross-site on a write. `Lax` withholds it from every cross-site non-`GET`
+request, which covers each forgeable endpoint here. `Strict` is not used
+because it breaks the Access login redirect with `ERR_TOO_MANY_REDIRECTS`.
+
+The API rejects cross-site writes on its own as well: `withAdmin` refuses any
+non-`GET` request whose `Sec-Fetch-Site` is not `same-origin`, and JSON
+endpoints reject bodies sent with a form-submittable content type.
 
 For local development only, `.dev.vars` can contain:
 
