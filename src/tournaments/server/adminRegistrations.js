@@ -52,6 +52,8 @@ const registrationExportColumns = [
   "payment_method",
   "payment_status",
   "total_amount_cents",
+  "stripe_fee_cents",
+  "stripe_net_cents",
   "paid_at",
 ].join(", ")
 

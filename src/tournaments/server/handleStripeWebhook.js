@@ -25,6 +25,37 @@ const getRegistrationLookup = (session) => {
     : { column: "stripe_checkout_session_id", value: session.id }
 }
 
+// Stripe takes its cut before the payout, so the order total is what the player
+// paid and the balance transaction is what the club actually receives. It is
+// only available once a charge exists, so a pending session reports nothing.
+export const loadSettlement = async (stripe, session) => {
+  const paymentIntentId = getStripeId(session.payment_intent)
+
+  if (!paymentIntentId) {
+    return { feeCents: null, netCents: null }
+  }
+
+  try {
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
+      expand: ["latest_charge.balance_transaction"],
+    })
+    const balanceTransaction = paymentIntent?.latest_charge?.balance_transaction
+
+    if (!balanceTransaction) {
+      return { feeCents: null, netCents: null }
+    }
+
+    return {
+      feeCents: Number.isFinite(balanceTransaction.fee) ? balanceTransaction.fee : null,
+      netCents: Number.isFinite(balanceTransaction.net) ? balanceTransaction.net : null,
+    }
+  } catch {
+    // Settlement figures are reporting detail. Failing to read them must never
+    // stop a paid registration from being confirmed.
+    return { feeCents: null, netCents: null }
+  }
+}
+
 const updateRegistrationFromSession = async (db, session, eventId, status) => {
   const lookup = getRegistrationLookup(session)
   const paidAt = status.paidAt || null
@@ -38,6 +69,8 @@ const updateRegistrationFromSession = async (db, session, eventId, status) => {
       stripe_customer_id = ?,
       stripe_payment_status = ?,
       stripe_event_id = ?,
+      stripe_fee_cents = COALESCE(?, stripe_fee_cents),
+      stripe_net_cents = COALESCE(?, stripe_net_cents),
       paid_at = COALESCE(?, paid_at),
       updated_at = ?
     WHERE ${lookup.column} = ? AND payment_status != 'paid'
@@ -50,6 +83,8 @@ const updateRegistrationFromSession = async (db, session, eventId, status) => {
     getStripeId(session.customer),
     session.payment_status || null,
     eventId,
+    status.feeCents ?? null,
+    status.netCents ?? null,
     paidAt,
     new Date().toISOString(),
     lookup.value,
@@ -176,7 +211,11 @@ export async function handleStripeWebhook(request) {
         return jsonResponse(400, { error: "The Stripe session underpaid the registration." })
       }
 
+      const settlement = await loadSettlement(stripe, session)
+
       registration = await updateRegistrationFromSession(db, session, event.id, {
+        feeCents: settlement.feeCents,
+        netCents: settlement.netCents,
         paymentStatus: "paid",
         registrationStatus: "confirmed",
         paidAt: new Date(event.created * 1000).toISOString(),

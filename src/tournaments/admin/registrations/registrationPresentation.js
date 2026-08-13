@@ -21,6 +21,30 @@ export const csvEscape = (value) => {
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
 }
 
+const isPaid = (row) => row.payment_status === "paid"
+
+// Cash taken at the door has no processor fee, so its net is the full total.
+// A card payment's net comes from Stripe's balance transaction. Anything paid
+// by card before that was recorded stays blank rather than guessing a rate,
+// because a wrong number in an accounting column is worse than a missing one.
+export const getSettlementCents = (row) => {
+  if (!isPaid(row)) {
+    return { feeCents: null, netCents: null }
+  }
+
+  if (row.payment_method !== "stripe_checkout") {
+    return { feeCents: 0, netCents: row.total_amount_cents || 0 }
+  }
+
+  if (!Number.isFinite(row.stripe_net_cents)) {
+    return { feeCents: null, netCents: null }
+  }
+
+  return { feeCents: row.stripe_fee_cents ?? null, netCents: row.stripe_net_cents }
+}
+
+const formatSettlement = (cents) => (Number.isFinite(cents) ? formatCents(cents) : "")
+
 export const csvColumns = [
   ["Registered", (row) => formatDate(row.created_at)],
   ["Player", (row) => row.player_name],
@@ -37,5 +61,7 @@ export const csvColumns = [
   ["Payment method", (row) => row.payment_method],
   ["Payment status", (row) => paymentStatusLabels[row.payment_status] || row.payment_status],
   ["Total", (row) => formatCents(row.total_amount_cents)],
+  ["Processor fee", (row) => formatSettlement(getSettlementCents(row).feeCents)],
+  ["Net received", (row) => formatSettlement(getSettlementCents(row).netCents)],
   ["Paid at", (row) => formatDate(row.paid_at)],
 ]
