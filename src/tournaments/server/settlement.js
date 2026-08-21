@@ -1,8 +1,14 @@
 import { allRows, runStatement } from "../../shared/server/database.js"
 
 // Stripe takes its cut before the payout, so the order total is what the player
-// paid and the balance transaction is what the club actually receives. It is
-// only available once a charge exists, so a pending session reports nothing.
+// paid and the balance transaction is what the club actually receives.
+//
+// The charge does not carry it. On API version 2026-05-27.dahlia a charge's
+// `balance_transaction` field is always null, so expanding it silently yields
+// nothing and the fee columns stay blank forever. The transaction is real and
+// available immediately; it just has to be looked up by its source charge. Its
+// `status` is `pending` until Stripe pays out, but `fee` and `net` are final
+// from the moment it exists.
 export const loadSettlement = async (stripe, paymentIntentId) => {
   if (!paymentIntentId) {
     return { feeCents: null, netCents: null }
@@ -10,22 +16,17 @@ export const loadSettlement = async (stripe, paymentIntentId) => {
 
   try {
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
-      expand: ["latest_charge.balance_transaction"],
+      expand: ["latest_charge"],
     })
-    const balanceTransaction = paymentIntent?.latest_charge?.balance_transaction
+    const chargeId = getChargeId(paymentIntent?.latest_charge)
 
-    if (!balanceTransaction) {
-      // A charge whose balance transaction has not been cut yet is normal and
-      // temporary. Say so, because the alternative reading of a blank fee
-      // column is that the Stripe call itself is broken.
-      console.error(
-        `Stripe settlement is not available yet for payment intent ${paymentIntentId}.`,
-      )
+    if (!chargeId) {
+      console.error(`Stripe has no charge yet for payment intent ${paymentIntentId}.`)
 
       return { feeCents: null, netCents: null }
     }
 
-    return readBalanceTransaction(balanceTransaction)
+    return await loadSettlementForCharge(stripe, chargeId)
   } catch (error) {
     // Settlement figures are reporting detail. Failing to read them must never
     // stop a paid registration from being confirmed, but it must be visible:
@@ -37,6 +38,39 @@ export const loadSettlement = async (stripe, paymentIntentId) => {
 
     return { feeCents: null, netCents: null }
   }
+}
+
+// A charge event already names its charge, so it can skip straight to the
+// lookup rather than resolving the payment intent again.
+export const loadSettlementForCharge = async (stripe, chargeId) => {
+  if (!chargeId) {
+    return { feeCents: null, netCents: null }
+  }
+
+  const transactions = await stripe.balanceTransactions.list({
+    limit: 1,
+    source: chargeId,
+  })
+  const balanceTransaction = transactions?.data?.[0]
+
+  if (!balanceTransaction) {
+    // A charge whose balance transaction has not been cut yet is normal and
+    // temporary. Say so, because the other reading of a blank fee column is
+    // that the Stripe call itself is broken.
+    console.error(`Stripe settlement is not available yet for charge ${chargeId}.`)
+
+    return { feeCents: null, netCents: null }
+  }
+
+  return readBalanceTransaction(balanceTransaction)
+}
+
+const getChargeId = (charge) => {
+  if (!charge) {
+    return null
+  }
+
+  return typeof charge === "string" ? charge : charge.id || null
 }
 
 export const readBalanceTransaction = (balanceTransaction) => ({

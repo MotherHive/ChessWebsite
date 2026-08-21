@@ -5,6 +5,7 @@ import {
   findUnsettledRegistrations,
   hasSettlement,
   loadSettlement,
+  loadSettlementForCharge,
   readBalanceTransaction,
   recordSettlement,
 } from "./settlement.js"
@@ -40,7 +41,16 @@ const fakeDatabase = ({ changes = 1, rows = [] } = {}) => {
   }
 }
 
-const fakeStripe = (retrieve) => ({ paymentIntents: { retrieve } })
+// Mirrors the real API on version 2026-05-27.dahlia: the payment intent names
+// its charge, and the balance transaction is reachable only by source lookup.
+const fakeStripe = ({ charges = {}, retrieve } = {}) => ({
+  balanceTransactions: {
+    list: async ({ source }) => ({ data: charges[source] ? [charges[source]] : [] }),
+  },
+  paymentIntents: {
+    retrieve: retrieve || (async (id) => ({ latest_charge: { id: `ch_${id}` } })),
+  },
+})
 
 const silenceErrors = (run) => async () => {
   const original = console.error
@@ -72,12 +82,18 @@ test("only a complete pair of figures counts as a settlement", () => {
   assert.equal(hasSettlement(null), false)
 })
 
-test("settlement is read from the charge's expanded balance transaction", async () => {
-  const stripe = fakeStripe(async (id, options) => {
-    assert.equal(id, "pi_live")
-    assert.deepEqual(options, { expand: ["latest_charge.balance_transaction"] })
+// The charge object's own `balance_transaction` field is always null on this
+// API version, so the settlement has to come from a source lookup. A fake that
+// expands the field instead would pass while production stayed blank.
+test("settlement is read by looking the balance transaction up by charge", async () => {
+  const stripe = fakeStripe({
+    charges: { ch_live: { fee: 89, net: 1911, status: "pending" } },
+    retrieve: async (id, options) => {
+      assert.equal(id, "pi_live")
+      assert.deepEqual(options, { expand: ["latest_charge"] })
 
-    return { latest_charge: { balance_transaction: { fee: 89, net: 1911 } } }
+      return { latest_charge: { balance_transaction: null, id: "ch_live" } }
+    },
   })
 
   assert.deepEqual(
@@ -86,24 +102,61 @@ test("settlement is read from the charge's expanded balance transaction", async 
   )
 })
 
+test("a charge event settles without resolving the payment intent again", async () => {
+  const stripe = fakeStripe({
+    charges: { ch_live: { fee: 89, net: 1911 } },
+    retrieve: async () => {
+      throw new Error("A charge event must not re-read the payment intent.")
+    },
+  })
+
+  assert.deepEqual(
+    await loadSettlementForCharge(stripe, "ch_live"),
+    { feeCents: 89, netCents: 1911 },
+  )
+  assert.deepEqual(
+    await loadSettlementForCharge(stripe, null),
+    { feeCents: null, netCents: null },
+  )
+})
+
+test("a pending balance transaction still reports final figures", async () => {
+  const stripe = fakeStripe({ charges: { ch_live: { fee: 33, net: 67, status: "pending" } } })
+
+  assert.deepEqual(
+    await loadSettlementForCharge(stripe, "ch_live"),
+    { feeCents: 33, netCents: 67 },
+  )
+})
+
 test("a registration with no payment intent never calls Stripe", async () => {
-  const stripe = fakeStripe(async () => {
-    throw new Error("Stripe must not be called without a payment intent.")
+  const stripe = fakeStripe({
+    retrieve: async () => {
+      throw new Error("Stripe must not be called without a payment intent.")
+    },
   })
 
   assert.deepEqual(await loadSettlement(stripe, null), { feeCents: null, netCents: null })
 })
 
 test("a Stripe failure reports no settlement instead of throwing", silenceErrors(async () => {
-  const stripe = fakeStripe(async () => {
-    throw new Error("Stripe is unavailable.")
+  const stripe = fakeStripe({
+    retrieve: async () => {
+      throw new Error("Stripe is unavailable.")
+    },
   })
 
   assert.deepEqual(await loadSettlement(stripe, "pi_live"), { feeCents: null, netCents: null })
 }))
 
 test("a charge without a balance transaction yet reports no settlement", silenceErrors(async () => {
-  const stripe = fakeStripe(async () => ({ latest_charge: { balance_transaction: null } }))
+  const stripe = fakeStripe({ charges: {} })
+
+  assert.deepEqual(await loadSettlement(stripe, "pi_live"), { feeCents: null, netCents: null })
+}))
+
+test("a payment intent with no charge yet reports no settlement", silenceErrors(async () => {
+  const stripe = fakeStripe({ retrieve: async () => ({ latest_charge: null }) })
 
   assert.deepEqual(await loadSettlement(stripe, "pi_live"), { feeCents: null, netCents: null })
 }))
@@ -162,11 +215,14 @@ test("the backfill settles the rows Stripe can answer for", async () => {
       { id: "reg_pending", stripe_payment_intent_id: "pi_pending" },
     ],
   })
-  const stripe = fakeStripe(async (id) => (
-    id === "pi_settled"
-      ? { latest_charge: { balance_transaction: { fee: 89, net: 1911 } } }
-      : { latest_charge: null }
-  ))
+  const stripe = fakeStripe({
+    charges: { ch_settled: { fee: 89, net: 1911 } },
+    retrieve: async (id) => (
+      id === "pi_settled"
+        ? { latest_charge: { id: "ch_settled" } }
+        : { latest_charge: { id: "ch_pending" } }
+    ),
+  })
 
   const original = console.error
   console.error = () => {}

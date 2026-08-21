@@ -11,7 +11,7 @@ import { fromRegistrationRow } from "./databaseRows.js"
 import {
   hasSettlement,
   loadSettlement,
-  readBalanceTransaction,
+  loadSettlementForCharge,
   recordSettlement,
 } from "./settlement.js"
 
@@ -226,17 +226,15 @@ export async function handleStripeWebhook(request) {
   if (settlementEventTypes.includes(event.type)) {
     const charge = event.data.object
     const paymentIntentId = getStripeId(charge.payment_intent)
-    const balanceTransaction = charge.balance_transaction
-    const settlement = typeof balanceTransaction === "object" && balanceTransaction
-      ? readBalanceTransaction(balanceTransaction)
-      : await loadSettlement(stripe, paymentIntentId)
 
-    if (hasSettlement(settlement)) {
-      try {
+    try {
+      const settlement = await loadSettlementForCharge(stripe, getStripeId(charge))
+
+      if (hasSettlement(settlement)) {
         await recordSettlement(db, paymentIntentId, settlement)
-      } catch {
-        return jsonResponse(500, { error: "Could not record the Stripe settlement." })
       }
+    } catch {
+      return jsonResponse(500, { error: "Could not record the Stripe settlement." })
     }
   }
 
