@@ -34,8 +34,12 @@ for (const endpoint of existingEndpoints.data.filter(({ url }) => staleUrls.has(
 const endpoint = await stripe.webhookEndpoints.create({
   description: "Scranton Chess isolated staging",
   // Delayed payment methods only settle through the async events, so a
-  // registration paid that way never confirms if they are not subscribed.
+  // registration paid that way never confirms if they are not subscribed. The
+  // charge events carry the balance transaction, which is what records the
+  // processor fee once Stripe has cut it.
   enabled_events: [
+    "charge.succeeded",
+    "charge.updated",
     "checkout.session.async_payment_failed",
     "checkout.session.async_payment_succeeded",
     "checkout.session.completed",

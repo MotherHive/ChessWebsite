@@ -1,6 +1,8 @@
 import { allRows, firstRow } from "@/shared/server/database"
 import { jsonResponse } from "@/shared/server/http"
+import { getStripe } from "@/shared/server/stripe"
 import { fromRegistrationRow, fromTournamentRow } from "./databaseRows.js"
+import { backfillSettlements } from "./settlement.js"
 
 const registrationSummaryColumns = [
   "id",
@@ -258,5 +260,32 @@ export const exportRegistrations = async (db, searchParams) => {
     })
   } catch {
     return jsonResponse(500, { error: "Could not export registrations." })
+  }
+}
+
+// Card fees are read from Stripe when the payment lands, so a registration only
+// reaches here if that read failed or ran before Stripe had cut the balance
+// transaction. Re-reading is safe to repeat: it overwrites the same two
+// reporting columns and never touches payment state.
+export const settleStripeRegistrations = async (db) => {
+  let stripe
+
+  try {
+    stripe = getStripe()
+  } catch {
+    return jsonResponse(500, { error: "Stripe is not configured." })
+  }
+
+  try {
+    const results = await backfillSettlements(db, stripe)
+
+    return jsonResponse(200, {
+      examined: results.examined,
+      failed: results.failed.length,
+      pending: results.pending.length,
+      settled: results.settled.length,
+    })
+  } catch {
+    return jsonResponse(500, { error: "Could not read the Stripe settlements." })
   }
 }

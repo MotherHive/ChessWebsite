@@ -8,6 +8,12 @@ import {
 import { jsonResponse } from "@/shared/server/http"
 import { getStripe, getStripeWebhookSecret } from "@/shared/server/stripe"
 import { fromRegistrationRow } from "./databaseRows.js"
+import {
+  hasSettlement,
+  loadSettlement,
+  readBalanceTransaction,
+  recordSettlement,
+} from "./settlement.js"
 
 const getStripeId = (value) => {
   if (!value) {
@@ -23,37 +29,6 @@ const getRegistrationLookup = (session) => {
   return registrationId
     ? { column: "id", value: registrationId }
     : { column: "stripe_checkout_session_id", value: session.id }
-}
-
-// Stripe takes its cut before the payout, so the order total is what the player
-// paid and the balance transaction is what the club actually receives. It is
-// only available once a charge exists, so a pending session reports nothing.
-export const loadSettlement = async (stripe, session) => {
-  const paymentIntentId = getStripeId(session.payment_intent)
-
-  if (!paymentIntentId) {
-    return { feeCents: null, netCents: null }
-  }
-
-  try {
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
-      expand: ["latest_charge.balance_transaction"],
-    })
-    const balanceTransaction = paymentIntent?.latest_charge?.balance_transaction
-
-    if (!balanceTransaction) {
-      return { feeCents: null, netCents: null }
-    }
-
-    return {
-      feeCents: Number.isFinite(balanceTransaction.fee) ? balanceTransaction.fee : null,
-      netCents: Number.isFinite(balanceTransaction.net) ? balanceTransaction.net : null,
-    }
-  } catch {
-    // Settlement figures are reporting detail. Failing to read them must never
-    // stop a paid registration from being confirmed.
-    return { feeCents: null, netCents: null }
-  }
 }
 
 const updateRegistrationFromSession = async (db, session, eventId, status) => {
@@ -211,7 +186,7 @@ export async function handleStripeWebhook(request) {
         return jsonResponse(400, { error: "The Stripe session underpaid the registration." })
       }
 
-      const settlement = await loadSettlement(stripe, session)
+      const settlement = await loadSettlement(stripe, getStripeId(session.payment_intent))
 
       registration = await updateRegistrationFromSession(db, session, event.id, {
         feeCents: settlement.feeCents,
@@ -238,6 +213,29 @@ export async function handleStripeWebhook(request) {
         // Payment state is authoritative and must not be rolled back or retried
         // merely because the optional confirmation email provider is unavailable.
         console.error("Payment was recorded, but the registration confirmation email failed.")
+      }
+    }
+  }
+
+  // Stripe cuts the balance transaction moments after the charge, which can be
+  // after `checkout.session.completed` has already confirmed the registration.
+  // The charge events are the second chance to record what the club actually
+  // banked, and they are what repairs a row the first pass left blank.
+  const settlementEventTypes = ["charge.succeeded", "charge.updated"]
+
+  if (settlementEventTypes.includes(event.type)) {
+    const charge = event.data.object
+    const paymentIntentId = getStripeId(charge.payment_intent)
+    const balanceTransaction = charge.balance_transaction
+    const settlement = typeof balanceTransaction === "object" && balanceTransaction
+      ? readBalanceTransaction(balanceTransaction)
+      : await loadSettlement(stripe, paymentIntentId)
+
+    if (hasSettlement(settlement)) {
+      try {
+        await recordSettlement(db, paymentIntentId, settlement)
+      } catch {
+        return jsonResponse(500, { error: "Could not record the Stripe settlement." })
       }
     }
   }
