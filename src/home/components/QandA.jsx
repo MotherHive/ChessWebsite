@@ -25,7 +25,7 @@ const questionColumns = [
     },
     {
       question: "What is the rating range of your players?",
-      answer: "We have players anywhere from 400 to 2200 USCF.",
+      answer: "We have players anywhere from 400 to 2200 US Chess.",
     },
   ],
   [

@@ -43,6 +43,7 @@ test("D1 registration writes serialize JSON and booleans", () => {
       byes: "[]",
       entered_with_team: 1,
       is_expired_member: 0,
+    is_student: 0,
       line_items: '[{"key":"entry"}]',
       needs_membership: 1,
     },

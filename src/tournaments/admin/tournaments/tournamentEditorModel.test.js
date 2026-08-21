@@ -67,6 +67,25 @@ test("saved locations are unique and retain their address details", () => {
   ])
 })
 
+test("deleted presets are left out of the venue and director pickers", () => {
+  const tournaments = [
+    { data: { location: "Club Hall", address: "1 Main St" } },
+    { data: { location: "Library", address: "10 State St" } },
+    { data: { director: { name: "Alex Smith", email: "alex@example.com" } } },
+    { data: { director: { name: "Robin Lee", email: "robin@example.com" } } },
+  ]
+
+  assert.deepEqual(
+    getSavedLocations(tournaments, ["club hall"]).map((option) => option.location),
+    ["Library"],
+  )
+  assert.deepEqual(
+    getSavedDirectors(tournaments, ["alex smith|alex@example.com"]).map((option) => option.name),
+    ["Robin Lee"],
+  )
+  assert.equal(getSavedLocations(tournaments).length, 2)
+})
+
 test("map links are generated from the venue address", () => {
   assert.equal(
     createMapUrl("1300 University Ave., Scranton, PA 18509"),

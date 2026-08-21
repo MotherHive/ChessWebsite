@@ -1,5 +1,10 @@
-import { byePrice, paymentMethods, paymentOptions } from "../registration/constants"
-import { formatPrice } from "../registration/pricing"
+import {
+  byePrice,
+  paymentMethods,
+  paymentOptions,
+  studentDiscountLabel,
+} from "../registration/constants"
+import { formatPrice, formatRatingLabel } from "../registration/pricing"
 import TurnstileWidget from "@/shared/components/ui/TurnstileWidget"
 import {
   PurchaseMessage,
@@ -20,6 +25,7 @@ export default function PurchaseReviewStep({ purchase }) {
     purchaseStatus,
     purchaseTotal,
     retryTurnstile,
+    studentDiscount,
     setTurnstileStatus,
     setTurnstileToken,
     turnstileKey,
@@ -40,7 +46,7 @@ export default function PurchaseReviewStep({ purchase }) {
           <p>{purchaseForm.email}</p>
           {purchaseForm.uscfId && (
             <p>
-              USCF ID:{" "}
+              US Chess ID:{" "}
               <a className="purchase-member-id-link" href={playerSearchUrl} target="_blank" rel="noreferrer">
                 {purchaseForm.uscfId}
               </a>
@@ -52,7 +58,7 @@ export default function PurchaseReviewStep({ purchase }) {
         <section className="purchase-review-section" aria-labelledby="purchase-tournament-heading">
           <h4 id="purchase-tournament-heading">Tournament details</h4>
           <strong>{checkoutTournamentDetails.title}</strong>
-          <p>{checkoutTournamentDetails.type} · {checkoutTournamentDetails.rating}</p>
+          <p>{checkoutTournamentDetails.type} · {formatRatingLabel(checkoutTournamentDetails.rating)}</p>
           <p>{checkoutTournamentDetails.dateRange}</p>
           <p>{checkoutTournamentDetails.location}</p>
           <p>{checkoutTournamentDetails.address}</p>
@@ -92,7 +98,7 @@ export default function PurchaseReviewStep({ purchase }) {
           ))}
         </fieldset>
         {needsMembership && (
-          <p className="purchase-payment-note">USCF membership purchases are non-refundable.</p>
+          <p className="purchase-payment-note">US Chess membership purchases are non-refundable.</p>
         )}
       </div>
 
@@ -103,7 +109,10 @@ export default function PurchaseReviewStep({ purchase }) {
         </div>
         <div className="purchase-line-items">
           <div className="purchase-line-item">
-            <p>Tournament entry · {purchaseForm.section}</p>
+            <p>
+              Tournament entry · {purchaseForm.section}
+              {studentDiscount > 0 && ` · ${studentDiscountLabel} (−${formatPrice(studentDiscount)})`}
+            </p>
             <strong>{formatPrice(entryPrice)}</strong>
           </div>
           {purchaseForm.byes.map((bye) => (
@@ -115,7 +124,7 @@ export default function PurchaseReviewStep({ purchase }) {
           {needsMembership && (
             <div className="purchase-line-item">
               <p>
-                {membershipTier?.label || "USCF membership"}
+                {membershipTier?.label || "US Chess membership"}
                 {purchaseForm.isExpiredMember ? " · expired member discount" : ""}
               </p>
               <strong>{formatPrice(membershipPrice)}</strong>

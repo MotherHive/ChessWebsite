@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { Fragment, useEffect, useMemo, useRef, useState } from "react"
 import { adminRequest } from "../client"
 import RegistrationDetail from "./RegistrationDetail"
 import {
@@ -9,6 +9,7 @@ import {
   csvEscape,
   formatCents,
   formatDate,
+  getPaymentLabel,
   paymentStatusLabels,
 } from "./registrationPresentation"
 
@@ -309,7 +310,7 @@ export default function AdminRegistrationsPage() {
           Search
           <input
             onChange={(event) => setSearchText(event.target.value)}
-            placeholder="Name, email, USCF ID, school"
+            placeholder="Name, email, US Chess ID, school"
             type="search"
             value={searchText}
           />
@@ -382,25 +383,46 @@ export default function AdminRegistrationsPage() {
             </thead>
             <tbody>
               {registrations.map((row) => (
-                <tr
-                  className={`admin-clickable-row${openRegistrationId === row.id ? " admin-row-open" : ""}`}
-                  key={row.id}
-                  onClick={() => toggleRegistration(row)}
-                >
-                  <td>{formatDate(row.created_at)}</td>
-                  <td>
-                    <strong>{row.player_name}</strong>
-                    <span className="admin-muted admin-table-sub">{row.email}</span>
-                  </td>
-                  <td>{row.tournament_title}</td>
-                  <td>{row.section}</td>
-                  <td>{formatCents(row.total_amount_cents)}</td>
-                  <td>
-                    <span className={`admin-status admin-status-payment-${row.payment_status}`}>
-                      {paymentStatusLabels[row.payment_status] || row.payment_status}
-                    </span>
-                  </td>
-                </tr>
+                <Fragment key={row.id}>
+                  <tr
+                    className={`admin-clickable-row${openRegistrationId === row.id ? " admin-row-open" : ""}`}
+                    onClick={() => toggleRegistration(row)}
+                  >
+                    <td>{formatDate(row.created_at)}</td>
+                    <td>
+                      <strong>{row.player_name}</strong>
+                      <span className="admin-muted admin-table-sub">{row.email}</span>
+                    </td>
+                    <td>{row.tournament_title}</td>
+                    <td>{row.section}</td>
+                    <td>{formatCents(row.total_amount_cents)}</td>
+                    <td>
+                      <span className={`admin-status admin-status-payment-${row.payment_status}`}>
+                        {getPaymentLabel(row)}
+                      </span>
+                    </td>
+                  </tr>
+                  {openRegistrationId === row.id && (
+                    <tr className="admin-detail-row">
+                      <td colSpan={6}>
+                        {openRegistration?.id === row.id && (
+                          <RegistrationDetail
+                            onClose={closeRegistration}
+                            onMarkPaid={markPaidInPerson}
+                            paymentActionMessage={paymentActionMessage}
+                            paymentActionState={paymentActionState}
+                            registration={openRegistration}
+                          />
+                        )}
+                        {isDetailLoading && openRegistration?.id !== row.id && (
+                          <p className="admin-muted admin-detail-loading" role="status">
+                            Loading registration details...
+                          </p>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
               {!registrations.length && (
                 <tr>
@@ -440,22 +462,6 @@ export default function AdminRegistrationsPage() {
             </button>
           </div>
         </nav>
-      )}
-
-      {isDetailLoading && (
-        <p className="admin-muted admin-detail-loading" role="status">
-          Loading registration details...
-        </p>
-      )}
-
-      {openRegistration && (
-        <RegistrationDetail
-          onClose={closeRegistration}
-          onMarkPaid={markPaidInPerson}
-          paymentActionMessage={paymentActionMessage}
-          paymentActionState={paymentActionState}
-          registration={openRegistration}
-        />
       )}
     </section>
   )

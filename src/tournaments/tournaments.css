@@ -44,41 +44,13 @@ max-width: 820px;
   letter-spacing: 0;
 }
 
-.tournaments-copy > p:not(.tournament-director-byline) {
+.tournaments-copy > p {
 max-width: 680px;
   margin: var(--space-5) 0 0;
   color: rgb(255 255 255 / 0.86);
   font-family: var(--font-body);
   font-size: clamp(1rem, 1.35vw, 1.35rem);
   line-height: 1.55;
-}
-
-.tournament-director-byline {
-display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  max-width: 680px;
-  margin: var(--space-4) 0 0;
-  color: rgb(255 255 255 / 0.72);
-  font-family: var(--font-body);
-  font-size: clamp(0.95rem, 1.05vw, 1.08rem);
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  line-height: 1.35;
-  text-transform: uppercase;
-}
-
-.tournament-director-byline a {
-color: var(--color-accent-bright);
-  text-decoration-color: currentColor;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.24em;
-}
-
-.tournament-director-byline a:hover,
-.tournament-director-byline a:focus-visible {
-color: var(--color-chess-white);
 }
 
 .tournaments-actions {
@@ -405,6 +377,52 @@ color: rgb(0 0 0 / 0.5);
 color: var(--color-club-green);
   font-size: 0.95rem;
   letter-spacing: 0.02em;
+}
+
+.tournament-card-director {
+display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid rgb(0 0 0 / 0.12);
+  font-family: var(--font-body);
+}
+
+.tournament-card-director-role {
+color: rgb(0 0 0 / 0.6);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tournament-card-director-name {
+color: rgb(0 0 0 / 0.86);
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.tournament-card-director-contacts {
+display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.tournament-card-director-contacts a {
+color: var(--color-club-green);
+  overflow-wrap: anywhere;
+  text-decoration-color: rgb(0 0 0 / 0.25);
+  text-underline-offset: 0.22em;
+}
+
+.tournament-card-director-contacts a:hover,
+.tournament-card-director-contacts a:focus-visible {
+color: var(--color-chess-black);
+  text-decoration-color: currentColor;
 }
 
 .tournament-discount {
@@ -997,28 +1015,18 @@ padding-bottom: var(--space-4);
   border-bottom: 4px double rgb(0 0 0 / 0.72);
 }
 
-.tournaments-page .tournaments-copy > p:not(.tournament-director-byline) {
+.tournaments-page .tournaments-copy > p {
 max-width: 560px;
   color: rgb(0 0 0 / 0.76);
 }
 
-.tournaments-page .tournaments-copy > p:not(.tournament-director-byline)::first-letter {
+.tournaments-page .tournaments-copy > p::first-letter {
 float: left;
   margin: 0.08em 0.12em 0 0;
   font-family: var(--font-heading);
   font-size: 3em;
   font-weight: 700;
   line-height: 0.72;
-}
-
-.tournaments-page .tournament-director-byline,
-.tournaments-page .tournament-director-byline a {
-color: rgb(0 0 0 / 0.68);
-}
-
-.tournaments-page .tournament-director-byline a:hover,
-.tournaments-page .tournament-director-byline a:focus-visible {
-color: var(--color-chess-black);
 }
 
 .tournaments-page .tournament-listing {
@@ -1090,6 +1098,14 @@ background-color: var(--color-charcoal);
 .tournaments-page .tournament-price strong,
 .tournaments-page .tournament-time-card-head strong,
 .tournaments-page .tournament-prize-table td strong {
+color: var(--color-chess-black);
+}
+
+.tournaments-page .tournament-card-director {
+border-top: 1px solid rgb(0 0 0 / 0.24);
+}
+
+.tournaments-page .tournament-card-director-contacts a {
 color: var(--color-chess-black);
 }
 

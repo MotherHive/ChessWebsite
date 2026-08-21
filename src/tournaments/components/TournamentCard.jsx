@@ -1,7 +1,7 @@
 const CalendarIcon = "/assets/icons/Calendar.svg"
 const LocationIcon = "/assets/icons/Location.svg"
 import ProgressiveImage from "@/shared/components/ui/ProgressiveImage"
-import { formatPrice } from "../registration/pricing"
+import { formatPrice, formatRatingLabel, ratingSlug } from "../registration/pricing"
 import TournamentPrizes from "./TournamentPrizes"
 import TournamentSchedule from "./TournamentSchedule"
 
@@ -24,6 +24,8 @@ export default function TournamentCard({
       ? "TOURNAMENT IN PROGRESS"
       : ""
   const canPurchaseEntry = tournamentStatus === "upcoming"
+  const director = tournament.director
+  const hasDirector = Boolean(director?.name)
   const getDisplayedEntryPrice = (fee) => (
     !hasEarlyEntryDiscount || earlyEntryIsExpired || !Number.isFinite(fee.earlyPrice)
       ? fee.price
@@ -44,8 +46,8 @@ export default function TournamentCard({
                 </span>
                 <strong>{tournament.title}</strong>
               </span>
-              <span className={`tournament-rating tournament-rating-${tournament.rating.toLowerCase()}`}>
-                {tournament.rating}
+              <span className={`tournament-rating tournament-rating-${ratingSlug(tournament.rating)}`}>
+                {formatRatingLabel(tournament.rating)}
               </span>
             </span>
             <span className="tournament-card-facts" aria-label="Tournament details">
@@ -99,6 +101,26 @@ export default function TournamentCard({
               </span>
             </span>
           </span>
+
+          {hasDirector && (
+            <span className="tournament-card-director">
+              <span className="tournament-card-director-role">Tournament Director</span>
+              <span className="tournament-card-director-name">{director.name}</span>
+              <span className="tournament-card-director-contacts">
+                {director.email && (
+                  <a href={`mailto:${director.email}`}>{director.email}</a>
+                )}
+                {director.phone && (
+                  <a href={`tel:${director.phone.replace(/[^+\d]/g, "")}`}>{director.phone}</a>
+                )}
+                {director.website && (
+                  <a href={director.website} target="_blank" rel="noreferrer">
+                    Website
+                  </a>
+                )}
+              </span>
+            </span>
+          )}
         </span>
 
         <span className="tournament-summary-image">
@@ -168,7 +190,7 @@ export default function TournamentCard({
                     href={tournament.uscfUrl}
                     target="_blank"
                     rel="noreferrer"
-                    aria-label={`${tournament.title} USCF listing`}
+                    aria-label={`${tournament.title} US Chess listing`}
                   >
                     <span aria-hidden="true"></span>
                   </a>

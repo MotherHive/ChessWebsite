@@ -5,7 +5,9 @@ import {
 } from "./constants.js"
 import {
   getEntryFeePrice,
+  getStudentDiscount,
   getTournamentEntryFees,
+  hasStudentDiscount,
 } from "./buildRegistration.js"
 import {
   getMembershipPrice,
@@ -13,9 +15,12 @@ import {
 } from "./pricing.js"
 import {
   getPlayerSearchUrl,
+  hasCompleteAddress,
   isValidEmail,
   isValidPhoneNumber,
+  isValidStateCode,
   isValidUscfId,
+  isValidZipCode,
   registrationMessages,
 } from "./validation.js"
 
@@ -26,12 +31,17 @@ const getDefaultTournamentSection = (tournament) => getTournamentEntryFees(tourn
 export const createPurchaseForm = (tournament, savedInfo = {}) => ({
   activeMembershipStatus: "",
   isExpiredMember: false,
+  isStudent: false,
   enteredWithTeam: false,
   uscfId: "",
   name: savedInfo.name || "",
   email: savedInfo.email || "",
   phone: "",
-  address: "",
+  street: "",
+  unit: "",
+  city: "",
+  state: "",
+  zip: "",
   birthDate: "",
   school: "",
   section: getDefaultTournamentSection(tournament),
@@ -43,14 +53,18 @@ export const reconcilePurchaseForm = (form, tournament) => {
   const maxByeCount = tournament.maxByes ?? tournamentRounds.length
   const sectionExists = getTournamentEntryFees(tournament).some((fee) => fee.section === form.section)
   const section = sectionExists ? form.section : getDefaultTournamentSection(tournament)
+  // A saved student box must not follow the player to a tournament that does
+  // not offer the discount.
+  const isStudent = form.isStudent && hasStudentDiscount(tournament)
 
-  if (form.byes.length <= maxByeCount && form.section === section) {
+  if (form.byes.length <= maxByeCount && form.section === section && form.isStudent === isStudent) {
     return form
   }
 
   return {
     ...form,
     section,
+    isStudent,
     byes: form.byes.slice(0, maxByeCount),
   }
 }
@@ -92,8 +106,16 @@ export const getInfoStepError = (form, { hasActiveMembership, membershipTier, ne
     return registrationMessages.membershipStatus
   }
 
-  if (!form.address.trim() || !form.phone.trim() || !form.birthDate) {
+  if (!hasCompleteAddress(form) || !form.phone.trim() || !form.birthDate) {
     return registrationMessages.membershipContact
+  }
+
+  if (!isValidStateCode(form.state)) {
+    return registrationMessages.invalidState
+  }
+
+  if (!isValidZipCode(form.zip)) {
+    return registrationMessages.invalidZip
   }
 
   if (!isValidPhoneNumber(form.phone)) {
@@ -123,7 +145,9 @@ export const derivePurchase = (tournament, form, now = Date.now()) => {
   const entryFees = getTournamentEntryFees(tournament)
   const tournamentSections = entryFees.map((fee) => fee.section)
   const selectedEntryFee = entryFees.find((fee) => fee.section === form.section) ?? entryFees[0]
-  const entryPrice = getEntryFeePrice(selectedEntryFee, tournament, now)
+  const fullEntryPrice = getEntryFeePrice(selectedEntryFee, tournament, now)
+  const studentDiscount = getStudentDiscount(tournament, fullEntryPrice, form.isStudent)
+  const entryPrice = fullEntryPrice - studentDiscount
   const membershipPrice = getMembershipPrice({
     needsMembership,
     membershipTier,
@@ -153,6 +177,10 @@ export const derivePurchase = (tournament, form, now = Date.now()) => {
       possibleByes: maxByeCount,
     },
     entryPrice,
+    fullEntryPrice,
+    offersStudentDiscount: hasStudentDiscount(tournament),
+    studentDiscount,
+    studentDiscountAmount: getStudentDiscount(tournament, fullEntryPrice, true),
     entryStepCanContinue: !entryStepError,
     entryStepError,
     hasActiveMembership,
@@ -196,6 +224,9 @@ export const purchaseReducer = (state, action) => {
         purchaseForm: reconcilePurchaseForm({
           ...state.purchaseForm,
           ...action.savedEntry,
+          // Byes are per-entry choices, so each new registration starts without
+          // any rather than inheriting the last one's.
+          byes: [],
           name: state.purchaseForm.name || action.savedInfo?.name || "",
           email: state.purchaseForm.email || action.savedInfo?.email || "",
         }, action.tournament),

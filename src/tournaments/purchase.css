@@ -368,6 +368,63 @@ border-color: var(--color-club-green);
 border-color: #d92d20;
 }
 
+.purchase-address-group {
+display: grid;
+  gap: var(--space-3);
+}
+
+.purchase-field-note {
+color: rgb(0 0 0 / 0.58);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  line-height: 1.25;
+  text-align: right;
+}
+
+/* City takes the room it needs; the state code and ZIP stay narrow beside it. */
+.purchase-field-row {
+display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.7fr) minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.purchase-combo {
+position: relative;
+}
+
+/* Capped so the option list scrolls inside the drawer instead of running past
+   the bottom of the screen. */
+.purchase-combo-list {
+position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: max(100%, 13rem);
+  z-index: 5;
+  max-height: 11rem;
+  margin: 2px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  background-color: var(--color-chess-white);
+  border: 1px solid rgb(0 0 0 / 0.18);
+  box-shadow: 0 8px 18px rgb(0 0 0 / 0.12);
+}
+
+.purchase-combo-option {
+display: flex;
+  gap: 0.4rem;
+  padding: 0.5rem var(--space-3);
+  white-space: nowrap;
+  font-family: var(--font-body);
+  font-size: 0.94rem;
+  line-height: 1.25;
+  cursor: pointer;
+}
+
+.purchase-combo-option-active {
+background-color: rgb(6 170 19 / 0.14);
+}
+
 .purchase-field-hint {
 margin-top: calc(var(--space-1) * -1);
 color: rgb(0 0 0 / 0.58);
@@ -382,6 +439,7 @@ line-height: 1.4;
 cursor: wait;
   opacity: 0.7;
 }
+
 
 .purchase-total {
 min-height: 64px;
@@ -639,6 +697,17 @@ color: rgb(0 0 0 / 0.62);
 display: grid;
   gap: var(--space-3);
   margin-top: var(--space-4);
+}
+
+/* The student option is its own choice, not another bye row, so it stands off
+   from the section and bye controls above it. The card keeps its own black top
+   border, so the separation is spacing rather than a rule. */
+.purchase-student-card {
+margin-top: var(--space-5);
+}
+
+.purchase-bye-list + .purchase-student-card {
+margin-top: var(--space-6);
 }
 
 .purchase-bye-row {
@@ -921,6 +990,14 @@ margin: 0;
   .purchase-section-select select,
   .purchase-bye-row select {
   font-size: 1rem;
+  }
+
+  .purchase-field-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .purchase-field-row > :first-child {
+  grid-column: 1 / -1;
   }
 
   .purchase-steps {

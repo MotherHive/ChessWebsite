@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { paymentOptions } from "../../tournaments/registration/constants.js";
 import { getServerConfig } from "./cloudflare.js";
 
 // ============================================================================
@@ -148,7 +149,8 @@ export const detailsFromDatabaseRow = (row, { paid = false } = {}) => ({
   section: row.section,
   dateRange: row.tournament_date_range,
   location: row.tournament_location,
-  paymentMethodLabel: row.payment_method,
+  paymentMethodLabel: paymentOptions.find((option) => option.id === row.payment_method)?.label
+    || row.payment_method,
   lineItems: row.line_items,
   totalAmountCents: row.total_amount_cents,
   paid,

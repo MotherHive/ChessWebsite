@@ -5,6 +5,7 @@ import {
   createPurchaseState,
   derivePurchase,
   purchaseReducer,
+  reconcilePurchaseForm,
 } from "./model.js"
 
 const tournament = {
@@ -71,7 +72,7 @@ test("reports duplicate byes and missing active membership ID", () => {
   const purchase = derivePurchase(tournament, form)
 
   assert.equal(purchase.entryStepError, "Choose each bye round only once.")
-  assert.equal(purchase.infoStepError, "Enter the active USCF ID.")
+  assert.equal(purchase.infoStepError, "Enter the active US Chess ID.")
 })
 
 test("opening another tournament atomically resets workflow and reconciles its form", () => {
@@ -112,31 +113,29 @@ test("opening another tournament atomically resets workflow and reconciles its f
   assert.equal(nextState.purchaseForm.section, "K-8")
   assert.equal(nextState.purchaseForm.name, "Ada Lovelace")
   assert.equal(nextState.purchaseForm.email, "ada@example.com")
-  assert.deepEqual(nextState.purchaseForm.byes, [{ id: "bye-1", round: "Round 1" }])
+  assert.deepEqual(nextState.purchaseForm.byes, [])
 })
 
-test("opening restores saved entry choices before reconciling tournament limits", () => {
-  const initialState = createPurchaseState(tournament, {})
+test("opening restores saved entry choices but never carries byes over", () => {
+  const initialState = {
+    ...createPurchaseState(tournament, {}),
+    purchaseForm: {
+      ...createPurchaseForm(tournament),
+      byes: [{ id: "bye-1", round: "Round 1" }],
+    },
+  }
   const nextState = purchaseReducer(initialState, {
     type: "open",
     tournament,
     savedEntry: {
       activeMembershipStatus: "yes",
       section: "U1600",
-      byes: [
-        { id: "bye-1", round: "Round 1" },
-        { id: "bye-2", round: "Round 2" },
-        { id: "bye-3", round: "Round 3" },
-      ],
     },
   })
 
   assert.equal(nextState.purchaseForm.activeMembershipStatus, "yes")
   assert.equal(nextState.purchaseForm.section, "U1600")
-  assert.deepEqual(nextState.purchaseForm.byes, [
-    { id: "bye-1", round: "Round 1" },
-    { id: "bye-2", round: "Round 2" },
-  ])
+  assert.deepEqual(nextState.purchaseForm.byes, [])
 })
 
 test("form reducer actions clear stale submission feedback", () => {
@@ -161,4 +160,39 @@ test("form reducer actions clear stale submission feedback", () => {
   assert.equal(submittedState.purchaseStep, "thanks")
   assert.equal(submittedState.purchaseStatus, "success")
   assert.deepEqual(submittedState.purchaseResult, { registrationId: "registration-1" })
+})
+
+test("the student box takes the tournament's discount off the entry fee", () => {
+  const studentTournament = { ...tournament, studentDiscount: 5 }
+  const form = { ...createPurchaseForm(studentTournament), isStudent: true }
+  const purchase = derivePurchase(studentTournament, form)
+
+  assert.equal(purchase.offersStudentDiscount, true)
+  assert.equal(purchase.studentDiscountAmount, 5)
+  assert.equal(purchase.studentDiscount, 5)
+  assert.equal(purchase.entryPrice, 25)
+  assert.equal(purchase.fullEntryPrice, 30)
+  assert.equal(purchase.purchaseTotal, 25)
+})
+
+test("a tournament without a student discount ignores a saved student choice", () => {
+  const plainTournament = { ...tournament, studentDiscount: 0 }
+  const form = { ...createPurchaseForm(plainTournament), isStudent: true }
+  const purchase = derivePurchase(plainTournament, form)
+
+  assert.equal(purchase.offersStudentDiscount, false)
+  assert.equal(purchase.studentDiscount, 0)
+  assert.equal(purchase.entryPrice, 30)
+  assert.equal(reconcilePurchaseForm(form, plainTournament).isStudent, false)
+})
+
+test("the student discount never pushes an entry below zero", () => {
+  const freeTournament = {
+    ...tournament,
+    studentDiscount: 25,
+    entryFees: [{ section: "Open", price: 10 }],
+  }
+  const form = { ...createPurchaseForm(freeTournament), isStudent: true }
+
+  assert.equal(derivePurchase(freeTournament, form).entryPrice, 0)
 })

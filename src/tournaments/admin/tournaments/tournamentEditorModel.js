@@ -1,3 +1,5 @@
+import { defaultStudentDiscount } from "../../registration/constants.js"
+
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "long",
   day: "numeric",
@@ -202,6 +204,7 @@ export const createBlankTournament = (recentTournament = {}) => ({
   mapUrl: recentTournament.mapUrl || "",
   imageUrl: "",
   maxByes: recentTournament.maxByes ?? 0,
+  studentDiscount: recentTournament.studentDiscount ?? defaultStudentDiscount,
   director: {
     name: recentTournament.director?.name || "",
     email: recentTournament.director?.email || "",
@@ -226,14 +229,17 @@ export const createBlankTournament = (recentTournament = {}) => ({
   }],
 })
 
-export const getSavedLocations = (tournaments) => {
+// Deleted presets stay out of the picker until a tournament uses them again.
+const isHidden = (hiddenKeys, key) => (hiddenKeys || []).includes(key)
+
+export const getSavedLocations = (tournaments, hiddenKeys) => {
   const locations = new Map()
 
   ;(tournaments || []).forEach((row) => {
     const data = row?.data || {}
     const name = data.location?.trim()
 
-    if (name && !locations.has(name.toLowerCase())) {
+    if (name && !locations.has(name.toLowerCase()) && !isHidden(hiddenKeys, name.toLowerCase())) {
       locations.set(name.toLowerCase(), {
         location: name,
         address: data.address || "",
@@ -245,7 +251,7 @@ export const getSavedLocations = (tournaments) => {
   return [...locations.values()]
 }
 
-export const getSavedDirectors = (tournaments) => {
+export const getSavedDirectors = (tournaments, hiddenKeys) => {
   const directors = new Map()
 
   ;(tournaments || []).forEach((row) => {
@@ -259,7 +265,7 @@ export const getSavedDirectors = (tournaments) => {
 
     const key = `${name || ""}|${email || ""}`.toLowerCase()
 
-    if (!directors.has(key)) {
+    if (!directors.has(key) && !isHidden(hiddenKeys, key)) {
       directors.set(key, {
         key,
         name: name || "",

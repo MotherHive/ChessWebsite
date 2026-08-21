@@ -29,7 +29,7 @@ export const fromRegistrationRow = (row) => {
     }
   }
 
-  for (const column of ["entered_with_team", "is_expired_member", "needs_membership"]) {
+  for (const column of ["entered_with_team", "is_expired_member", "is_student", "needs_membership"]) {
     if (column in row) {
       parsed[column] = Boolean(row[column])
     }
@@ -43,6 +43,7 @@ export const toRegistrationRow = (row) => ({
   byes: JSON.stringify(row.byes || []),
   entered_with_team: Number(Boolean(row.entered_with_team)),
   is_expired_member: Number(Boolean(row.is_expired_member)),
+  is_student: Number(Boolean(row.is_student)),
   line_items: JSON.stringify(row.line_items || []),
   needs_membership: Number(Boolean(row.needs_membership)),
 })

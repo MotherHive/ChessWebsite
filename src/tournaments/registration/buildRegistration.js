@@ -1,7 +1,9 @@
 import {
   byePrice,
+  defaultStudentDiscount,
   paymentMethods,
   paymentOptions,
+  studentDiscountLabel,
   tournamentRounds,
 } from "./constants.js"
 import {
@@ -9,9 +11,13 @@ import {
   getMembershipTier,
 } from "./pricing.js"
 import {
+  formatMailingAddress,
+  hasCompleteAddress,
   isValidEmail,
   isValidPhoneNumber,
+  resolveStateCode,
   isValidUscfId,
+  isValidZipCode,
   registrationMessages,
 } from "./validation.js"
 
@@ -36,6 +42,24 @@ export const getEntryFeePrice = (fee, tournament, now = Date.now()) => {
 
   return fee.price
 }
+
+// The tournament, not the browser, decides what a student entry is worth. A
+// discount larger than the entry itself would otherwise make the order negative.
+export const getStudentDiscount = (tournament, entryPrice, isStudent) => {
+  if (!isStudent) {
+    return 0
+  }
+
+  const configured = Number.isFinite(tournament?.studentDiscount)
+    ? tournament.studentDiscount
+    : defaultStudentDiscount
+
+  return Math.max(0, Math.min(configured, entryPrice))
+}
+
+export const hasStudentDiscount = (tournament) => (
+  getStudentDiscount(tournament, Number.POSITIVE_INFINITY, true) > 0
+)
 
 const getPaymentMethodLabel = (paymentMethod) => (
   paymentOptions.find((option) => option.id === paymentMethod)?.label || paymentMethod
@@ -116,13 +140,27 @@ export const buildTournamentRegistration = (payload, now = Date.now(), tournamen
 
   const enteredWithTeam = Boolean(form.enteredWithTeam)
   const birthDate = trimString(form.birthDate)
-  const address = trimString(form.address)
+  const street = trimString(form.street)
+  const unit = trimString(form.unit)
+  const city = trimString(form.city)
+  const typedState = trimString(form.state)
+  const state = resolveStateCode(typedState)
+  const zip = trimString(form.zip)
+  const address = formatMailingAddress({ street, unit, city, state, zip })
   const phone = trimString(form.phone)
   const school = trimString(form.school)
   const membershipTier = needsMembership ? getMembershipTier(birthDate) : null
 
-  if (needsMembership && (!address || !phone || !birthDate)) {
+  if (needsMembership && (!hasCompleteAddress({ street, city, state: typedState, zip }) || !phone || !birthDate)) {
     throw new Error(registrationMessages.membershipContact)
+  }
+
+  if (needsMembership && !state) {
+    throw new Error(registrationMessages.invalidState)
+  }
+
+  if (needsMembership && !isValidZipCode(zip)) {
+    throw new Error(registrationMessages.invalidZip)
   }
 
   if (needsMembership && !isValidPhoneNumber(phone)) {
@@ -137,7 +175,10 @@ export const buildTournamentRegistration = (payload, now = Date.now(), tournamen
     throw new Error(registrationMessages.teamSchool)
   }
 
-  const entryPrice = getEntryFeePrice(selectedEntryFee, selectedTournament, now)
+  const fullEntryPrice = getEntryFeePrice(selectedEntryFee, selectedTournament, now)
+  const isStudent = Boolean(form.isStudent)
+  const studentDiscount = getStudentDiscount(selectedTournament, fullEntryPrice, isStudent)
+  const entryPrice = fullEntryPrice - studentDiscount
   const membershipPrice = getMembershipPrice({
     needsMembership,
     membershipTier,
@@ -146,10 +187,14 @@ export const buildTournamentRegistration = (payload, now = Date.now(), tournamen
   const byeTotal = byes.length * byePrice
   const total = entryPrice + byeTotal + membershipPrice
 
+  // Stripe rejects a negative line item, so the student discount is folded into
+  // the entry line rather than listed as its own credit.
   const lineItems = [
     {
       key: "entry",
-      label: `Tournament entry - ${section}`,
+      label: studentDiscount > 0
+        ? `Tournament entry - ${section} (${studentDiscountLabel})`
+        : `Tournament entry - ${section}`,
       amount_cents: dollarsToCents(entryPrice),
       quantity: 1,
     },
@@ -187,6 +232,11 @@ export const buildTournamentRegistration = (payload, now = Date.now(), tournamen
       email,
       phone,
       address,
+      street,
+      unit,
+      city,
+      state,
+      zip,
       birthDate,
       school,
       uscfId,
@@ -195,6 +245,7 @@ export const buildTournamentRegistration = (payload, now = Date.now(), tournamen
       needsMembership,
       isExpiredMember,
       enteredWithTeam,
+      isStudent,
       membershipTier,
     },
     order: {
@@ -204,6 +255,7 @@ export const buildTournamentRegistration = (payload, now = Date.now(), tournamen
       paymentMethod,
       paymentMethodLabel: getPaymentMethodLabel(paymentMethod),
       entryAmountCents: dollarsToCents(entryPrice),
+      studentDiscountAmountCents: dollarsToCents(studentDiscount),
       byeAmountCents: dollarsToCents(byeTotal),
       membershipAmountCents: dollarsToCents(membershipPrice),
       totalAmountCents: dollarsToCents(total),

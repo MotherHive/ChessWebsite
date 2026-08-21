@@ -11,7 +11,6 @@ import useTournamentPurchase from "../registration/useTournamentPurchase"
 export default function TournamentsPage({ initialTime }) {
   const [sectionRef, isVisible] = useScrollVisibility({ threshold: 0.08 })
   const { tournaments, isLoading } = usePublishedTournaments()
-  const featuredTournament = tournaments[0]
   const [openTournamentId, setOpenTournamentId] = useState("")
   const [currentTime, setCurrentTime] = useState(() => new Date(initialTime).getTime())
   const purchase = useTournamentPurchase(tournaments, currentTime)
@@ -37,7 +36,7 @@ export default function TournamentsPage({ initialTime }) {
       className={`tournaments-section tournaments-page${isVisible ? " is-visible" : ""}`}
       aria-labelledby="tournaments-heading"
     >
-      <TournamentHero featuredTournament={featuredTournament} />
+      <TournamentHero />
       {!isLoading && tournaments.length === 0 && (
         <div className="tournaments-empty-state" role="status">
           <span>Schedule update</span>

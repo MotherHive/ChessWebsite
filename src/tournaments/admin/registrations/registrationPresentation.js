@@ -3,7 +3,22 @@ export const paymentStatusLabels = {
   checkout_pending: "Checkout pending",
   checkout_expired: "Checkout expired",
   checkout_failed: "Checkout failed",
-  manual_pending: "Pay at event with cash",
+  manual_pending: "Unpaid",
+}
+
+export const paymentMethodLabels = {
+  stripe_checkout: "Card",
+  pay_at_event: "Cash at event",
+}
+
+// The status names the state and the method only qualifies it, so they are
+// joined once here. Views that printed both on their own repeated themselves
+// whenever a label carried the method inside the status.
+export const getPaymentLabel = (row) => {
+  const status = paymentStatusLabels[row.payment_status] || row.payment_status
+  const method = paymentMethodLabels[row.payment_method]
+
+  return method ? `${status} · ${method}` : status
 }
 
 export const formatCents = (cents) => `$${((cents || 0) / 100).toFixed(2)}`
@@ -43,10 +58,10 @@ export const getSettlementCents = (row) => {
   return { feeCents: row.stripe_fee_cents ?? null, netCents: row.stripe_net_cents }
 }
 
-// USCF membership dues are collected on the club's behalf and passed straight
-// through to USCF, so they are not club earnings. Stripe still charges its fee
-// on the full charge, which is why the club net is the settled net minus dues
-// rather than the entry fees on their own.
+// US Chess membership dues are collected on the club's behalf and passed
+// straight through to US Chess, so they are not club earnings. Stripe still
+// charges its fee on the full charge, which is why the club net is the settled
+// net minus dues rather than the entry fees on their own.
 export const getMembershipDuesCents = (row) => (
   isPaid(row) ? row.membership_amount_cents || 0 : null
 )
@@ -68,13 +83,19 @@ export const csvColumns = [
   ["Phone", (row) => row.phone],
   ["Tournament", (row) => row.tournament_title],
   ["Section", (row) => row.section],
-  ["USCF ID", (row) => row.uscf_id],
+  ["US Chess ID", (row) => row.uscf_id],
   ["Active membership", (row) => row.active_membership_status],
   ["Needs membership", (row) => (row.needs_membership ? "yes" : "no")],
   ["Team", (row) => (row.entered_with_team ? "yes" : "no")],
   ["School", (row) => row.school],
+  ["Student entry", (row) => (row.is_student ? "yes" : "no")],
+  [
+    "Student discount",
+    (row) => formatCents(row.student_discount_cents),
+    (row) => row.student_discount_cents || 0,
+  ],
   ["Byes", (row) => (row.byes || []).map((bye) => bye.round).join("; ")],
-  ["Payment method", (row) => row.payment_method],
+  ["Payment method", (row) => paymentMethodLabels[row.payment_method] || row.payment_method],
   ["Payment status", (row) => paymentStatusLabels[row.payment_status] || row.payment_status],
   [
     "Total",
@@ -92,7 +113,7 @@ export const csvColumns = [
     (row) => getSettlementCents(row).netCents,
   ],
   [
-    "USCF membership dues",
+    "US Chess membership dues",
     (row) => formatSettlement(getMembershipDuesCents(row)),
     getMembershipDuesCents,
   ],

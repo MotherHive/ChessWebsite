@@ -51,6 +51,9 @@ export default function ContactPage() {
           <p>
             Get club information, ask about meetings or tournaments, and see the staff roles that keep the club running.
           </p>
+          <p className="contact-email-line">
+            Email us at <a href="mailto:scrantonchess@gmail.com">scrantonchess@gmail.com</a>
+          </p>
 
           <div className="tournaments-actions">
             <a className="button button-large" href="mailto:scrantonchess@gmail.com">Email Club</a>

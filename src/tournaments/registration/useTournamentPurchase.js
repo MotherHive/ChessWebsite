@@ -16,7 +16,7 @@ import {
 } from "./model"
 import { buildTournamentRegistration } from "./buildRegistration"
 
-const savedEntryFields = new Set(["activeMembershipStatus", "section"])
+const savedEntryFields = new Set(["activeMembershipStatus", "isStudent", "section"])
 
 export default function useTournamentPurchase(tournaments, currentTime) {
   const purchaseButtonRef = useRef(null)
@@ -52,6 +52,7 @@ export default function useTournamentPurchase(tournaments, currentTime) {
     maxByeCount,
     membershipPrice,
     purchaseTotal,
+    studentDiscount,
   } = purchaseDetails
   const currentStepIndex = purchaseStep === "entry" ? 0 : purchaseStep === "info" ? 1 : 2
 
@@ -125,35 +126,22 @@ export default function useTournamentPurchase(tournaments, currentTime) {
   const addBye = () => {
     invalidatePurchaseAttempt()
     const id = window.crypto?.randomUUID?.() || `${Date.now()}-${purchaseForm.byes.length}`
-    const byes = [...purchaseForm.byes, { id, round: "" }]
 
     dispatch({
       type: "add-bye",
       id,
       maxByeCount,
     })
-
-    if (purchaseForm.byes.length < maxByeCount) {
-      savePurchaseEntry(selectedTournament.id, { ...purchaseForm, byes })
-    }
   }
 
   const updateBye = (id, round) => {
     invalidatePurchaseAttempt()
     dispatch({ type: "update-bye", id, round })
-    savePurchaseEntry(selectedTournament.id, {
-      ...purchaseForm,
-      byes: purchaseForm.byes.map((bye) => (bye.id === id ? { ...bye, round } : bye)),
-    })
   }
 
   const removeBye = (id) => {
     invalidatePurchaseAttempt()
     dispatch({ type: "remove-bye", id })
-    savePurchaseEntry(selectedTournament.id, {
-      ...purchaseForm,
-      byes: purchaseForm.byes.filter((bye) => bye.id !== id),
-    })
   }
 
   const handleEntryContinue = () => {
@@ -218,6 +206,7 @@ export default function useTournamentPurchase(tournaments, currentTime) {
         name: registration.player.name,
         email: registration.player.email,
         entryPrice,
+        studentDiscount,
         byePrice,
         possibleByes: maxByeCount,
         membershipPrice,

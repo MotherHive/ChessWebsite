@@ -2,10 +2,12 @@ import {
   byePrice,
   expiredMembershipDiscount,
   membershipAgeTiers,
+  studentDiscountLabel,
   tournamentRounds,
 } from "../registration/constants"
 import { formatPrice } from "../registration/pricing"
 import {
+  PurchaseCheckboxCard,
   PurchaseMessage,
   PurchaseSelectField,
   PurchaseStepFooter,
@@ -22,6 +24,7 @@ export default function PurchaseEntryStep({ purchase }) {
     maxByeCount,
     membershipTier,
     needsMembership,
+    offersStudentDiscount,
     purchaseForm,
     purchaseMessage,
     purchaseStatus,
@@ -29,6 +32,7 @@ export default function PurchaseEntryStep({ purchase }) {
     removeBye,
     selectedByeRounds,
     selectedTournament,
+    studentDiscountAmount,
     tournamentSections,
     updateBye,
   } = purchase
@@ -39,7 +43,7 @@ export default function PurchaseEntryStep({ purchase }) {
         <PurchaseSelectField
           field="activeMembershipStatus"
           id="purchase-active-membership"
-          label={<>Do you have an <strong>active</strong> USCF membership?</>}
+          label={<>Do you have an <strong>active</strong> US Chess membership?</>}
           purchase={purchase}
           required
           invalid={purchaseStatus === "error" && !purchaseForm.activeMembershipStatus}
@@ -54,7 +58,7 @@ export default function PurchaseEntryStep({ purchase }) {
       {needsMembership && (
         <div className="purchase-cart-card">
           <div className="purchase-cart-card-header">
-            <strong>USCF membership</strong>
+            <strong>US Chess membership</strong>
           </div>
           <ul className="purchase-age-table">
             {membershipAgeTiers.map((tier) => (
@@ -89,14 +93,16 @@ export default function PurchaseEntryStep({ purchase }) {
                 <option key={section}>{section}</option>
               ))}
             </PurchaseSelectField>
-            <button
-              className="purchase-add-bye-link"
-              type="button"
-              onClick={addBye}
-              disabled={purchaseForm.byes.length >= maxByeCount}
-            >
-              <span className="purchase-add-bye-label">+ Add Bye</span>
-            </button>
+            {maxByeCount > 0 && (
+              <button
+                className="purchase-add-bye-link"
+                type="button"
+                onClick={addBye}
+                disabled={purchaseForm.byes.length >= maxByeCount}
+              >
+                <span className="purchase-add-bye-label">+ Add Bye</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -139,12 +145,22 @@ export default function PurchaseEntryStep({ purchase }) {
           </div>
         )}
 
+        {offersStudentDiscount && (
+          <PurchaseCheckboxCard
+            checkedField="isStudent"
+            className="purchase-student-card"
+            title={studentDiscountLabel}
+            description={`${formatPrice(studentDiscountAmount)} off the entry fee.`}
+            purchase={purchase}
+          />
+        )}
+
         <p>
           {selectedTournament.title}. {selectedTournament.dateRange}. {maxByeCount} possible bye
           {maxByeCount === 1 ? "" : "s"} at registration.
         </p>
 
-        {purchaseForm.byes.length >= maxByeCount && (
+        {maxByeCount > 0 && purchaseForm.byes.length >= maxByeCount && (
           <small className="purchase-bye-limit">All possible byes have been selected.</small>
         )}
       </div>

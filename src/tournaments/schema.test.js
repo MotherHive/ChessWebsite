@@ -20,6 +20,7 @@ test("drafts can be saved before publishing details are complete", () => {
 
   assert.equal(result.success, true)
   assert.equal(result.data.maxByes, 0)
+  assert.equal(result.data.studentDiscount, 5)
   assert.deepEqual(result.data.days, [])
 })
 

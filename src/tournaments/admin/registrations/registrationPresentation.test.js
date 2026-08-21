@@ -62,7 +62,7 @@ test("the CSV renders settlement columns as currency and blanks", () => {
   assert.equal(render("Processor fee", { ...paidByCard, payment_status: "manual_pending" }), "")
 })
 
-test("USCF membership dues come out of the club's net, Stripe's fee does not", () => {
+test("US Chess membership dues come out of the club's net, Stripe's fee does not", () => {
   const withMembership = {
     ...paidByCard,
     membership_amount_cents: 2400,
@@ -92,7 +92,7 @@ test("the totals row tallies paid registrations only", () => {
   assert.equal(cellAt(totals, "Total"), "$50.00")
   assert.equal(cellAt(totals, "Processor fee"), "$0.59")
   assert.equal(cellAt(totals, "Net received"), "$49.41")
-  assert.equal(cellAt(totals, "USCF membership dues"), "$24.00")
+  assert.equal(cellAt(totals, "US Chess membership dues"), "$24.00")
   assert.equal(cellAt(totals, "Club net"), "$25.41")
   assert.equal(cellAt(totals, "Paid at"), "")
 })

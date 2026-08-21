@@ -5,9 +5,22 @@ import {
   publishedTournamentSchema,
   tournamentDraftSchema,
 } from "@/tournaments/schema"
+import { clearHiddenPresets, toPresetKey } from "./adminPresets.js"
 import { fromTournamentRow } from "./databaseRows.js"
 
 const tournamentColumns = "id, status, data, created_at, updated_at"
+
+// Matches the keys the editor derives from saved tournaments.
+const presetsUsedBy = (data) => {
+  const location = toPresetKey(data.location)
+  const director = data.director || {}
+  const directorKey = toPresetKey(`${director.name || ""}|${director.email || ""}`)
+
+  return [
+    ...(location ? [{ type: "location", key: location }] : []),
+    ...(directorKey === "|" ? [] : [{ type: "director", key: directorKey }]),
+  ]
+}
 
 const slugify = (value) => (
   String(value || "")
@@ -76,6 +89,8 @@ export const saveTournament = async (db, body) => {
         updated_at = excluded.updated_at
       RETURNING ${tournamentColumns}
     `).bind(id, status, JSON.stringify(parsedTournament.data), now, now))
+
+    await clearHiddenPresets(db, presetsUsedBy(parsedTournament.data))
 
     return jsonResponse(200, { tournament: fromTournamentRow(row) })
   } catch {

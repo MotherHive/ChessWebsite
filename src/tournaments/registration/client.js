@@ -12,14 +12,6 @@ const sanitizePurchaseEntry = (entry) => {
       ? entry.activeMembershipStatus
       : "",
     section: typeof entry.section === "string" ? entry.section : "",
-    byes: Array.isArray(entry.byes)
-      ? entry.byes
-        .filter((bye) => bye && typeof bye.round === "string")
-        .map((bye, index) => ({
-          id: typeof bye.id === "string" && bye.id ? bye.id : `saved-bye-${index}`,
-          round: bye.round,
-        }))
-      : [],
   }
 }
 

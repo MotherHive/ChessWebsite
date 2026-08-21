@@ -32,7 +32,9 @@ max-width: 580px;
   color: rgb(255 255 255 / 0.78);
 }
 
-.contact-hero .tournaments-copy > p::first-letter {
+/* The drop cap belongs to the opening paragraph only, not the email line
+   underneath it. */
+.contact-hero .tournaments-copy > p:first-of-type::first-letter {
 float: left;
   margin: 0.08em 0.12em 0 0;
   color: var(--color-chess-white);
@@ -40,6 +42,27 @@ float: left;
   font-size: 3em;
   font-weight: 700;
   line-height: 0.72;
+}
+
+.contact-hero .contact-email-line {
+margin-top: var(--space-3);
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.contact-hero .contact-email-line a {
+color: var(--color-chess-white);
+  text-decoration: underline;
+  text-decoration-color: rgb(255 255 255 / 0.6);
+  text-underline-offset: 0.22em;
+  word-break: break-word;
+}
+
+.contact-hero .contact-email-line a:hover,
+.contact-hero .contact-email-line a:focus-visible {
+text-decoration-color: var(--color-chess-white);
 }
 
 .contact-page .tournaments-text-link {

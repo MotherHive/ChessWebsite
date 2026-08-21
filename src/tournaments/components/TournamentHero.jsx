@@ -1,19 +1,11 @@
 const TournamentBanner = "/assets/TournamentBannerTransparent.webp"
 import ProgressiveImage from "@/shared/components/ui/ProgressiveImage"
 
-export default function TournamentHero({ featuredTournament }) {
+export default function TournamentHero() {
   return (
     <div className="tournaments-hero">
       <div className="tournaments-copy">
         <h2 id="tournaments-heading">UPCOMING EVENTS</h2>
-        {featuredTournament?.director?.name && (
-          <p className="tournament-director-byline">
-            Tournament Director{" "}
-            <a href={`mailto:${featuredTournament.director.email}`}>
-              {featuredTournament.director.name}
-            </a>
-          </p>
-        )}
         <p>
           Explore upcoming over-the-board events from Scranton Chess, with
           dates, locations, schedules, entry fees, and registration details all

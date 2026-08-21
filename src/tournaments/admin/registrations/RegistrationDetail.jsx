@@ -1,7 +1,7 @@
 import {
   formatCents,
   formatDate,
-  paymentStatusLabels,
+  getPaymentLabel,
 } from "./registrationPresentation"
 
 export default function RegistrationDetail({
@@ -43,11 +43,11 @@ export default function RegistrationDetail({
           <dd>{registration.birth_date || "—"}</dd>
         </div>
         <div>
-          <dt>USCF ID</dt>
+          <dt>US Chess ID</dt>
           <dd>{registration.uscf_id || "—"}</dd>
         </div>
         <div>
-          <dt>Active USCF membership</dt>
+          <dt>Active US Chess membership</dt>
           <dd>
             {registration.active_membership_status}
             {registration.needs_membership && ` — buying ${registration.membership_tier_label || "membership"}`}
@@ -57,6 +57,14 @@ export default function RegistrationDetail({
         <div>
           <dt>Team entry</dt>
           <dd>{registration.entered_with_team ? registration.school || "yes" : "No"}</dd>
+        </div>
+        <div>
+          <dt>Student entry</dt>
+          <dd>
+            {registration.is_student
+              ? `Yes — ${formatCents(registration.student_discount_cents)} off`
+              : "No"}
+          </dd>
         </div>
         <div>
           <dt>Byes</dt>
@@ -80,11 +88,7 @@ export default function RegistrationDetail({
         <div>
           <dt>Payment</dt>
           <dd>
-            {registration.payment_method === "stripe_checkout"
-              ? "Stripe checkout"
-              : registration.payment_status === "paid" ? "Paid in person" : "Pay at event with cash"}
-            {" — "}
-            {paymentStatusLabels[registration.payment_status] || registration.payment_status}
+            {getPaymentLabel(registration)}
             {registration.paid_at && ` (paid ${formatDate(registration.paid_at)})`}
           </dd>
         </div>

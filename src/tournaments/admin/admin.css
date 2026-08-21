@@ -446,6 +446,11 @@ padding-top: 0.25rem;
   border-top: 1px dashed var(--color-border);
 }
 
+.admin-preset-delete {
+margin-top: 0.75rem;
+  color: #a52121;
+}
+
 .admin-preset-summary {
 display: flex;
   flex-direction: column;
@@ -679,7 +684,21 @@ cursor: not-allowed;
 }
 
 .admin-detail-loading {
-margin-top: 1.5rem;
+margin: 0;
+  padding: 1rem;
+}
+
+/* The detail opens as an expanded row under the registration it belongs to, so
+   it carries the table's own framing instead of the standalone panel's. */
+.admin-detail-row > td {
+padding: 0;
+  background: #f7faf7;
+}
+
+.admin-detail-row .admin-detail {
+margin-top: 0;
+  border: none;
+  background: transparent;
 }
 
 /* Registration detail */

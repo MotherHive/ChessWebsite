@@ -57,7 +57,7 @@ export default function PurchaseDrawer({ purchase }) {
           <div>
             <span>Registration</span>
             <h3 id="purchase-drawer-heading">
-              {purchaseStep === "thanks" ? "Thank You" : "Tournament Entry"}
+              {purchaseStep === "thanks" ? "Completed" : "Tournament Entry"}
             </h3>
           </div>
           <button

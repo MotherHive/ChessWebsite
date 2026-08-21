@@ -18,7 +18,7 @@ export default function PrivacyPage() {
       <p>
         <strong>Tournament registration.</strong> Your name, email address, and
         the entry details you choose. Depending on the tournament, this can also
-        include your phone number, mailing address, date of birth, USCF ID,
+        include your phone number, mailing address, date of birth, US Chess ID,
         school, and the sections and byes you select. We keep a record of what
         you were charged and whether it was paid.
       </p>

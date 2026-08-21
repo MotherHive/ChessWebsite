@@ -5,6 +5,16 @@ import {
 
 export const formatPrice = (amount) => `$${amount}`
 
+// Tournament rows store the rating body as "USCF", the name the federation used
+// when they were written. Only the label changed, so it is translated on the way
+// out instead of rewriting stored data.
+export const formatRatingLabel = (rating) => (rating === "USCF" ? "US Chess" : rating)
+
+export const ratingSlug = (rating) => String(rating || "")
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, "-")
+  .replace(/^-|-$/g, "")
+
 export const formatPrizePlace = (row) => {
   const hasMultipleBrackets = row.brackets.length > 1 || row.brackets.some((bracket) => bracket.includes("/"))
 
@@ -82,6 +92,8 @@ export const getAgeFromBirthDate = (birthDate) => {
   return age
 }
 
+// US Chess tiers go by age at expiration, and a membership runs a year from
+// purchase, so the player is one year older when it lapses.
 export const getMembershipTier = (birthDate) => {
   const age = getAgeFromBirthDate(birthDate)
 
@@ -89,7 +101,11 @@ export const getMembershipTier = (birthDate) => {
     return null
   }
 
-  return membershipAgeTiers.find((tier) => age <= tier.maxAge) || membershipAgeTiers.at(-1)
+  const ageAtExpiration = age + 1
+
+  return (
+    membershipAgeTiers.find((tier) => ageAtExpiration <= tier.maxAge) || membershipAgeTiers.at(-1)
+  )
 }
 
 export const getMembershipPrice = ({ needsMembership, membershipTier, isExpiredMember }) => {

@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { defaultStudentDiscount } from "./registration/constants.js"
 
 const shortText = z.string().max(200)
 const longText = z.string().max(500)
@@ -83,6 +84,9 @@ export const tournamentDraftSchema = z.object({
   mapUrl: blankOrUrl.default(""),
   imageUrl: blankOrUrl.default(""),
   maxByes: z.number().int().nonnegative().max(20).default(0),
+  // Taken off the section entry fee when a player checks the student box.
+  // Zero turns the option off for the tournament.
+  studentDiscount: money.default(defaultStudentDiscount),
   director: directorSchema.optional(),
   rulesUrl: blankOrUrl.default(""),
   flyerUrl: blankOrUrl.default(""),

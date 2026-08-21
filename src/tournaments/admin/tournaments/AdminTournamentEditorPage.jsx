@@ -54,25 +54,28 @@ function TournamentEditor({ tournamentId }) {
   const [savedDirectors, setSavedDirectors] = useState([])
   const [savedSectionNames, setSavedSectionNames] = useState([])
   const [prizeGroupPresets, setPrizeGroupPresets] = useState([])
+  const [savedTournaments, setSavedTournaments] = useState([])
   const [venueChoice, setVenueChoice] = useState("")
   const [directorChoice, setDirectorChoice] = useState("")
 
   useEffect(() => {
     let isActive = true
 
-    adminRequest("tournaments")
-      .then((result) => {
+    Promise.all([adminRequest("tournaments"), adminRequest("presets")])
+      .then(([result, presetResult]) => {
         if (!isActive) {
           return
         }
 
         const tournaments = result.tournaments || []
+        const hiddenPresets = presetResult.hiddenPresets || {}
         const tournament = tournaments.find((row) => row.id === tournamentId)
-        const locations = getSavedLocations(tournaments)
-        const directors = getSavedDirectors(tournaments)
+        const locations = getSavedLocations(tournaments, hiddenPresets.location)
+        const directors = getSavedDirectors(tournaments, hiddenPresets.director)
         const sectionNames = getSavedSectionNames(tournaments)
         const prizeGroups = getPrizeGroupPresets(tournaments)
 
+        setSavedTournaments(tournaments)
         setSavedLocations(locations)
         setSavedDirectors(directors)
         setSavedSectionNames(sectionNames)
@@ -208,6 +211,38 @@ function TournamentEditor({ tournamentId }) {
     })
   }
 
+  const savedVenuePreset = savedLocations.find((option) => option.location === venueChoice)
+  const savedDirectorPreset = savedDirectors.find((option) => option.key === directorChoice)
+
+  // Presets come from saved tournaments, so deleting one records it as hidden
+  // rather than touching the tournaments that used it.
+  const deletePreset = async (type, key, label) => {
+    const noun = type === "location" ? "venue" : "director"
+
+    if (!window.confirm(
+      `Remove the saved ${noun} preset "${label}"? Past tournaments keep their details, and the preset returns if a tournament is saved with it again.`,
+    )) {
+      return
+    }
+
+    try {
+      const result = await adminRequest("presets", { method: "POST", body: { type, key } })
+      const hiddenPresets = result.hiddenPresets || {}
+
+      setSavedLocations(getSavedLocations(savedTournaments, hiddenPresets.location))
+      setSavedDirectors(getSavedDirectors(savedTournaments, hiddenPresets.director))
+
+      if (type === "location") {
+        chooseLocation("")
+      } else {
+        chooseDirector("")
+      }
+    } catch (error) {
+      setSaveState("error")
+      setMessage(error.message)
+    }
+  }
+
   const setAddress = (address) => {
     setForm((current) => ({
       ...current,
@@ -317,7 +352,7 @@ function TournamentEditor({ tournamentId }) {
             <label>
               Rating
               <select onChange={(event) => setField("rating", event.target.value)} value={form.rating}>
-                <option value="USCF">USCF</option>
+                <option value="USCF">US Chess</option>
                 <option value="Unrated">Unrated</option>
               </select>
             </label>
@@ -327,7 +362,9 @@ function TournamentEditor({ tournamentId }) {
         <fieldset className="admin-fieldset">
           <legend>Entry settings</legend>
           <p className="admin-field-help">
-            Set the optional early-entry cutoff and how many byes each player may request.
+            Set the optional early-entry cutoff, how many byes each player may request, and
+            what a student entry (Marywood student or K-12) takes off the entry fee. A $0
+            student discount hides the option from the purchase form.
           </p>
           <div className="admin-grid">
             <label>
@@ -345,6 +382,15 @@ function TournamentEditor({ tournamentId }) {
                 onChange={(event) => setField("maxByes", toNumber(event.target.value) ?? 0)}
                 type="number"
                 value={form.maxByes ?? ""}
+              />
+            </label>
+            <label>
+              Student discount ($)
+              <input
+                min="0"
+                onChange={(event) => setField("studentDiscount", toNumber(event.target.value) ?? 0)}
+                type="number"
+                value={form.studentDiscount ?? ""}
               />
             </label>
           </div>
@@ -367,6 +413,15 @@ function TournamentEditor({ tournamentId }) {
               </select>
             </label>
           </div>
+          {savedVenuePreset && (
+            <button
+              className="admin-link-button admin-preset-delete"
+              onClick={() => deletePreset("location", savedVenuePreset.location.toLowerCase(), savedVenuePreset.location)}
+              type="button"
+            >
+              Delete “{savedVenuePreset.location}” preset
+            </button>
+          )}
           {venueChoice === "__new__" ? (
             <div className="admin-grid admin-preset-fields">
               <label>
@@ -455,6 +510,19 @@ function TournamentEditor({ tournamentId }) {
               </select>
             </label>
           </div>
+          {savedDirectorPreset && (
+            <button
+              className="admin-link-button admin-preset-delete"
+              onClick={() => deletePreset(
+                "director",
+                savedDirectorPreset.key,
+                savedDirectorPreset.name || savedDirectorPreset.email,
+              )}
+              type="button"
+            >
+              Delete “{savedDirectorPreset.name || savedDirectorPreset.email}” preset
+            </button>
+          )}
           {directorChoice === "__new__" ? (
             <div className="admin-grid admin-preset-fields">
               <label>
