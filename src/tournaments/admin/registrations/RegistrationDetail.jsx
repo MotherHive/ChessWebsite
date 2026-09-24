@@ -17,6 +17,12 @@ export default function RegistrationDetail({
         <h3>{registration.player_name}</h3>
         <button className="admin-link-button" onClick={onClose} type="button">Close</button>
       </div>
+      {registration.superseded_by_registration_id && (
+        <p className="admin-error" role="alert">
+          This is an additional paid record for the same player and tournament.
+          Reconcile it against the canonical registration before issuing any refund.
+        </p>
+      )}
       <dl className="admin-detail-grid">
         <div>
           <dt>Tournament</dt>

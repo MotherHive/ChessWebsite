@@ -3,6 +3,10 @@ import { jsonResponse } from "@/shared/server/http"
 import { getStripe } from "@/shared/server/stripe"
 import { fromRegistrationRow, fromTournamentRow } from "./databaseRows.js"
 import { backfillSettlements } from "./settlement.js"
+import {
+  buildRegistrationFilter,
+  getRegistrationFilters,
+} from "./adminRegistrationFilters.js"
 
 const registrationSummaryColumns = [
   "id",
@@ -15,6 +19,7 @@ const registrationSummaryColumns = [
   "total_amount_cents",
   "payment_status",
   "entered_with_team",
+  "superseded_by_registration_id",
 ].join(", ")
 
 const registrationDetailColumns = [
@@ -61,59 +66,9 @@ const registrationExportColumns = [
   "membership_amount_cents",
   "stripe_fee_cents",
   "stripe_net_cents",
+  "superseded_by_registration_id",
   "paid_at",
 ].join(", ")
-
-const getRegistrationFilters = (searchParams) => ({
-  paymentStatus: searchParams.get("payment") || "",
-  query: (searchParams.get("q") || "").trim().slice(0, 100),
-  section: searchParams.get("section") || "",
-  team: searchParams.get("team") || "",
-  tournamentId: searchParams.get("tournament") || "",
-})
-
-const buildRegistrationFilter = (filters) => {
-  const clauses = []
-  const bindings = []
-
-  if (filters.tournamentId) {
-    clauses.push("tournament_id = ?")
-    bindings.push(filters.tournamentId)
-  }
-
-  if (filters.section) {
-    clauses.push("section = ?")
-    bindings.push(filters.section)
-  }
-
-  if (filters.paymentStatus) {
-    clauses.push("payment_status = ?")
-    bindings.push(filters.paymentStatus)
-  }
-
-  if (filters.team === "team" || filters.team === "individual") {
-    clauses.push("entered_with_team = ?")
-    bindings.push(filters.team === "team" ? 1 : 0)
-  }
-
-  const searchTerm = filters.query.replace(/[\\%_]/g, "\\$&").replace(/\s+/g, " ").trim()
-
-  if (searchTerm) {
-    clauses.push(`(
-      player_name LIKE ? ESCAPE '\\' COLLATE NOCASE OR
-      email LIKE ? ESCAPE '\\' COLLATE NOCASE OR
-      uscf_id LIKE ? ESCAPE '\\' COLLATE NOCASE OR
-      school LIKE ? ESCAPE '\\' COLLATE NOCASE
-    )`)
-    const pattern = `%${searchTerm}%`
-    bindings.push(pattern, pattern, pattern, pattern)
-  }
-
-  return {
-    bindings,
-    where: clauses.length ? ` WHERE ${clauses.join(" AND ")}` : "",
-  }
-}
 
 export const listRegistrations = async (db, searchParams) => {
   const requestedPage = Number.parseInt(searchParams.get("page") || "1", 10)

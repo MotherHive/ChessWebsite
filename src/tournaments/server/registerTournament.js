@@ -28,6 +28,10 @@ import {
   isStripePaymentMethod,
 } from "@/tournaments/registration/buildRegistration"
 import { fromRegistrationRow, toRegistrationRow } from "./databaseRows.js"
+import {
+  getCanonicalRegistrationAction,
+  getRegistrationIdentityKey,
+} from "./registrationIdentity.js"
 
 const toDatabaseRegistration = (registration, status, idempotency) => ({
   tournament_id: registration.tournament.id,
@@ -65,6 +69,8 @@ const toDatabaseRegistration = (registration, status, idempotency) => ({
   registration_status: status.registrationStatus,
   idempotency_key: idempotency.key,
   request_fingerprint: idempotency.fingerprint,
+  registration_identity_key: idempotency.identityKey,
+  checkout_request_key: idempotency.checkoutRequestKey || null,
 })
 
 const createStripeLineItems = (registration) => (
@@ -90,6 +96,28 @@ const loadRegistrationByIdempotencyKey = async (db, idempotencyKey) => fromRegis
     FROM tournament_registrations
     WHERE idempotency_key = ?
   `).bind(idempotencyKey)),
+)
+
+const loadRegistrationByIdentityKey = async (db, identityKey) => fromRegistrationRow(
+  await firstRow(db.prepare(`
+    SELECT *
+    FROM tournament_registrations
+    WHERE registration_identity_key = ?
+  `).bind(identityKey)),
+)
+
+const loadRegistrationById = async (db, id) => fromRegistrationRow(
+  await firstRow(db.prepare(`
+    SELECT *
+    FROM tournament_registrations
+    WHERE id = ?
+  `).bind(id)),
+)
+
+const resolveCanonicalRegistration = async (db, registration) => (
+  registration?.superseded_by_registration_id
+    ? loadRegistrationById(db, registration.superseded_by_registration_id)
+    : registration
 )
 
 const trySendFirstRegistrationWelcomeEmail = async (db, registrationRow) => {
@@ -119,24 +147,57 @@ const trySendFirstRegistrationWelcomeEmail = async (db, registrationRow) => {
   )
 }
 
-const registrationResponse = (registration) => jsonResponse(200, {
+const registrationResponse = (registration, { checkoutUrl = registration.stripe_checkout_url } = {}) => jsonResponse(200, {
   registrationId: registration.id,
-  ...(registration.stripe_checkout_url ? { checkoutUrl: registration.stripe_checkout_url } : {}),
+  ...(checkoutUrl ? { checkoutUrl } : {}),
   paymentStatus: registration.payment_status,
   registrationStatus: registration.registration_status,
 })
 
-const continueStripeCheckout = async ({
-  db,
-  idempotencyKey,
-  registration,
-  stripe,
-}) => {
-  if (registration.payment_status === "paid" || registration.stripe_checkout_url) {
-    return registrationResponse(registration)
+const loadCurrentRegistration = async (db, registrationId) => {
+  try {
+    return await loadRegistrationById(db, registrationId)
+  } catch {
+    return null
+  }
+}
+
+const claimCheckoutCreation = async (db, registration, checkoutRequestKey) => {
+  if (registration.payment_status === "checkout_creating") {
+    return registration
   }
 
+  return fromRegistrationRow(await firstRow(db.prepare(`
+    UPDATE tournament_registrations
+    SET
+      payment_status = 'checkout_creating',
+      registration_status = 'pending_payment',
+      checkout_request_key = ?,
+      stripe_checkout_session_id = NULL,
+      stripe_checkout_url = NULL,
+      stripe_payment_intent_id = NULL,
+      stripe_customer_id = NULL,
+      stripe_payment_status = NULL,
+      stripe_event_id = NULL,
+      updated_at = ?
+    WHERE id = ?
+      AND payment_status != 'paid'
+      AND payment_status != 'checkout_creating'
+    RETURNING *
+  `).bind(
+    checkoutRequestKey,
+    new Date().toISOString(),
+    registration.id,
+  )))
+}
+
+const createAndAttachStripeCheckout = async ({ db, registration, stripe }) => {
   const siteUrl = getSiteUrl()
+  const checkoutRequestKey = registration.checkout_request_key
+
+  if (!checkoutRequestKey) {
+    return jsonResponse(500, { error: "Could not identify the Stripe checkout request." })
+  }
 
   let session
 
@@ -153,21 +214,22 @@ const continueStripeCheckout = async ({
         tournament_id: registration.tournament_id,
         player_email: registration.email,
       },
-    }, { idempotencyKey: `registration-${idempotencyKey}` })
+    }, { idempotencyKey: `registration-${checkoutRequestKey}` })
   } catch (error) {
     console.error("Stripe Checkout session creation failed:", error)
 
     try {
-      await executeUpdate(
-        db,
-        "tournament_registrations",
-        registration.id,
-        {
-          payment_status: "checkout_failed",
-          registration_status: "pending_payment",
-        },
-        " AND payment_status != 'paid'",
-      )
+      await firstRow(db.prepare(`
+        UPDATE tournament_registrations
+        SET
+          payment_status = 'checkout_failed',
+          registration_status = 'pending_payment',
+          updated_at = ?
+        WHERE id = ?
+          AND checkout_request_key = ?
+          AND payment_status = 'checkout_creating'
+        RETURNING id
+      `).bind(new Date().toISOString(), registration.id, checkoutRequestKey))
     } catch {
       // The checkout failure is still the actionable error for the client.
     }
@@ -178,35 +240,249 @@ const continueStripeCheckout = async ({
   let updated
 
   try {
-    updated = await executeUpdate(
-      db,
-      "tournament_registrations",
+    updated = fromRegistrationRow(await firstRow(db.prepare(`
+      UPDATE tournament_registrations
+      SET
+        stripe_checkout_session_id = ?,
+        stripe_checkout_url = ?,
+        payment_status = 'checkout_pending',
+        registration_status = 'pending_payment',
+        updated_at = ?
+      WHERE id = ?
+        AND checkout_request_key = ?
+        AND payment_status = 'checkout_creating'
+      RETURNING *
+    `).bind(
+      session.id,
+      session.url,
+      new Date().toISOString(),
       registration.id,
-      {
-        stripe_checkout_session_id: session.id,
-        stripe_checkout_url: session.url,
-        payment_status: "checkout_pending",
-        registration_status: "pending_payment",
-      },
-      " AND payment_status != 'paid'",
-    )
+      checkoutRequestKey,
+    )))
   } catch {
     return jsonResponse(500, { error: "Could not attach Stripe checkout to the registration." })
   }
 
   if (!updated) {
-    try {
-      const current = fromRegistrationRow(await firstRow(
-        db.prepare("SELECT * FROM tournament_registrations WHERE id = ?").bind(registration.id),
-      ))
+    const current = await loadCurrentRegistration(db, registration.id)
 
-      return registrationResponse(current)
-    } catch {
-      return jsonResponse(500, { error: "Could not load the completed registration." })
+    return current
+      ? registrationResponse(current)
+      : jsonResponse(500, { error: "Could not load the completed registration." })
+  }
+
+  return registrationResponse(updated)
+}
+
+const continueStripeCheckout = async ({
+  db,
+  idempotencyKey,
+  registration,
+  stripe,
+}) => {
+  if (registration.payment_status === "paid") {
+    return registrationResponse(registration)
+  }
+
+  if (registration.payment_status === "checkout_creating") {
+    return createAndAttachStripeCheckout({ db, registration, stripe })
+  }
+
+  if (
+    ["checkout_expired", "checkout_failed"].includes(registration.payment_status)
+    && registration.checkout_request_key === idempotencyKey
+  ) {
+    return jsonResponse(409, {
+      error: "That checkout can no longer be used. Submit once more to start a fresh payment.",
+    })
+  }
+
+  if (registration.stripe_checkout_session_id && registration.payment_status === "checkout_pending") {
+    let session
+
+    try {
+      session = await stripe.checkout.sessions.retrieve(registration.stripe_checkout_session_id)
+    } catch (error) {
+      console.error("Stripe Checkout session lookup failed:", error)
+      return jsonResponse(502, { error: "Could not verify the existing Stripe checkout." })
+    }
+
+    if (session.status === "open") {
+      return registrationResponse(registration, {
+        checkoutUrl: session.url || registration.stripe_checkout_url,
+      })
+    }
+
+    if (session.status === "complete") {
+      return registrationResponse(registration, { checkoutUrl: null })
     }
   }
 
-  return registrationResponse(fromRegistrationRow(updated))
+  const claimed = await claimCheckoutCreation(db, registration, idempotencyKey)
+
+  if (!claimed) {
+    const current = await loadCurrentRegistration(db, registration.id)
+
+    if (!current) {
+      return jsonResponse(500, { error: "Could not prepare the Stripe checkout." })
+    }
+
+    if (current.payment_status === "checkout_creating") {
+      return createAndAttachStripeCheckout({ db, registration: current, stripe })
+    }
+
+    return registrationResponse(current)
+  }
+
+  return createAndAttachStripeCheckout({ db, registration: claimed, stripe })
+}
+
+const retireExistingCheckout = async (registration, stripe) => {
+  if (!registration.stripe_checkout_session_id) {
+    return { retired: true }
+  }
+
+  let session
+
+  try {
+    session = await stripe.checkout.sessions.retrieve(registration.stripe_checkout_session_id)
+  } catch (error) {
+    console.error("Stripe Checkout session lookup failed:", error)
+    return { error: "Could not verify the existing Stripe checkout." }
+  }
+
+  if (session.status === "complete") {
+    if (registration.payment_status === "checkout_failed" && session.payment_status !== "paid") {
+      return { retired: true }
+    }
+
+    return {
+      error: session.payment_status === "paid"
+        ? "This player has already paid. The registration is being confirmed."
+        : "This player's payment is still processing.",
+    }
+  }
+
+  if (session.status === "open") {
+    try {
+      await stripe.checkout.sessions.expire(session.id)
+    } catch (error) {
+      console.error("Stripe Checkout session expiration failed:", error)
+      return { error: "Could not close the previous Stripe checkout." }
+    }
+  }
+
+  return { retired: true }
+}
+
+const replaceUnpaidRegistration = async ({
+  db,
+  existing,
+  idempotencyKey,
+  registration,
+  requestFingerprint,
+  stripe,
+}) => {
+  if (existing.payment_status === "checkout_creating") {
+    return jsonResponse(409, {
+      error: "A checkout is already being prepared for this player. Try again in a moment.",
+    })
+  }
+
+  if (existing.payment_method === "stripe_checkout" && existing.stripe_checkout_session_id) {
+    const retirement = await retireExistingCheckout(existing, stripe)
+
+    if (!retirement.retired) {
+      return jsonResponse(409, { error: retirement.error })
+    }
+  }
+
+  const usesStripe = isStripePaymentMethod(registration.order.paymentMethod)
+  const status = usesStripe
+    ? { paymentStatus: "checkout_creating", registrationStatus: "pending_payment" }
+    : { paymentStatus: "manual_pending", registrationStatus: "manual_pending" }
+  const replacement = toRegistrationRow(toDatabaseRegistration(
+    registration,
+    status,
+    {
+      checkoutRequestKey: usesStripe ? idempotencyKey : null,
+      fingerprint: requestFingerprint,
+      identityKey: existing.registration_identity_key,
+      key: existing.idempotency_key,
+    },
+  ))
+
+  Object.assign(replacement, {
+    paid_at: null,
+    stripe_checkout_session_id: null,
+    stripe_checkout_url: null,
+    stripe_customer_id: null,
+    stripe_event_id: null,
+    stripe_fee_cents: null,
+    stripe_net_cents: null,
+    stripe_payment_intent_id: null,
+    stripe_payment_status: null,
+  })
+
+  let updated
+
+  try {
+    updated = await executeUpdate(
+      db,
+      "tournament_registrations",
+      existing.id,
+      replacement,
+      " AND payment_status != 'paid'",
+    )
+  } catch {
+    return jsonResponse(500, { error: "Could not update the unpaid registration." })
+  }
+
+  if (!updated) {
+    return jsonResponse(409, { error: "This player is already registered and paid." })
+  }
+
+  const row = fromRegistrationRow(updated)
+
+  if (usesStripe) {
+    return continueStripeCheckout({ db, idempotencyKey, registration: row, stripe })
+  }
+
+  await trySendRegistrationEmail(detailsFromRegistration(registration, { paid: false }), {
+    idempotencyKey: `registration-${row.id}-received`,
+  })
+
+  return registrationResponse(row)
+}
+
+const handleCanonicalRegistration = async ({
+  db,
+  existing,
+  idempotencyKey,
+  registration,
+  requestFingerprint,
+  stripe,
+}) => {
+  const action = getCanonicalRegistrationAction(existing, requestFingerprint)
+
+  if (action === "block-paid") {
+    return jsonResponse(409, { error: "This player is already registered and paid for this tournament." })
+  }
+
+  if (action === "replace-unpaid") {
+    return replaceUnpaidRegistration({
+      db,
+      existing,
+      idempotencyKey,
+      registration,
+      requestFingerprint,
+      stripe,
+    })
+  }
+
+  return isStripePaymentMethod(existing.payment_method)
+    ? continueStripeCheckout({ db, idempotencyKey, registration: existing, stripe })
+    : registrationResponse(existing)
 }
 
 export async function registerTournament(request) {
@@ -260,11 +536,21 @@ export async function registerTournament(request) {
   }
 
   if (existing) {
+    try {
+      existing = await resolveCanonicalRegistration(db, existing)
+    } catch {
+      return jsonResponse(500, { error: "Could not load the canonical registration." })
+    }
+
+    if (!existing) {
+      return jsonResponse(500, { error: "Could not load the canonical registration." })
+    }
+
     if (!isStripePaymentMethod(existing.payment_method)) {
       return registrationResponse(existing)
     }
 
-    if (existing.payment_status === "paid" || existing.stripe_checkout_url) {
+    if (existing.payment_status === "paid") {
       return registrationResponse(existing)
     }
 
@@ -314,13 +600,28 @@ export async function registerTournament(request) {
   }
 
   const usesStripe = isStripePaymentMethod(registration.order.paymentMethod)
+  const identityKey = getRegistrationIdentityKey(registration)
   const initialStatus = usesStripe
-    ? { paymentStatus: "checkout_pending", registrationStatus: "pending_payment" }
+    ? { paymentStatus: "checkout_creating", registrationStatus: "pending_payment" }
     : { paymentStatus: "manual_pending", registrationStatus: "manual_pending" }
+  let canonicalRegistration
+
+  try {
+    canonicalRegistration = await loadRegistrationByIdentityKey(db, identityKey)
+  } catch {
+    return jsonResponse(500, { error: "Could not check for an existing player registration." })
+  }
+
+  if (canonicalRegistration?.payment_status === "paid") {
+    return jsonResponse(409, {
+      error: "This player is already registered and paid for this tournament.",
+    })
+  }
+
   let stripe
 
-  if (usesStripe) {
-    if (registration.order.totalAmountCents <= 0) {
+  if (usesStripe || isStripePaymentMethod(canonicalRegistration?.payment_method)) {
+    if (usesStripe && registration.order.totalAmountCents <= 0) {
       return jsonResponse(400, { error: "Stripe checkout requires a positive order total." })
     }
 
@@ -331,6 +632,17 @@ export async function registerTournament(request) {
     }
   }
 
+  if (canonicalRegistration) {
+    return handleCanonicalRegistration({
+      db,
+      existing: canonicalRegistration,
+      idempotencyKey,
+      registration,
+      requestFingerprint,
+      stripe,
+    })
+  }
+
   let data
 
   try {
@@ -339,8 +651,10 @@ export async function registerTournament(request) {
       registration,
       initialStatus,
       {
+        checkoutRequestKey: usesStripe ? idempotencyKey : null,
         key: idempotencyKey,
         fingerprint: requestFingerprint,
+        identityKey,
       },
     ))
     const inserted = await executeInsert(db, "tournament_registrations", {
@@ -356,24 +670,19 @@ export async function registerTournament(request) {
 
       try {
         racedRegistration = await loadRegistrationByIdempotencyKey(db, idempotencyKey)
+          || await loadRegistrationByIdentityKey(db, identityKey)
       } catch {
         racedRegistration = null
       }
 
-      if (racedRegistration?.request_fingerprint === requestFingerprint) {
-        return usesStripe
-          ? continueStripeCheckout({
-            db,
-            idempotencyKey,
-            registration: racedRegistration,
-            stripe,
-          })
-          : registrationResponse(racedRegistration)
-      }
-
       if (racedRegistration) {
-        return jsonResponse(409, {
-          error: "This registration attempt was already used with different details.",
+        return handleCanonicalRegistration({
+          db,
+          existing: racedRegistration,
+          idempotencyKey,
+          registration,
+          requestFingerprint,
+          stripe,
         })
       }
     }

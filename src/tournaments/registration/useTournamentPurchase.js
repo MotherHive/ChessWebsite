@@ -221,6 +221,10 @@ export default function useTournamentPurchase(tournaments, currentTime) {
 
       dispatch({ type: "submit-succeeded", result })
     } catch (error) {
+      // The canonical registration on the server makes a fresh request key
+      // safe, while reusing a key from an expired or failed Stripe Session can
+      // only recover that same dead Session from Stripe's idempotency cache.
+      invalidatePurchaseAttempt()
       showPurchaseError(error.message || "Could not submit the registration. Try again later.")
     } finally {
       setTurnstileToken("")

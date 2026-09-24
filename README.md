@@ -68,6 +68,11 @@ server directory.
 Stripe tournament checkout uses Next.js route handlers on Cloudflare Workers and
 stores registration state in D1.
 
+A player has one canonical registration per tournament. An active Checkout is
+reopened on an identical retry; an unpaid registration can be replaced, but a
+paid registration cannot be duplicated. Card checkout setup/expiration is not
+part of the default admin roster or outstanding-revenue total.
+
 Required environment variables:
 
 ```text

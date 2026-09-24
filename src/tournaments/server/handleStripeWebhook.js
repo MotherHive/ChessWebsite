@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer"
 import { getDatabase } from "@/shared/server/cloudflare"
-import { firstRow, runStatement } from "@/shared/server/database"
+import { allRows, firstRow, runStatement } from "@/shared/server/database"
 import {
   detailsFromDatabaseRow,
   trySendRegistrationEmail,
@@ -31,28 +31,22 @@ const getRegistrationLookup = (session) => {
     : { column: "stripe_checkout_session_id", value: session.id }
 }
 
-const updateRegistrationFromSession = async (db, session, eventId, status) => {
+const updateRegistrationFromSession = async (
+  db,
+  session,
+  eventId,
+  status,
+  { allowSupersededSession = false } = {},
+) => {
   const lookup = getRegistrationLookup(session)
   const paidAt = status.paidAt || null
-  const row = await firstRow(db.prepare(`
-    UPDATE tournament_registrations
-    SET
-      payment_status = ?,
-      registration_status = ?,
-      stripe_checkout_session_id = ?,
-      stripe_payment_intent_id = ?,
-      stripe_customer_id = ?,
-      stripe_payment_status = ?,
-      stripe_event_id = ?,
-      stripe_fee_cents = COALESCE(?, stripe_fee_cents),
-      stripe_net_cents = COALESCE(?, stripe_net_cents),
-      paid_at = COALESCE(?, paid_at),
-      updated_at = ?
-    WHERE ${lookup.column} = ? AND payment_status != 'paid'
-    RETURNING *
-  `).bind(
+  const currentSessionGuard = lookup.column === "id" && !allowSupersededSession
+    ? " AND stripe_checkout_session_id = ?"
+    : ""
+  const bindings = [
     status.paymentStatus,
     status.registrationStatus,
+    status.paymentMethod || null,
     session.id,
     getStripeId(session.payment_intent),
     getStripeId(session.customer),
@@ -63,7 +57,26 @@ const updateRegistrationFromSession = async (db, session, eventId, status) => {
     paidAt,
     new Date().toISOString(),
     lookup.value,
-  ))
+    ...(currentSessionGuard ? [session.id] : []),
+  ]
+  const row = await firstRow(db.prepare(`
+    UPDATE tournament_registrations
+    SET
+      payment_status = ?,
+      registration_status = ?,
+      payment_method = COALESCE(?, payment_method),
+      stripe_checkout_session_id = ?,
+      stripe_payment_intent_id = ?,
+      stripe_customer_id = ?,
+      stripe_payment_status = ?,
+      stripe_event_id = ?,
+      stripe_fee_cents = COALESCE(?, stripe_fee_cents),
+      stripe_net_cents = COALESCE(?, stripe_net_cents),
+      paid_at = COALESCE(?, paid_at),
+      updated_at = ?
+    WHERE ${lookup.column} = ? AND payment_status != 'paid'${currentSessionGuard}
+    RETURNING *
+  `).bind(...bindings))
 
   return fromRegistrationRow(row)
 }
@@ -89,6 +102,108 @@ export const isFullyPaidSession = (session, registration) => {
   }
 
   return paid >= expected
+}
+
+const expireReplacedCheckout = async (stripe, registration, paidSessionId) => {
+  const replacedSessionId = registration?.stripe_checkout_session_id
+
+  if (!replacedSessionId || replacedSessionId === paidSessionId) {
+    return
+  }
+
+  try {
+    const replaced = await stripe.checkout.sessions.retrieve(replacedSessionId)
+
+    if (replaced.status === "open") {
+      await stripe.checkout.sessions.expire(replacedSessionId)
+    }
+  } catch (error) {
+    // The paid registration remains authoritative. Surface the cleanup failure
+    // for operations without risking a webhook retry that could resend email.
+    console.error("Could not expire a replaced Stripe Checkout session.", error)
+  }
+}
+
+const expireCheckoutSession = async (stripe, sessionId) => {
+  if (!sessionId) {
+    return
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId)
+
+    if (session.status === "open") {
+      await stripe.checkout.sessions.expire(sessionId)
+    }
+  } catch (error) {
+    console.error("Could not expire a duplicate Stripe Checkout session.", error)
+  }
+}
+
+const promotePaidSupersededRegistration = async (db, stripe, registration) => {
+  const canonicalId = registration?.superseded_by_registration_id
+
+  if (!canonicalId) {
+    return registration
+  }
+
+  const canonical = await firstRow(
+    db.prepare("SELECT * FROM tournament_registrations WHERE id = ?").bind(canonicalId),
+  )
+
+  // Two real payments must both remain visible for reconciliation. Promotion
+  // is only safe while the previously canonical row is still unpaid.
+  if (!canonical || canonical.payment_status === "paid") {
+    return registration
+  }
+
+  await expireCheckoutSession(stripe, canonical.stripe_checkout_session_id)
+
+  const now = new Date().toISOString()
+  await db.batch([
+    db.prepare(`
+      UPDATE tournament_registrations
+      SET registration_identity_key = NULL,
+          superseded_by_registration_id = ?,
+          updated_at = ?
+      WHERE id = ? AND payment_status != 'paid'
+    `).bind(registration.id, now, canonical.id),
+    db.prepare(`
+      UPDATE tournament_registrations
+      SET registration_identity_key = ?,
+          superseded_by_registration_id = NULL,
+          updated_at = ?
+      WHERE id = ? AND payment_status = 'paid'
+    `).bind(canonical.registration_identity_key, now, registration.id),
+  ])
+
+  return {
+    ...registration,
+    registration_identity_key: canonical.registration_identity_key,
+    superseded_by_registration_id: null,
+  }
+}
+
+const expireSupersededCheckouts = async (db, stripe, registration) => {
+  if (!registration?.id) {
+    return
+  }
+
+  try {
+    const rows = await allRows(db.prepare(`
+      SELECT stripe_checkout_session_id
+      FROM tournament_registrations
+      WHERE superseded_by_registration_id = ?
+        AND payment_status != 'paid'
+        AND stripe_checkout_session_id IS NOT NULL
+    `).bind(registration.id))
+
+    await Promise.all(rows.map((row) => (
+      expireCheckoutSession(stripe, row.stripe_checkout_session_id)
+    )))
+  } catch (error) {
+    console.error("Could not close superseded Stripe Checkout sessions.", error)
+  }
 }
 
 const hasProcessedEvent = async (db, eventId) => firstRow(
@@ -191,14 +306,20 @@ export async function handleStripeWebhook(request) {
       registration = await updateRegistrationFromSession(db, session, event.id, {
         feeCents: settlement.feeCents,
         netCents: settlement.netCents,
+        paymentMethod: "stripe_checkout",
         paymentStatus: "paid",
         registrationStatus: "confirmed",
         paidAt: new Date(event.created * 1000).toISOString(),
-      })
+      }, { allowSupersededSession: true })
+
+      await expireReplacedCheckout(stripe, pending, session.id)
 
       if (!registration) {
         registration = pending
       }
+
+      registration = await promotePaidSupersededRegistration(db, stripe, registration)
+      await expireSupersededCheckouts(db, stripe, registration)
     } catch {
       return jsonResponse(500, { error: "Could not confirm the registration." })
     }
@@ -245,12 +366,19 @@ export async function handleStripeWebhook(request) {
 
   if (failedEventTypes.includes(event.type)) {
     try {
-      await updateRegistrationFromSession(db, event.data.object, event.id, {
+      const failedRegistration = await updateRegistrationFromSession(db, event.data.object, event.id, {
         paymentStatus: event.type === "checkout.session.expired"
           ? "checkout_expired"
           : "checkout_failed",
         registrationStatus: "pending_payment",
       })
+
+      if (failedRegistration?.superseded_by_registration_id) {
+        await runStatement(db.prepare(`
+          DELETE FROM tournament_registrations
+          WHERE id = ? AND payment_status != 'paid'
+        `).bind(failedRegistration.id))
+      }
     } catch {
       return jsonResponse(500, { error: "Could not expire the registration checkout." })
     }

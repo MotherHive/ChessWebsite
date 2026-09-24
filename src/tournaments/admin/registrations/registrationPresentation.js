@@ -1,6 +1,7 @@
 export const paymentStatusLabels = {
   paid: "Paid",
   checkout_pending: "Checkout pending",
+  checkout_creating: "Checkout starting",
   checkout_expired: "Checkout expired",
   checkout_failed: "Checkout failed",
   manual_pending: "Unpaid",
@@ -97,6 +98,10 @@ export const csvColumns = [
   ["Byes", (row) => (row.byes || []).map((bye) => bye.round).join("; ")],
   ["Payment method", (row) => paymentMethodLabels[row.payment_method] || row.payment_method],
   ["Payment status", (row) => paymentStatusLabels[row.payment_status] || row.payment_status],
+  [
+    "Duplicate payment record",
+    (row) => (row.superseded_by_registration_id ? "yes" : "no"),
+  ],
   [
     "Total",
     (row) => formatCents(row.total_amount_cents),

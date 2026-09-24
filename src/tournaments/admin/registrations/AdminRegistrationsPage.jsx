@@ -142,7 +142,7 @@ export default function AdminRegistrationsPage() {
     resetListView(page)
   }
 
-  const paymentOptions = Object.keys(paymentStatusLabels)
+  const paymentOptions = ["paid", "manual_pending"]
 
   const pageTotals = useMemo(() => {
     let collectedCents = 0
@@ -400,6 +400,9 @@ export default function AdminRegistrationsPage() {
                       <span className={`admin-status admin-status-payment-${row.payment_status}`}>
                         {getPaymentLabel(row)}
                       </span>
+                      {row.superseded_by_registration_id && (
+                        <span className="admin-error admin-table-sub">Duplicate payment record</span>
+                      )}
                     </td>
                   </tr>
                   {openRegistrationId === row.id && (
