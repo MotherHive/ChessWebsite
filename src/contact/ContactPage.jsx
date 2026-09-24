@@ -33,6 +33,10 @@ const staffPositions = [
     name: "Joe Brown",
     title: "Website Maintainer",
   },
+  {
+    name: "Ryan Murphy",
+    title: "Poster Graphic Designer",
+  },
 ]
 
 export default function ContactPage() {

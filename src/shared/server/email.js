@@ -19,6 +19,8 @@ const fromAddress = () => (
   getServerConfig("RESEND_FROM") || "Scranton Chess Club <noreply@scrantonchess.org>"
 );
 
+export const clubSignupNotificationAddress = "scrantonchess@gmail.com";
+
 // ============================================================================
 // 2. Formatting & Sanitization Helpers
 // ============================================================================
@@ -126,7 +128,44 @@ export const buildWelcomeText = (firstName) => [
 ].join("\n");
 
 // ============================================================================
-// 5. Data Mappers
+// 5. Template Builders: New Club Signup Notification
+// ============================================================================
+
+export const buildClubSignupNotificationHtml = ({ firstName, lastName, email, joinedAt }) => `
+  <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#111827;">
+    <h1 style="font-size:20px;">New club signup</h1>
+    <p style="color:#374151;">A new member joined the Scranton Chess Club mailing list.</p>
+    <table style="border-collapse:collapse;margin:16px 0;">
+      <tr>
+        <td style="padding:4px 12px 4px 0;color:#6b7280;">Name</td>
+        <td style="padding:4px 0;color:#111827;font-weight:600;">${escapeHtml(firstName)} ${escapeHtml(lastName)}</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 12px 4px 0;color:#6b7280;">Email</td>
+        <td style="padding:4px 0;color:#111827;font-weight:600;"><a href="mailto:${escapeHtml(email)}" style="color:#111827;">${escapeHtml(email)}</a></td>
+      </tr>
+      <tr>
+        <td style="padding:4px 12px 4px 0;color:#6b7280;">Joined</td>
+        <td style="padding:4px 0;color:#111827;font-weight:600;">${escapeHtml(joinedAt)}</td>
+      </tr>
+    </table>
+    <p style="color:#6b7280;font-size:13px;">— Scranton Chess Club website</p>
+  </div>`;
+
+export const buildClubSignupNotificationText = ({ firstName, lastName, email, joinedAt }) => [
+  "New club signup",
+  "",
+  "A new member joined the Scranton Chess Club mailing list.",
+  "",
+  `Name: ${firstName} ${lastName}`,
+  `Email: ${email}`,
+  `Joined: ${joinedAt}`,
+  "",
+  "— Scranton Chess Club website",
+].join("\n");
+
+// ============================================================================
+// 6. Data Mappers
 // ============================================================================
 
 export const detailsFromRegistration = (registration, { paid = false } = {}) => ({
@@ -157,7 +196,7 @@ export const detailsFromDatabaseRow = (row, { paid = false } = {}) => ({
 });
 
 // ============================================================================
-// 6. Core Delivery Functions
+// 7. Core Delivery Functions
 // ============================================================================
 
 export const sendClubWelcomeEmail = async ({ firstName, email }, { idempotencyKey } = {}) => {
@@ -170,6 +209,21 @@ export const sendClubWelcomeEmail = async ({ firstName, email }, { idempotencyKe
       subject: "Welcome to the Scranton Chess Club",
       html: buildWelcomeHtml(firstName),
       text: buildWelcomeText(firstName),
+    },
+    idempotencyKey ? { idempotencyKey } : undefined,
+  );
+};
+
+export const sendClubSignupNotificationEmail = async (details, { idempotencyKey } = {}) => {
+  const resend = getResend();
+
+  return resend.emails.send(
+    {
+      from: fromAddress(),
+      to: clubSignupNotificationAddress,
+      subject: "New Scranton Chess Club signup",
+      html: buildClubSignupNotificationHtml(details),
+      text: buildClubSignupNotificationText(details),
     },
     idempotencyKey ? { idempotencyKey } : undefined,
   );
@@ -194,7 +248,7 @@ export const sendRegistrationEmail = async (details, { idempotencyKey } = {}) =>
 };
 
 // ============================================================================
-// 7. Defensive Execution Wrappers
+// 8. Defensive Execution Wrappers
 // ============================================================================
 
 export const trySendClubWelcomeEmail = async (payload, options) => {
@@ -208,6 +262,21 @@ export const trySendClubWelcomeEmail = async (payload, options) => {
     return true;
   } catch (error) {
     console.error("Failed to send club welcome email:", error);
+    return false;
+  }
+};
+
+export const trySendClubSignupNotificationEmail = async (details, options) => {
+  try {
+    const result = await sendClubSignupNotificationEmail(details, options);
+
+    if (result?.error) {
+      throw result.error;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Failed to send club signup notification email:", error);
     return false;
   }
 };

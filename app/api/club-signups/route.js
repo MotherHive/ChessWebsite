@@ -1,6 +1,9 @@
 import { getDatabase } from "@/shared/server/cloudflare"
 import { firstRow, runStatement } from "@/shared/server/database"
-import { trySendClubWelcomeEmail } from "@/shared/server/email"
+import {
+  trySendClubSignupNotificationEmail,
+  trySendClubWelcomeEmail,
+} from "@/shared/server/email"
 import { jsonResponse, parseJsonRequest } from "@/shared/server/http"
 import { enforcePublicFormRateLimit } from "@/shared/server/rateLimit"
 import { verifyTurnstile } from "@/shared/server/turnstile"
@@ -48,13 +51,13 @@ export async function POST(request) {
       INSERT INTO club_signups (id, created_at, first_name, last_name, email, source)
       VALUES (?, ?, ?, ?, ?, 'join_menu')
       ON CONFLICT(email) DO NOTHING
-      RETURNING id, first_name, email, welcome_email_sent_at
+      RETURNING id, created_at, first_name, last_name, email, welcome_email_sent_at
     `).bind(crypto.randomUUID(), now, firstName, lastName, email))
     const duplicate = !signup
 
     if (!signup) {
       signup = await firstRow(db.prepare(`
-        SELECT id, first_name, email, welcome_email_sent_at
+        SELECT id, created_at, first_name, last_name, email, welcome_email_sent_at
         FROM club_signups
         WHERE email = ?
       `).bind(email))
@@ -65,10 +68,22 @@ export async function POST(request) {
     }
 
     if (!signup.welcome_email_sent_at) {
-      const emailSent = await trySendClubWelcomeEmail(
+      const welcomeEmail = trySendClubWelcomeEmail(
         { firstName: signup.first_name, email: signup.email },
         { idempotencyKey: `club-signup-${signup.id}-welcome` },
       )
+      const adminNotification = duplicate
+        ? Promise.resolve(true)
+        : trySendClubSignupNotificationEmail(
+          {
+            firstName: signup.first_name,
+            lastName: signup.last_name,
+            email: signup.email,
+            joinedAt: signup.created_at,
+          },
+          { idempotencyKey: `club-signup-${signup.id}-admin-notification` },
+        )
+      const [emailSent] = await Promise.all([welcomeEmail, adminNotification])
 
       if (!emailSent) {
         return jsonResponse(502, {
