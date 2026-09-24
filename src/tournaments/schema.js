@@ -28,10 +28,16 @@ const blankOrDate = z.string().refine(
   "Use a valid date.",
 )
 
+const ratingPriceSchema = z.object({
+  under: z.number().int().positive().max(9999),
+  price: money,
+}).strict()
+
 const entryFeeSchema = z.object({
   section: shortText,
   price: money,
   earlyPrice: money.optional(),
+  ratingPrices: z.array(ratingPriceSchema).max(20).optional(),
 }).strict()
 
 const directorSchema = z.object({
@@ -126,6 +132,7 @@ export const publishedTournamentSchema = tournamentDraftSchema.superRefine((data
 
   data.entryFees.forEach((fee, index) => {
     const section = fee.section.trim().toLowerCase()
+    const ratingThresholds = new Set()
 
     if (!section) {
       context.addIssue({
@@ -150,6 +157,18 @@ export const publishedTournamentSchema = tournamentDraftSchema.superRefine((data
         path: ["discountEndsAt"],
       })
     }
+
+    ;(fee.ratingPrices || []).forEach((ratingPrice, ratingPriceIndex) => {
+      if (ratingThresholds.has(ratingPrice.under)) {
+        context.addIssue({
+          code: "custom",
+          message: "Rating price thresholds must be unique within a section.",
+          path: ["entryFees", index, "ratingPrices", ratingPriceIndex, "under"],
+        })
+      }
+
+      ratingThresholds.add(ratingPrice.under)
+    })
   })
 
   const startsAt = new Date(data.startsAt).getTime()

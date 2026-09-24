@@ -73,6 +73,10 @@ export default function RegistrationDetail({
           </dd>
         </div>
         <div>
+          <dt>Rating price eligibility</dt>
+          <dd>{registration.rating_price_under ? `Under ${registration.rating_price_under}` : "No"}</dd>
+        </div>
+        <div>
           <dt>Byes</dt>
           <dd>
             {(registration.byes || []).length

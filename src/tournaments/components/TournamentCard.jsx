@@ -1,3 +1,5 @@
+import { Fragment } from "react"
+
 const CalendarIcon = "/assets/icons/Calendar.svg"
 const LocationIcon = "/assets/icons/Location.svg"
 import ProgressiveImage from "@/shared/components/ui/ProgressiveImage"
@@ -93,10 +95,23 @@ export default function TournamentCard({
             <span className="tournament-offer-row">
               <span className="tournament-price">
                 {tournament.entryFees.map((fee) => (
-                  <span className="tournament-price-section" key={fee.section}>
-                    <span>{fee.section}</span>
-                    <strong>{formatPrice(getDisplayedEntryPrice(fee))}</strong>
-                  </span>
+                  <Fragment key={fee.section}>
+                    <span className="tournament-price-section">
+                      <span>{fee.section}</span>
+                      <strong>{formatPrice(getDisplayedEntryPrice(fee))}</strong>
+                    </span>
+                    {[...(fee.ratingPrices || [])]
+                      .sort((left, right) => left.under - right.under)
+                      .map((ratingPrice, ratingPriceIndex) => (
+                        <span
+                          className="tournament-price-section tournament-rating-price-section"
+                          key={`${ratingPrice.under}-${ratingPriceIndex}`}
+                        >
+                          <span>{fee.section} · Under {ratingPrice.under}</span>
+                          <strong>{formatPrice(ratingPrice.price)}</strong>
+                        </span>
+                      ))}
+                  </Fragment>
                 ))}
               </span>
             </span>

@@ -204,3 +204,100 @@ test("a tournament with no student discount charges the full entry", () => {
   assert.equal(registration.order.totalAmountCents, 3000)
   assert.equal(registration.order.lineItems[0].label, "Tournament entry - Open")
 })
+
+test("a selected under-rating price changes only the entry before bye charges", () => {
+  const tournament = {
+    id: "rating-price-open",
+    title: "Rating Price Open",
+    maxByes: 1,
+    studentDiscount: 5,
+    entryFees: [{
+      section: "Open",
+      price: 30,
+      ratingPrices: [{ under: 1000, price: 15 }],
+    }],
+  }
+  const registration = buildTournamentRegistration({
+    tournamentId: tournament.id,
+    form: {
+      activeMembershipStatus: "yes",
+      byes: [{ round: "Round 2" }],
+      email: "player@example.com",
+      isStudent: true,
+      name: "Player Name",
+      paymentMethod: "pay_at_event",
+      ratingPriceUnder: "1000",
+      section: "Open",
+      uscfId: "12345678",
+    },
+  }, Date.now(), tournament)
+
+  assert.equal(registration.player.ratingPriceUnder, 1000)
+  assert.equal(registration.order.entryAmountCents, 1500)
+  assert.equal(registration.order.studentDiscountAmountCents, 0)
+  assert.equal(registration.order.ratingDiscountAmountCents, 1500)
+  assert.equal(registration.order.byeAmountCents, 500)
+  assert.equal(registration.order.totalAmountCents, 2000)
+  assert.equal(registration.order.lineItems[0].label, "Tournament entry - Open (rating under 1000)")
+})
+
+test("the student price wins when it is lower than the selected rating price", () => {
+  const tournament = {
+    id: "student-rating-open",
+    title: "Student Rating Open",
+    studentDiscount: 20,
+    entryFees: [{
+      section: "Open",
+      price: 30,
+      ratingPrices: [{ under: 1000, price: 15 }],
+    }],
+  }
+  const registration = buildTournamentRegistration({
+    tournamentId: tournament.id,
+    form: {
+      activeMembershipStatus: "yes",
+      byes: [],
+      email: "player@example.com",
+      isStudent: true,
+      name: "Player Name",
+      paymentMethod: "pay_at_event",
+      ratingPriceUnder: "1000",
+      section: "Open",
+      uscfId: "12345678",
+    },
+  }, Date.now(), tournament)
+
+  assert.equal(registration.order.entryAmountCents, 1000)
+  assert.equal(registration.order.studentDiscountAmountCents, 2000)
+  assert.equal(registration.order.ratingDiscountAmountCents, 0)
+  assert.equal(
+    registration.order.lineItems[0].label,
+    "Tournament entry - Open (Marywood student or K-12)",
+  )
+})
+
+test("rejects rating prices that were not configured for the selected section", () => {
+  const tournament = {
+    id: "rating-price-open",
+    title: "Rating Price Open",
+    entryFees: [{
+      section: "Open",
+      price: 30,
+      ratingPrices: [{ under: 1000, price: 15 }],
+    }],
+  }
+
+  assert.throws(() => buildTournamentRegistration({
+    tournamentId: tournament.id,
+    form: {
+      activeMembershipStatus: "yes",
+      byes: [],
+      email: "player@example.com",
+      name: "Player Name",
+      paymentMethod: "pay_at_event",
+      ratingPriceUnder: "1200",
+      section: "Open",
+      uscfId: "12345678",
+    },
+  }, Date.now(), tournament), /valid rating price/)
+})

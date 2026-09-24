@@ -477,6 +477,15 @@ display: flex;
 flex: 1 1 10rem;
 }
 
+.admin-rating-price-row {
+padding-top: 0.75rem;
+border-top: 1px dashed var(--color-border);
+}
+
+.admin-rating-price-row label {
+flex-grow: 0;
+}
+
 .admin-section-name {
 display: flex;
   flex: 1 1 10rem;

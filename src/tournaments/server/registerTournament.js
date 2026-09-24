@@ -55,6 +55,7 @@ const toDatabaseRegistration = (registration, status, idempotency) => ({
   entered_with_team: registration.player.enteredWithTeam,
   school: registration.player.school || null,
   is_student: registration.player.isStudent,
+  rating_price_under: registration.player.ratingPriceUnder,
   membership_tier_label: registration.player.membershipTier?.label || null,
   byes: registration.order.byes,
   line_items: registration.order.lineItems,

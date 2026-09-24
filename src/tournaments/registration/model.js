@@ -4,7 +4,9 @@ import {
   tournamentRounds,
 } from "./constants.js"
 import {
-  getEntryFeePrice,
+  getEntryPriceBreakdown,
+  getRatingPriceOptions,
+  getSelectedRatingPrice,
   getStudentDiscount,
   getTournamentEntryFees,
   hasStudentDiscount,
@@ -45,6 +47,7 @@ export const createPurchaseForm = (tournament, savedInfo = {}) => ({
   birthDate: "",
   school: "",
   section: getDefaultTournamentSection(tournament),
+  ratingPriceUnder: "",
   byes: [],
   paymentMethod: paymentOptions[0].id,
 })
@@ -53,29 +56,43 @@ export const reconcilePurchaseForm = (form, tournament) => {
   const maxByeCount = tournament.maxByes ?? tournamentRounds.length
   const sectionExists = getTournamentEntryFees(tournament).some((fee) => fee.section === form.section)
   const section = sectionExists ? form.section : getDefaultTournamentSection(tournament)
+  const selectedEntryFee = getTournamentEntryFees(tournament).find((fee) => fee.section === section)
+  const ratingPriceUnder = getSelectedRatingPrice(selectedEntryFee, form.ratingPriceUnder)
+    ? form.ratingPriceUnder
+    : ""
   // A saved student box must not follow the player to a tournament that does
   // not offer the discount.
   const isStudent = form.isStudent && hasStudentDiscount(tournament)
 
-  if (form.byes.length <= maxByeCount && form.section === section && form.isStudent === isStudent) {
+  if (
+    form.byes.length <= maxByeCount
+    && form.section === section
+    && form.isStudent === isStudent
+    && form.ratingPriceUnder === ratingPriceUnder
+  ) {
     return form
   }
 
   return {
     ...form,
     section,
+    ratingPriceUnder,
     isStudent,
     byes: form.byes.slice(0, maxByeCount),
   }
 }
 
-export const getEntryStepError = (form, selectedByeRounds) => {
+export const getEntryStepError = (form, selectedByeRounds, selectedEntryFee) => {
   if (!form.activeMembershipStatus || !form.section || form.byes.some((bye) => !bye.round)) {
     return "Select membership status, choose a section, and complete each bye round."
   }
 
   if (new Set(selectedByeRounds).size !== selectedByeRounds.length) {
     return registrationMessages.duplicateByes
+  }
+
+  if (form.ratingPriceUnder && !getSelectedRatingPrice(selectedEntryFee, form.ratingPriceUnder)) {
+    return "Choose a valid rating price for this section."
   }
 
   return ""
@@ -145,9 +162,20 @@ export const derivePurchase = (tournament, form, now = Date.now()) => {
   const entryFees = getTournamentEntryFees(tournament)
   const tournamentSections = entryFees.map((fee) => fee.section)
   const selectedEntryFee = entryFees.find((fee) => fee.section === form.section) ?? entryFees[0]
-  const fullEntryPrice = getEntryFeePrice(selectedEntryFee, tournament, now)
-  const studentDiscount = getStudentDiscount(tournament, fullEntryPrice, form.isStudent)
-  const entryPrice = fullEntryPrice - studentDiscount
+  const {
+    appliedRatingPrice,
+    entryPrice,
+    fullEntryPrice,
+    ratingDiscount,
+    selectedRatingPrice,
+    studentDiscount,
+  } = getEntryPriceBreakdown({
+    fee: selectedEntryFee,
+    isStudent: form.isStudent,
+    now,
+    ratingPriceUnder: form.ratingPriceUnder,
+    tournament,
+  })
   const membershipPrice = getMembershipPrice({
     needsMembership,
     membershipTier,
@@ -156,7 +184,7 @@ export const derivePurchase = (tournament, form, now = Date.now()) => {
   const byeTotal = form.byes.length * byePrice
   const purchaseTotal = entryPrice + byeTotal + membershipPrice
   const selectedByeRounds = form.byes.map((bye) => bye.round).filter(Boolean)
-  const entryStepError = getEntryStepError(form, selectedByeRounds)
+  const entryStepError = getEntryStepError(form, selectedByeRounds, selectedEntryFee)
   const infoStepError = getInfoStepError(form, {
     hasActiveMembership,
     membershipTier,
@@ -178,6 +206,7 @@ export const derivePurchase = (tournament, form, now = Date.now()) => {
     },
     entryPrice,
     fullEntryPrice,
+    appliedRatingPrice,
     offersStudentDiscount: hasStudentDiscount(tournament),
     studentDiscount,
     studentDiscountAmount: getStudentDiscount(tournament, fullEntryPrice, true),
@@ -192,6 +221,9 @@ export const derivePurchase = (tournament, form, now = Date.now()) => {
     needsMembership,
     playerSearchUrl: getPlayerSearchUrl(form.name),
     purchaseTotal,
+    ratingDiscount,
+    ratingPriceOptions: getRatingPriceOptions(selectedEntryFee),
+    selectedRatingPrice,
     selectedByeRounds,
     tournamentSections,
   }
@@ -243,7 +275,11 @@ export const purchaseReducer = (state, action) => {
     case "update-field":
       return clearMessage({
         ...state,
-        purchaseForm: { ...state.purchaseForm, [action.field]: action.value },
+        purchaseForm: {
+          ...state.purchaseForm,
+          [action.field]: action.value,
+          ...(action.field === "section" ? { ratingPriceUnder: "" } : {}),
+        },
       })
     case "add-bye":
       if (state.purchaseForm.byes.length >= action.maxByeCount) {

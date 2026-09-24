@@ -19,60 +19,116 @@ function EntryFeesField({ entryFees, savedSectionNames, setEntryFees, setEntryFe
   return (
     <fieldset className="admin-fieldset">
       <legend>Sections & entry fees</legend>
+      <p className="admin-field-help">
+        Rating prices are optional fixed entry prices. Players select the matching eligibility
+        option during registration, and the lower of that price or the student price is used.
+      </p>
       {entryFees.map((fee, feeIndex) => (
-        <div className="admin-repeater-row" key={feeIndex}>
-          <label>
-            Section
-            <select
-              onChange={(event) => setEntryFeeSection(
-                feeIndex,
-                event.target.value === "__new__" ? "" : event.target.value,
+        <div className="admin-nested-card admin-entry-fee-card" key={feeIndex}>
+          <div className="admin-repeater-row">
+            <label>
+              Section
+              <select
+                onChange={(event) => setEntryFeeSection(
+                  feeIndex,
+                  event.target.value === "__new__" ? "" : event.target.value,
+                )}
+                value={savedSectionNames.includes(fee.section) ? fee.section : "__new__"}
+              >
+                {savedSectionNames.map((sectionName) => (
+                  <option key={sectionName} value={sectionName}>{sectionName}</option>
+                ))}
+                <option value="__new__">+ Add new section preset</option>
+              </select>
+              {!savedSectionNames.includes(fee.section) && (
+                <input
+                  aria-label="New section name"
+                  onChange={(event) => setEntryFeeSection(feeIndex, event.target.value)}
+                  placeholder="New section name"
+                  value={fee.section}
+                />
               )}
-              value={savedSectionNames.includes(fee.section) ? fee.section : "__new__"}
-            >
-              {savedSectionNames.map((sectionName) => (
-                <option key={sectionName} value={sectionName}>{sectionName}</option>
-              ))}
-              <option value="__new__">+ Add new section preset</option>
-            </select>
-            {!savedSectionNames.includes(fee.section) && (
+            </label>
+            <label>
+              Price ($)
               <input
-                aria-label="New section name"
-                onChange={(event) => setEntryFeeSection(feeIndex, event.target.value)}
-                placeholder="New section name"
-                value={fee.section}
+                min="0"
+                onChange={(event) => setEntryFees((current) => updateAt(current, feeIndex, {
+                  price: toNumber(event.target.value) ?? 0,
+                }))}
+                type="number"
+                value={fee.price ?? ""}
               />
-            )}
-          </label>
-          <label>
-            Price ($)
-            <input
-              min="0"
-              onChange={(event) => setEntryFees((current) => updateAt(current, feeIndex, {
-                price: toNumber(event.target.value) ?? 0,
-              }))}
-              type="number"
-              value={fee.price ?? ""}
-            />
-          </label>
-          <label>
-            Early price ($)
-            <input
-              min="0"
-              onChange={(event) => setEntryFees((current) => updateAt(current, feeIndex, {
-                earlyPrice: toNumber(event.target.value),
-              }))}
-              placeholder="Optional"
-              type="number"
-              value={fee.earlyPrice ?? ""}
-            />
-          </label>
+            </label>
+            <label>
+              Early price ($)
+              <input
+                min="0"
+                onChange={(event) => setEntryFees((current) => updateAt(current, feeIndex, {
+                  earlyPrice: toNumber(event.target.value),
+                }))}
+                placeholder="Optional"
+                type="number"
+                value={fee.earlyPrice ?? ""}
+              />
+            </label>
+            <button
+              className="button admin-remove-button"
+              onClick={() => setEntryFees((current) => removeAt(current, feeIndex))}
+              type="button"
+            >
+              Remove section
+            </button>
+          </div>
+
+          {(fee.ratingPrices || []).map((ratingPrice, ratingPriceIndex) => (
+            <div className="admin-repeater-row admin-rating-price-row" key={ratingPriceIndex}>
+              <label>
+                Rating under
+                <input
+                  min="1"
+                  max="9999"
+                  onChange={(event) => setEntryFees((current) => updateAt(current, feeIndex, {
+                    ratingPrices: updateAt(fee.ratingPrices || [], ratingPriceIndex, {
+                      under: toNumber(event.target.value),
+                    }),
+                  }))}
+                  type="number"
+                  value={ratingPrice.under ?? ""}
+                />
+              </label>
+              <label>
+                Set price ($)
+                <input
+                  min="0"
+                  onChange={(event) => setEntryFees((current) => updateAt(current, feeIndex, {
+                    ratingPrices: updateAt(fee.ratingPrices || [], ratingPriceIndex, {
+                      price: toNumber(event.target.value) ?? 0,
+                    }),
+                  }))}
+                  type="number"
+                  value={ratingPrice.price ?? ""}
+                />
+              </label>
+              <button
+                className="button admin-remove-button"
+                onClick={() => setEntryFees((current) => updateAt(current, feeIndex, {
+                  ratingPrices: removeAt(fee.ratingPrices || [], ratingPriceIndex),
+                }))}
+                type="button"
+              >
+                Remove rating price
+              </button>
+            </div>
+          ))}
           <button
-            className="button admin-remove-button"
-            onClick={() => setEntryFees((current) => removeAt(current, feeIndex))}
+            className="admin-add-button"
+            onClick={() => setEntryFees((current) => updateAt(current, feeIndex, {
+              ratingPrices: [...(fee.ratingPrices || []), { under: 1000, price: 0 }],
+            }))}
             type="button"
           >
-            Remove
+            + Add rating price
           </button>
         </div>
       ))}

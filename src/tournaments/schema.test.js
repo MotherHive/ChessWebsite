@@ -51,6 +51,34 @@ test("published tournaments reject duplicate sections and backwards dates", () =
   assert.ok(result.error.issues.some((issue) => issue.path[0] === "endsAt"))
 })
 
+test("rating prices accept fixed under-rating tiers and reject duplicate thresholds", () => {
+  const valid = tournamentDraftSchema.safeParse({
+    title: "Rating Price Open",
+    entryFees: [{
+      section: "Open",
+      price: 30,
+      ratingPrices: [{ under: 1000, price: 15 }],
+    }],
+  })
+  const duplicate = publishedTournamentSchema.safeParse({
+    ...validPublishedTournament,
+    entryFees: [{
+      section: "Open",
+      price: 30,
+      ratingPrices: [
+        { under: 1000, price: 15 },
+        { under: 1000, price: 12 },
+      ],
+    }],
+  })
+
+  assert.equal(valid.success, true)
+  assert.equal(duplicate.success, false)
+  assert.ok(duplicate.error.issues.some((issue) => (
+    issue.path.join(".") === "entryFees.0.ratingPrices.1.under"
+  )))
+})
+
 test("unknown fields and malformed URLs are rejected", () => {
   const unknownField = tournamentDraftSchema.safeParse({ title: "Open", surprise: true })
   const invalidUrl = tournamentDraftSchema.safeParse({ title: "Open", rulesUrl: "not a URL" })

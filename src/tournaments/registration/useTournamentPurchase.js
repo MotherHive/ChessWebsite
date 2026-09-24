@@ -16,7 +16,12 @@ import {
 } from "./model"
 import { buildTournamentRegistration } from "./buildRegistration"
 
-const savedEntryFields = new Set(["activeMembershipStatus", "isStudent", "section"])
+const savedEntryFields = new Set([
+  "activeMembershipStatus",
+  "isStudent",
+  "ratingPriceUnder",
+  "section",
+])
 
 export default function useTournamentPurchase(tournaments, currentTime) {
   const purchaseButtonRef = useRef(null)
@@ -75,7 +80,11 @@ export default function useTournamentPurchase(tournaments, currentTime) {
     dispatch({ type: "update-field", field, value })
 
     if (savedEntryFields.has(field)) {
-      savePurchaseEntry(selectedTournament.id, { ...purchaseForm, [field]: value })
+      savePurchaseEntry(selectedTournament.id, {
+        ...purchaseForm,
+        [field]: value,
+        ...(field === "section" ? { ratingPriceUnder: "" } : {}),
+      })
     }
   }
 

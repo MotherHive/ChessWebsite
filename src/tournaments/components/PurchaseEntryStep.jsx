@@ -29,6 +29,7 @@ export default function PurchaseEntryStep({ purchase }) {
     purchaseMessage,
     purchaseStatus,
     purchaseTotal,
+    ratingPriceOptions,
     removeBye,
     selectedByeRounds,
     selectedTournament,
@@ -142,6 +143,33 @@ export default function PurchaseEntryStep({ purchase }) {
                 </button>
               </div>
             ))}
+          </div>
+        )}
+
+        {ratingPriceOptions.length > 0 && (
+          <div className="purchase-rating-price-options">
+            {ratingPriceOptions.map((option) => {
+              const isSelected = String(purchaseForm.ratingPriceUnder) === String(option.under)
+
+              return (
+                <label className="purchase-check-card purchase-check-card-compact" key={option.under}>
+                  <input
+                    checked={isSelected}
+                    onChange={(event) => purchase.updatePurchaseField(
+                      "ratingPriceUnder",
+                      event.target.checked ? String(option.under) : "",
+                    )}
+                    type="checkbox"
+                  />
+                  <span>
+                    <strong>My rating is under {option.under}</strong>
+                    <small>
+                      {formatPrice(option.price)} entry price when it is your lowest eligible price.
+                    </small>
+                  </span>
+                </label>
+              )
+            })}
           </div>
         )}
 

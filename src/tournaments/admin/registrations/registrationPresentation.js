@@ -90,6 +90,9 @@ export const csvColumns = [
   ["Team", (row) => (row.entered_with_team ? "yes" : "no")],
   ["School", (row) => row.school],
   ["Student entry", (row) => (row.is_student ? "yes" : "no")],
+  ["Rating price eligibility", (row) => (
+    row.rating_price_under ? `Under ${row.rating_price_under}` : ""
+  )],
   [
     "Student discount",
     (row) => formatCents(row.student_discount_cents),

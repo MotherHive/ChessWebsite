@@ -196,3 +196,30 @@ test("the student discount never pushes an entry below zero", () => {
 
   assert.equal(derivePurchase(freeTournament, form).entryPrice, 0)
 })
+
+test("rating pricing is self-selected and uses the lower alternative entry price", () => {
+  const ratingTournament = {
+    ...tournament,
+    studentDiscount: 5,
+    entryFees: [{
+      section: "Open",
+      price: 30,
+      ratingPrices: [{ under: 1200, price: 20 }, { under: 1000, price: 15 }],
+    }],
+  }
+  const form = {
+    ...createPurchaseForm(ratingTournament),
+    isStudent: true,
+    ratingPriceUnder: "1000",
+  }
+  const purchase = derivePurchase(ratingTournament, form)
+
+  assert.deepEqual(purchase.ratingPriceOptions, [
+    { under: 1000, price: 15 },
+    { under: 1200, price: 20 },
+  ])
+  assert.equal(purchase.appliedRatingPrice.under, 1000)
+  assert.equal(purchase.entryPrice, 15)
+  assert.equal(purchase.studentDiscount, 0)
+  assert.equal(purchase.purchaseTotal, 15)
+})

@@ -11,6 +11,10 @@ const sanitizePurchaseEntry = (entry) => {
     activeMembershipStatus: ["yes", "no"].includes(entry.activeMembershipStatus)
       ? entry.activeMembershipStatus
       : "",
+    isStudent: entry.isStudent === true,
+    ratingPriceUnder: /^\d+$/.test(String(entry.ratingPriceUnder || ""))
+      ? String(entry.ratingPriceUnder)
+      : "",
     section: typeof entry.section === "string" ? entry.section : "",
   }
 }

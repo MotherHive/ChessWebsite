@@ -46,6 +46,8 @@ test("saves and restores first-step entry choices per tournament", () => {
 
   savePurchaseEntry("summer-open", {
     activeMembershipStatus: "yes",
+    isStudent: true,
+    ratingPriceUnder: "1000",
     section: "Open",
     byes: [{ id: "bye-1", round: "Round 2" }],
     name: "not cached",
@@ -58,10 +60,14 @@ test("saves and restores first-step entry choices per tournament", () => {
 
   assert.deepEqual(readSavedPurchaseEntry("summer-open", storage), {
     activeMembershipStatus: "yes",
+    isStudent: true,
+    ratingPriceUnder: "1000",
     section: "Open",
   })
   assert.deepEqual(readSavedPurchaseEntry("fall-open", storage), {
     activeMembershipStatus: "no",
+    isStudent: false,
+    ratingPriceUnder: "",
     section: "U1600",
   })
   assert.deepEqual(readSavedPurchaseEntry("unknown", storage), {})
@@ -80,6 +86,8 @@ test("ignores invalid saved first-step entry data", () => {
 
   assert.deepEqual(readSavedPurchaseEntry("summer-open", storage), {
     activeMembershipStatus: "",
+    isStudent: false,
+    ratingPriceUnder: "",
     section: "",
   })
 })

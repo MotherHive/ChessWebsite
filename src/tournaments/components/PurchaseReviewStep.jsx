@@ -13,6 +13,7 @@ import {
 
 export default function PurchaseReviewStep({ purchase }) {
   const {
+    appliedRatingPrice,
     checkoutTournamentDetails,
     entryPrice,
     handlePurchaseSubmit,
@@ -24,6 +25,7 @@ export default function PurchaseReviewStep({ purchase }) {
     purchaseMessage,
     purchaseStatus,
     purchaseTotal,
+    ratingDiscount,
     retryTurnstile,
     studentDiscount,
     setTurnstileStatus,
@@ -53,6 +55,9 @@ export default function PurchaseReviewStep({ purchase }) {
             </p>
           )}
           {purchaseForm.school && <p>School: {purchaseForm.school}</p>}
+          {purchaseForm.ratingPriceUnder && (
+            <p>Rating price eligibility: Under {purchaseForm.ratingPriceUnder}</p>
+          )}
         </section>
 
         <section className="purchase-review-section" aria-labelledby="purchase-tournament-heading">
@@ -111,7 +116,11 @@ export default function PurchaseReviewStep({ purchase }) {
           <div className="purchase-line-item">
             <p>
               Tournament entry · {purchaseForm.section}
-              {studentDiscount > 0 && ` · ${studentDiscountLabel} (−${formatPrice(studentDiscount)})`}
+              {appliedRatingPrice
+                ? ` · Rating under ${appliedRatingPrice.under} (−${formatPrice(ratingDiscount)})`
+                : studentDiscount > 0
+                  ? ` · ${studentDiscountLabel} (−${formatPrice(studentDiscount)})`
+                  : ""}
             </p>
             <strong>{formatPrice(entryPrice)}</strong>
           </div>

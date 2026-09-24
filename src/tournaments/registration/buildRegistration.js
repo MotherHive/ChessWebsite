@@ -43,6 +43,31 @@ export const getEntryFeePrice = (fee, tournament, now = Date.now()) => {
   return fee.price
 }
 
+export const getRatingPriceOptions = (fee) => (
+  [...(fee?.ratingPrices || [])]
+    .filter((option) => (
+      Number.isInteger(option?.under)
+      && option.under > 0
+      && Number.isFinite(option?.price)
+      && option.price >= 0
+    ))
+    .sort((left, right) => left.under - right.under)
+)
+
+export const getSelectedRatingPrice = (fee, selectedUnder) => {
+  if (selectedUnder === "" || selectedUnder === null || selectedUnder === undefined) {
+    return null
+  }
+
+  const under = typeof selectedUnder === "number"
+    ? selectedUnder
+    : /^\d+$/.test(String(selectedUnder))
+      ? Number(selectedUnder)
+      : Number.NaN
+
+  return getRatingPriceOptions(fee).find((option) => option.under === under) || null
+}
+
 // The tournament, not the browser, decides what a student entry is worth. A
 // discount larger than the entry itself would otherwise make the order negative.
 export const getStudentDiscount = (tournament, entryPrice, isStudent) => {
@@ -60,6 +85,32 @@ export const getStudentDiscount = (tournament, entryPrice, isStudent) => {
 export const hasStudentDiscount = (tournament) => (
   getStudentDiscount(tournament, Number.POSITIVE_INFINITY, true) > 0
 )
+
+// Student and rating prices are alternatives, not stackable discounts. Only
+// the winning option changes the entry itself; byes and membership are added
+// afterward at their normal prices.
+export const getEntryPriceBreakdown = ({
+  fee,
+  isStudent,
+  now = Date.now(),
+  ratingPriceUnder,
+  tournament,
+}) => {
+  const fullEntryPrice = getEntryFeePrice(fee, tournament, now)
+  const availableStudentDiscount = getStudentDiscount(tournament, fullEntryPrice, isStudent)
+  const studentPrice = fullEntryPrice - availableStudentDiscount
+  const selectedRatingPrice = getSelectedRatingPrice(fee, ratingPriceUnder)
+  const ratingPriceWins = Boolean(selectedRatingPrice && selectedRatingPrice.price < studentPrice)
+
+  return {
+    appliedRatingPrice: ratingPriceWins ? selectedRatingPrice : null,
+    entryPrice: ratingPriceWins ? selectedRatingPrice.price : studentPrice,
+    fullEntryPrice,
+    ratingDiscount: ratingPriceWins ? fullEntryPrice - selectedRatingPrice.price : 0,
+    selectedRatingPrice,
+    studentDiscount: ratingPriceWins ? 0 : availableStudentDiscount,
+  }
+}
 
 const getPaymentMethodLabel = (paymentMethod) => (
   paymentOptions.find((option) => option.id === paymentMethod)?.label || paymentMethod
@@ -87,6 +138,18 @@ export const buildTournamentRegistration = (payload, now = Date.now(), tournamen
 
   if (!selectedEntryFee) {
     throw new Error("Choose a valid tournament section.")
+  }
+
+  const ratingPriceUnder = form.ratingPriceUnder
+  const selectedRatingPrice = getSelectedRatingPrice(selectedEntryFee, ratingPriceUnder)
+
+  if (
+    ratingPriceUnder !== ""
+    && ratingPriceUnder !== null
+    && ratingPriceUnder !== undefined
+    && !selectedRatingPrice
+  ) {
+    throw new Error("Choose a valid rating price for this section.")
   }
 
   const activeMembershipStatus = trimString(form.activeMembershipStatus)
@@ -175,10 +238,19 @@ export const buildTournamentRegistration = (payload, now = Date.now(), tournamen
     throw new Error(registrationMessages.teamSchool)
   }
 
-  const fullEntryPrice = getEntryFeePrice(selectedEntryFee, selectedTournament, now)
   const isStudent = Boolean(form.isStudent)
-  const studentDiscount = getStudentDiscount(selectedTournament, fullEntryPrice, isStudent)
-  const entryPrice = fullEntryPrice - studentDiscount
+  const {
+    appliedRatingPrice,
+    entryPrice,
+    ratingDiscount,
+    studentDiscount,
+  } = getEntryPriceBreakdown({
+    fee: selectedEntryFee,
+    isStudent,
+    now,
+    ratingPriceUnder,
+    tournament: selectedTournament,
+  })
   const membershipPrice = getMembershipPrice({
     needsMembership,
     membershipTier,
@@ -192,9 +264,11 @@ export const buildTournamentRegistration = (payload, now = Date.now(), tournamen
   const lineItems = [
     {
       key: "entry",
-      label: studentDiscount > 0
-        ? `Tournament entry - ${section} (${studentDiscountLabel})`
-        : `Tournament entry - ${section}`,
+      label: appliedRatingPrice
+        ? `Tournament entry - ${section} (rating under ${appliedRatingPrice.under})`
+        : studentDiscount > 0
+          ? `Tournament entry - ${section} (${studentDiscountLabel})`
+          : `Tournament entry - ${section}`,
       amount_cents: dollarsToCents(entryPrice),
       quantity: 1,
     },
@@ -246,6 +320,7 @@ export const buildTournamentRegistration = (payload, now = Date.now(), tournamen
       isExpiredMember,
       enteredWithTeam,
       isStudent,
+      ratingPriceUnder: selectedRatingPrice?.under ?? null,
       membershipTier,
     },
     order: {
@@ -255,6 +330,7 @@ export const buildTournamentRegistration = (payload, now = Date.now(), tournamen
       paymentMethod,
       paymentMethodLabel: getPaymentMethodLabel(paymentMethod),
       entryAmountCents: dollarsToCents(entryPrice),
+      ratingDiscountAmountCents: dollarsToCents(ratingDiscount),
       studentDiscountAmountCents: dollarsToCents(studentDiscount),
       byeAmountCents: dollarsToCents(byeTotal),
       membershipAmountCents: dollarsToCents(membershipPrice),
